@@ -2,5 +2,4 @@ Django==2.1.3
 djangorestframework==3.9.0
 pytest-django==3.4.3
 attrs==18.2.0
-mypy==0.641
 pyrsistent==0.14.5

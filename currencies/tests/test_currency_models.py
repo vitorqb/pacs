@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from common.test import TestCase
 from common.models import full_clean_and_save
 from currencies.models import Currency
-from datetime import date
+from datetime import date, timedelta
 
 
 class CurrencyModelTestCase(TestCase):
@@ -55,3 +55,29 @@ class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):
         dt, new_price = date(2018, 12, 1), 250
         price_change = self.currency.new_price_change(dt, new_price)
         assert list(self.currency.price_changes_iter()) == [price_change]
+
+
+class CurrencyTestCase_price_changes_iter_until(CurrencyModelTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.price_changes = [
+            self.currency.new_price_change(d, p)
+            for d, p in ((date(2016, 1, 1), 180),
+                         (date(2016, 2, 2), 200),
+                         (date(2017, 1, 13), 120))
+        ]
+
+    def test_none(self):
+        dt = self.price_changes[0].date - timedelta(days=1)
+        assert list(self.currency.price_changes_iter_until(dt)) == []
+
+    def test_one(self):
+        dt = self.price_changes[0].date
+        assert list(self.currency.price_changes_iter_until(dt)) == \
+            self.price_changes[:1]
+
+    def test_all(self):
+        dt = self.price_changes[2].date
+        assert list(self.currency.price_changes_iter_until(dt)) == \
+            self.price_changes

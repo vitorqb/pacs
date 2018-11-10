@@ -1,4 +1,5 @@
 import django.db.models as m
+import itertools
 from django.core.validators import MinValueValidator
 from common.models import NameField, CentsPriceField, full_clean_and_save
 
@@ -26,6 +27,13 @@ class Currency(m.Model):
         """ Returns an iterator through price changes in chronological
         order """
         yield from self.currencypricechange_set.all().order_by('date')
+
+    def price_changes_iter_until(self, date_):
+        """ Iterates through price changes until a date (included) """
+        yield from itertools.takewhile(
+            lambda x: x.date <= date_,
+            self.price_changes_iter()
+        )
 
 
 class CurrencyPriceChange(m.Model):

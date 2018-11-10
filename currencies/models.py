@@ -1,5 +1,6 @@
 import django.db.models as m
 import itertools
+import functools
 from django.core.validators import MinValueValidator
 from common.models import NameField, CentsPriceField, full_clean_and_save
 
@@ -22,6 +23,22 @@ class Currency(m.Model):
             new_price=new_price,
             currency=self
         ))
+
+    def get_price(self, date_):
+        """ Returns price at a date """
+        last_change = self.get_last_price_change_before(date_)
+        if last_change is not None:
+            return last_change.new_price
+        return self.base_price
+
+    def get_last_price_change_before(self, dt):
+        """ Returns the last price change before date, inclusive. """
+        return self\
+            .currencypricechange_set\
+            .all()\
+            .order_by('-date')\
+            .filter(date__lte=dt)\
+            .first()
 
     def price_changes_iter(self):
         """ Returns an iterator through price changes in chronological

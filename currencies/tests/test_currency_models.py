@@ -6,9 +6,18 @@ from datetime import date, timedelta
 
 
 class CurrencyModelTestCase(TestCase):
+
     def setUp(self):
         super().setUp()
         self.currency = Currency.objects.create(name="Real", base_price=200)
+
+    def set_up_price_changes(self):
+        self.price_changes = [
+            self.currency.new_price_change(d, p)
+            for d, p in ((date(2016, 1, 1), 180),
+                         (date(2016, 2, 2), 200),
+                         (date(2017, 1, 13), 120))
+        ]
 
 
 class CurrencyTestCase(CurrencyModelTestCase):
@@ -61,12 +70,7 @@ class CurrencyTestCase_price_changes_iter_until(CurrencyModelTestCase):
 
     def setUp(self):
         super().setUp()
-        self.price_changes = [
-            self.currency.new_price_change(d, p)
-            for d, p in ((date(2016, 1, 1), 180),
-                         (date(2016, 2, 2), 200),
-                         (date(2017, 1, 13), 120))
-        ]
+        self.set_up_price_changes()
 
     def test_none(self):
         dt = self.price_changes[0].date - timedelta(days=1)
@@ -81,3 +85,27 @@ class CurrencyTestCase_price_changes_iter_until(CurrencyModelTestCase):
         dt = self.price_changes[2].date
         assert list(self.currency.price_changes_iter_until(dt)) == \
             self.price_changes
+
+
+class CurrencyTestCase_get_price(CurrencyModelTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.set_up_price_changes()
+
+    def call(self):
+        return self.currency.get_price(self.dt)
+
+    def test_base_price(self):
+        self.dt = self.price_changes[0].date - timedelta(days=1)
+        assert self.call() == self.currency.base_price
+
+    def test_middle(self):
+        self.dt = date(2017, 1, 4)
+        assert self.dt < self.price_changes[-1].date and\
+            self.dt > self.price_changes[-2].date
+        assert self.call() == self.price_changes[-2].new_price
+
+    def test_last(self):
+        self.dt = self.price_changes[-1].date
+        assert self.call() == self.price_changes[-1].new_price

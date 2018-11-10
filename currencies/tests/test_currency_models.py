@@ -28,6 +28,11 @@ class CurrencyTestCase(CurrencyModelTestCase):
         assert cur.name == name
         assert cur.base_price == base_price
 
+    def test_currency_cant_have_negative_price(self):
+        name, base_price = "a", -1
+        with self.assertRaises(ValidationError):
+            full_clean_and_save(Currency(name=name, base_price=base_price))
+
 
 class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
 

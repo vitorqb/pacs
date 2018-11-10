@@ -6,7 +6,9 @@ from datetime import date
 
 
 class CurrencyModelTestCase(TestCase):
-    pass
+    def setUp(self):
+        super().setUp()
+        self.currency = Currency.objects.create(name="Real", base_price=200)
 
 
 class CurrencyTestCase(CurrencyModelTestCase):
@@ -22,7 +24,6 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
 
     def setUp(self):
         super().setUp()
-        self.currency = Currency.objects.create(name="Real", base_price=200)
         self.dt = date(2018, 1, 1)
         self.new_price = 250
 
@@ -43,3 +44,14 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
     def test_zero_value_raises_err(self):
         self.new_price = 0
         self.assertRaisesRegex(ValidationError, 'new_price.+positive', self.call)
+
+
+class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):
+
+    def test_empty(self):
+        assert list(self.currency.price_changes_iter()) == []
+
+    def test_one_long(self):
+        dt, new_price = date(2018, 12, 1), 250
+        price_change = self.currency.new_price_change(dt, new_price)
+        assert list(self.currency.price_changes_iter()) == [price_change]

@@ -22,6 +22,11 @@ class Currency(m.Model):
             currency=self
         ))
 
+    def price_changes_iter(self):
+        """ Returns an iterator through price changes in chronological
+        order """
+        yield from self.currencypricechange_set.all().order_by('date')
+
 
 class CurrencyPriceChange(m.Model):
 

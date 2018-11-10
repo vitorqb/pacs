@@ -1,5 +1,4 @@
 import django.db.models as m
-import itertools
 from common.models import NameField, CentsPriceField, full_clean_and_save
 
 

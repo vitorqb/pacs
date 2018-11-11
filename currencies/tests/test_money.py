@@ -1,6 +1,6 @@
 from currencies.models import Currency, get_default_currency
 from currencies.money import Money
-from currencies.management.commands.populate_currencies import CurrencyPopulator
+from currencies.management.commands.populate_currencies import currency_populator
 from common.test import TestCase
 from common.utils import utcdatetime
 
@@ -8,7 +8,7 @@ from common.utils import utcdatetime
 class MoneyTestCase(TestCase):
     def setUp(self):
         super().setUp()
-        CurrencyPopulator()()
+        currency_populator()
         self.dollar = get_default_currency()
         self.euro = Currency.objects.get(name="Euro")
         self.money = Money(250, self.euro)

@@ -1,6 +1,7 @@
+import attr
 from common.test import TestCase
 from currencies.models import Currency, CurrencyFactory
-from currencies.management.commands.populate_currencies import CurrencyPopulator
+from currencies.management.commands.populate_currencies import currency_populator
 from pyrsistent import m, v
 
 
@@ -14,8 +15,9 @@ class TestPopulateCurrencies(ManagementCommandTestCase):
         super().setUp()
         self.name = "Yen"
         self.price = 210
-        self.populator = CurrencyPopulator(
-            currencies_data=v(m(name=self.name, base_price=self.price))
+        self.populator = attr.evolve(
+            currency_populator,
+            model_data=v(m(name=self.name, base_price=self.price))
         )
 
     def test_base(self):

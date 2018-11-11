@@ -1,5 +1,6 @@
 import django.db.models as m
 from django.core.validators import MinValueValidator
+from copy import deepcopy
 
 
 class CentsField(m.IntegerField):
@@ -8,11 +9,14 @@ class CentsField(m.IntegerField):
 
 
 class PriceField(m.FloatField):
+
+    min_value_validator = MinValueValidator(0, "Prices must be positive")
+
     def __init__(self, *args, **kwargs):
-        if 'validators' not in kwargs:
-            kwargs['validators'] = []
-        kwargs['validators'].append(MinValueValidator(0, "Prices must be positive"))
-        return super().__init__(*args, **kwargs)
+        validators = deepcopy(kwargs.pop('validators', []))
+        if self.min_value_validator not in validators:
+            validators.append(self.min_value_validator)
+        return super().__init__(*args, **kwargs, validators=validators)
 
 
 class NameField(m.CharField):

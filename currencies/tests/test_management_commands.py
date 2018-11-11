@@ -1,6 +1,5 @@
 from common.test import TestCase
-from common.models import full_clean_and_save
-from currencies.models import Currency
+from currencies.models import Currency, CurrencyFactory
 from currencies.management.commands.populate_currencies import CurrencyPopulator
 from pyrsistent import m, v
 
@@ -22,11 +21,11 @@ class TestPopulateCurrencies(ManagementCommandTestCase):
     def test_base(self):
         assert not Currency.objects.filter(name=self.name).exists()
         self.populator()
-        yen = Currency.objects.filter(name=self.name).get()
+        yen = Currency.objects.get(name=self.name)
         assert yen.name == self.name
         assert yen.base_price == self.price
 
     def test_skip(self):
-        yen = full_clean_and_save(Currency(name=self.name, base_price=self.price))
+        yen = CurrencyFactory()(name=self.name, base_price=self.price)
         self.populator()
         assert Currency.objects.get(name=self.name) == yen

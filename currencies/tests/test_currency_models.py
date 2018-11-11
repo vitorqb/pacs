@@ -1,7 +1,6 @@
 from django.core.exceptions import ValidationError
 from common.test import TestCase
-from common.models import full_clean_and_save
-from currencies.models import Currency
+from currencies.models import CurrencyFactory
 from datetime import date, timedelta
 
 
@@ -9,7 +8,7 @@ class CurrencyModelTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
-        self.currency = Currency.objects.create(name="Real", base_price=2)
+        self.currency = CurrencyFactory()(name="Real", base_price=2)
 
     def set_up_price_changes(self):
         self.price_changes = [
@@ -24,14 +23,14 @@ class CurrencyTestCase(CurrencyModelTestCase):
 
     def test_currency_base(self):
         name, base_price = "a", 1
-        cur = Currency.objects.create(name=name, base_price=base_price)
+        cur = CurrencyFactory()(name=name, base_price=base_price)
         assert cur.name == name
         assert cur.base_price == base_price
 
     def test_currency_cant_have_negative_price(self):
         name, base_price = "a", -1
         with self.assertRaises(ValidationError):
-            full_clean_and_save(Currency(name=name, base_price=base_price))
+            CurrencyFactory()(name=name, base_price=base_price)
 
 
 class CurrencyTestCase_new_price_change(CurrencyModelTestCase):

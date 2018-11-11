@@ -6,7 +6,7 @@ from currencies.models import Currency
 
 
 CURRENCIES_DATA = v(
-    m(name="Dollar", base_price=1),
+    m(name="Dollar", base_price=1, imutable=True),
     m(name="Euro", base_price=1.13),
     m(name="Real", base_price=0.27)
 )
@@ -47,4 +47,5 @@ class CurrencyPopulator():
         return Currency.objects.filter(name=cur_data['name']).exists()
 
     def _create_currency(self, cur_data):
+        """ The only place that allowed to skip the Factory """
         return full_clean_and_save(Currency(**cur_data))

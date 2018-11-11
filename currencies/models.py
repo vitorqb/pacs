@@ -1,10 +1,19 @@
+import attr
 import django.db.models as m
 from common.models import NameField, PriceField, full_clean_and_save
 
 
 # ------------------------------------------------------------------------------
 # Models
-# !!!! TODO -> Add imutable currencies
+@attr.s()
+class CurrencyFactory():
+    """ Encapsulates creation of currencies """
+
+    def __call__(self, name, base_price):
+        """ Creates a currency using name and base_price """
+        return full_clean_and_save(Currency(name=name, base_price=base_price))
+
+
 class Currency(m.Model):
 
     #
@@ -12,6 +21,7 @@ class Currency(m.Model):
     #
     name = NameField()
     base_price = PriceField()
+    imutable = m.BooleanField(default=False)
 
     #
     # Methods

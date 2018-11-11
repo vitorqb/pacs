@@ -1,5 +1,6 @@
 import attr
 import django.db.models as m
+from django.core.exceptions import ValidationError
 from common.models import NameField, PriceField, full_clean_and_save
 
 
@@ -16,6 +17,10 @@ class CurrencyFactory():
 
 class Currency(m.Model):
 
+    ERR_MSGS = {
+        "IMUTABLE_CURRENCY": "Currency {} is imutable."
+    }
+
     #
     # Fields
     #
@@ -28,6 +33,7 @@ class Currency(m.Model):
     #
     def new_price_change(self, date_, new_price):
         """ Register's a price change for a currency and returns. """
+        self._assert_not_imutable()
         return full_clean_and_save(CurrencyPriceChange(
             date=date_,
             new_price=new_price,
@@ -62,6 +68,11 @@ class Currency(m.Model):
             .all()\
             .filter(date__lte=date_)\
             .order_by('date')
+
+    def _assert_not_imutable(self):
+        if self.imutable:
+            m = self.ERR_MSGS['IMUTABLE_CURRENCY'].format(self.name)
+            raise ValidationError(dict(price_change=m))
 
 
 class CurrencyPriceChange(m.Model):

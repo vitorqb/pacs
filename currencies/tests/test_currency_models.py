@@ -32,6 +32,13 @@ class CurrencyTestCase(CurrencyModelTestCase):
         with self.assertRaises(ValidationError):
             CurrencyFactory()(name=name, base_price=base_price)
 
+    def test_cant_set_price_if_imutable(self):
+        cur = CurrencyFactory()(name="hola", base_price=True)
+        cur.imutable = True
+        exp_err_msg = cur.ERR_MSGS['IMUTABLE_CURRENCY'].format(cur.name)
+        with self.assertRaisesRegex(ValidationError, exp_err_msg):
+            cur.new_price_change(date(2017, 1, 1), 20)
+
 
 class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
 

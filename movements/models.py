@@ -4,7 +4,6 @@ import django.db.models as m
 from django.db.transaction import atomic
 from django.core.exceptions import ValidationError
 from common.models import full_clean_and_save
-from currencies.models import Currency
 from currencies.money import Money
 from accounts.models import Account
 
@@ -90,6 +89,12 @@ class MovementSpec():
         return self.money.get_value(date_)
 
 
+class MovementManager(m.Manager):
+
+    def filter_currency(self, cur):
+        return self.filter(currency=cur)
+
+
 class Movement(m.Model):
     """
     A credit or debit of Money from an account.
@@ -101,8 +106,13 @@ class Movement(m.Model):
     account = m.ForeignKey(Account, on_delete=m.CASCADE)
     transaction = m.ForeignKey(Transaction, on_delete=m.CASCADE)
     # currency + quantity forms Money
-    currency = m.ForeignKey(Currency, on_delete=m.CASCADE)
+    currency = m.ForeignKey('currencies.Currency', on_delete=m.CASCADE)
     quantity = m.IntegerField()
+
+    #
+    # django magic
+    #
+    objects = MovementManager()
 
     #
     # Methods

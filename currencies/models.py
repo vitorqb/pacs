@@ -1,7 +1,9 @@
+from pyrsistent import pvector
 import attr
 import django.db.models as m
 from django.core.exceptions import ValidationError
 from common.models import NameField, PriceField, full_clean_and_save
+from movements.models import Transaction, Movement
 
 
 # ------------------------------------------------------------------------------
@@ -58,6 +60,18 @@ class Currency(m.Model):
             .order_by('-date')\
             .filter(date__lte=dt)\
             .first()
+
+    def get_transactions(self, init_dt):
+        """ Retrieves all transactions with movements that involve
+        this currency, after init_dt """
+        movements_pks = pvector(
+            Movement.objects.filter_currency(self).values_list('pk', flat=True)
+        )
+        return Transaction\
+            .objects\
+            .filter(date__gte=init_dt)\
+            .filter(movement__pk__in=movements_pks)\
+            .distinct()
 
     def price_changes_iter(self):
         """ Returns an iterator through price changes in chronological

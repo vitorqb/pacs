@@ -1,14 +1,24 @@
+from datetime import date, timedelta
+from pyrsistent import v, pvector
 from django.core.exceptions import ValidationError
 from common.test import TestCase
+from currencies.money import Money
 from currencies.models import CurrencyFactory
-from datetime import date, timedelta
+from movements.models import TransactionFactory, MovementSpec
+from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
+from accounts.management.commands.populate_accounts import (
+    account_type_populator,
+    account_populator
+)
 
 
 class CurrencyModelTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
-        self.currency = CurrencyFactory()(name="Real", base_price=2)
+        account_type_populator()
+        account_populator()
+        self.currency = CurrencyFactory()(name="Yen", base_price=2)
 
     def set_up_price_changes(self):
         self.price_changes = [
@@ -46,6 +56,10 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
         super().setUp()
         self.dt = date(2018, 1, 1)
         self.new_price = 2.50
+        self.accs = pvector(
+            AccountFactory()(x, AccTypeEnum.LEAF, get_root_acc())
+            for x in ("A", "B")
+        )
 
     def call(self):
         return self.currency.new_price_change(self.dt, self.new_price)
@@ -64,6 +78,30 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
     def test_zero_value_raises_err(self):
         self.new_price = -0.01
         self.assertRaisesRegex(ValidationError, 'new_price.+positive', self.call)
+
+    def test_get_transactions(self):
+        moneys = v(Money(100, self.currency), Money(-100, self.currency))
+        movs_specs = pvector(MovementSpec(a, m) for a, m in zip(self.accs, moneys))
+        dates = v(self.dt - timedelta(days=1), self.dt)
+
+        trans = pvector(TransactionFactory()("_", d, movs_specs) for d in dates)
+        assert pvector(self.currency.get_transactions(dates[0])) == trans
+        assert pvector(self.currency.get_transactions(dates[1])) == trans[1:]
+        assert pvector(self.currency.get_transactions(dates[1] + timedelta(days=1))) ==\
+            pvector()
+
+    def test_get_transactions_leave_out_if_not_same_cur(self):
+        other_cur = CurrencyFactory()("A", 1)
+        trans = TransactionFactory()(
+            "_",
+            self.dt,
+            v(
+                MovementSpec(self.accs[0], Money(100, other_cur)),
+                MovementSpec(self.accs[1], Money(-100, other_cur))
+            )
+        )
+        assert pvector(other_cur.get_transactions(self.dt)) == v(trans)
+        assert pvector(self.currency.get_transactions(self.dt)) == pvector()
 
 
 class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):

@@ -1,14 +1,17 @@
 import django.db.models as m
-from common.models import NameField, CentsPriceField, full_clean_and_save
+from common.models import NameField, PriceField, full_clean_and_save
 
 
+# ------------------------------------------------------------------------------
+# Models
+# !!!! TODO -> Add imutable currencies
 class Currency(m.Model):
 
     #
     # Fields
     #
     name = NameField()
-    base_price = CentsPriceField()
+    base_price = PriceField()
 
     #
     # Methods
@@ -56,7 +59,20 @@ class CurrencyPriceChange(m.Model):
 
     date = m.DateField()
     currency = m.ForeignKey(Currency, on_delete=m.CASCADE)
-    new_price = CentsPriceField()
+    new_price = PriceField()
 
     class Meta:
         unique_together = ('date', 'currency')
+
+
+# ------------------------------------------------------------------------------
+# Services
+_cached_default_currency = None
+
+
+def get_default_currency():
+    """ Returns the default Currency. Cached for efficiency. """
+    global _cached_default_currency
+    if _cached_default_currency is None:
+        _cached_default_currency = Currency.objects.get(name="Dollar")
+    return _cached_default_currency

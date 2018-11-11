@@ -9,14 +9,14 @@ class CurrencyModelTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
-        self.currency = Currency.objects.create(name="Real", base_price=200)
+        self.currency = Currency.objects.create(name="Real", base_price=2)
 
     def set_up_price_changes(self):
         self.price_changes = [
             self.currency.new_price_change(d, p)
-            for d, p in ((date(2016, 1, 1), 180),
-                         (date(2016, 2, 2), 200),
-                         (date(2017, 1, 13), 120))
+            for d, p in ((date(2016, 1, 1), 1.8),
+                         (date(2016, 2, 2), 2),
+                         (date(2017, 1, 13), 1.2))
         ]
 
 
@@ -39,7 +39,7 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
     def setUp(self):
         super().setUp()
         self.dt = date(2018, 1, 1)
-        self.new_price = 250
+        self.new_price = 2.50
 
     def call(self):
         return self.currency.new_price_change(self.dt, self.new_price)
@@ -56,7 +56,7 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
         self.assertRaisesRegex(ValidationError, 'Date.+exists', self.call)
 
     def test_zero_value_raises_err(self):
-        self.new_price = 0
+        self.new_price = -0.01
         self.assertRaisesRegex(ValidationError, 'new_price.+positive', self.call)
 
 
@@ -66,7 +66,7 @@ class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):
         assert list(self.currency.price_changes_iter()) == []
 
     def test_one_long(self):
-        dt, new_price = date(2018, 12, 1), 250
+        dt, new_price = date(2018, 12, 1), 2.5
         price_change = self.currency.new_price_change(dt, new_price)
         assert list(self.currency.price_changes_iter()) == [price_change]
 

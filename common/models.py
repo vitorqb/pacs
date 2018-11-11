@@ -7,11 +7,11 @@ class CentsField(m.IntegerField):
     pass
 
 
-class CentsPriceField(CentsField):
+class PriceField(m.FloatField):
     def __init__(self, *args, **kwargs):
         if 'validators' not in kwargs:
             kwargs['validators'] = []
-        kwargs['validators'].append(MinValueValidator(1, "Prices must be positive"))
+        kwargs['validators'].append(MinValueValidator(0, "Prices must be positive"))
         return super().__init__(*args, **kwargs)
 
 

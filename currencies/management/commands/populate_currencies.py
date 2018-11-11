@@ -6,9 +6,9 @@ from currencies.models import Currency
 
 
 CURRENCIES_DATA = v(
-    m(name="Dolar", base_price=100),
-    m(name="Euro", base_price=113),
-    m(name="Real", base_price=373)
+    m(name="Dollar", base_price=1),
+    m(name="Euro", base_price=1.13),
+    m(name="Real", base_price=0.27)
 )
 
 

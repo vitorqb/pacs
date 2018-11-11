@@ -1,8 +1,9 @@
 from pyrsistent import pvector
 import attr
+from django.db.transaction import atomic
 import django.db.models as m
 from django.core.exceptions import ValidationError
-from common.models import NameField, PriceField, full_clean_and_save
+from common.models import NameField, PriceField, full_clean_and_save, extract_pks
 from movements.models import Transaction, Movement
 
 
@@ -33,17 +34,19 @@ class Currency(m.Model):
     #
     # Methods
     #
-    # !!!! TODO
-    # When a price changes, all future transactions that involve the
-    # currency have to be rebalanced.
+    @atomic
     def new_price_change(self, date_, new_price):
-        """ Register's a price change for a currency and returns. """
+        """
+        Register's a price change for a currency and returns.
+        """
         self._assert_not_imutable()
-        return full_clean_and_save(CurrencyPriceChange(
+        price_change = full_clean_and_save(CurrencyPriceChange(
             date=date_,
             new_price=new_price,
             currency=self
         ))
+        self._rebalance_transactions_on_price_change(price_change)
+        return price_change
 
     def get_price(self, date_):
         """ Returns price at a date """
@@ -61,17 +64,9 @@ class Currency(m.Model):
             .filter(date__lte=dt)\
             .first()
 
-    def get_transactions(self, init_dt):
-        """ Retrieves all transactions with movements that involve
-        this currency, after init_dt """
-        movements_pks = pvector(
-            Movement.objects.filter_currency(self).values_list('pk', flat=True)
-        )
-        return Transaction\
-            .objects\
-            .filter(date__gte=init_dt)\
-            .filter(movement__pk__in=movements_pks)\
-            .distinct()
+    def get_movements(self):
+        """ Returns a queryset of Movement with this currency """
+        return self.movement_set.all()
 
     def price_changes_iter(self):
         """ Returns an iterator through price changes in chronological
@@ -91,6 +86,11 @@ class Currency(m.Model):
             m = self.ERR_MSGS['IMUTABLE_CURRENCY'].format(self.name)
             raise ValidationError(dict(price_change=m))
 
+    def _rebalance_transactions_on_price_change(self, price_change):
+        """ Iterates through all transactions afected by a price change and
+        calls rebalance on them """
+        assert False
+
 
 class CurrencyPriceChange(m.Model):
     """ The event of a change in a currency price """
@@ -101,6 +101,30 @@ class CurrencyPriceChange(m.Model):
 
     class Meta:
         unique_together = ('date', 'currency')
+
+    def get_affected_transactions(self):
+        """ Retrieves all transactions which have their values affected
+        by this price change """
+        movements_pks = extract_pks(self.currency.get_movements())
+        next_price_change = self.get_future_price_changes().first()
+
+        qset = Transaction.objects.all()
+        qset = qset.filter(movement__pk__in=movements_pks)
+        qset = qset.filter(date__gte=self.date)
+        if next_price_change is not None:
+            qset = qset.filter(date__lt=next_price_change.date)
+        qset = qset.distinct()
+
+        return qset
+
+    def get_future_price_changes(self):
+        """ Return an ordered queryset of price changes for the same currency
+        after this one """
+        return CurrencyPriceChange\
+            .objects\
+            .filter(currency=self.currency)\
+            .filter(date__gt=self.date)\
+            .order_by('date')
 
 
 # ------------------------------------------------------------------------------

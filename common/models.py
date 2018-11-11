@@ -1,3 +1,4 @@
+from pyrsistent import pvector
 import django.db.models as m
 from django.core.validators import MinValueValidator
 from copy import deepcopy
@@ -33,3 +34,7 @@ def full_clean_and_save(x):
     x.full_clean()
     x.save()
     return x
+
+
+def extract_pks(x):
+    return pvector(x.values_list('pk', flat=True))

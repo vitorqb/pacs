@@ -19,14 +19,18 @@ class CurrencyModelTestCase(TestCase):
         account_type_populator()
         account_populator()
         self.currency = CurrencyFactory()(name="Yen", base_price=2)
+        self.accs = pvector(
+            AccountFactory()(x, AccTypeEnum.LEAF, get_root_acc())
+            for x in ("A", "B")
+        )
 
     def set_up_price_changes(self):
-        self.price_changes = [
+        self.price_changes = pvector([
             self.currency.new_price_change(d, p)
             for d, p in ((date(2016, 1, 1), 1.8),
                          (date(2016, 2, 2), 2),
                          (date(2017, 1, 13), 1.2))
-        ]
+        ])
 
 
 class CurrencyTestCase(CurrencyModelTestCase):
@@ -58,7 +62,7 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
         self.new_price = 2.50
         self.accs = pvector(
             AccountFactory()(x, AccTypeEnum.LEAF, get_root_acc())
-            for x in ("A", "B")
+            for x in ("D", "E")
         )
 
     def call(self):
@@ -78,30 +82,6 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
     def test_zero_value_raises_err(self):
         self.new_price = -0.01
         self.assertRaisesRegex(ValidationError, 'new_price.+positive', self.call)
-
-    def test_get_transactions(self):
-        moneys = v(Money(100, self.currency), Money(-100, self.currency))
-        movs_specs = pvector(MovementSpec(a, m) for a, m in zip(self.accs, moneys))
-        dates = v(self.dt - timedelta(days=1), self.dt)
-
-        trans = pvector(TransactionFactory()("_", d, movs_specs) for d in dates)
-        assert pvector(self.currency.get_transactions(dates[0])) == trans
-        assert pvector(self.currency.get_transactions(dates[1])) == trans[1:]
-        assert pvector(self.currency.get_transactions(dates[1] + timedelta(days=1))) ==\
-            pvector()
-
-    def test_get_transactions_leave_out_if_not_same_cur(self):
-        other_cur = CurrencyFactory()("A", 1)
-        trans = TransactionFactory()(
-            "_",
-            self.dt,
-            v(
-                MovementSpec(self.accs[0], Money(100, other_cur)),
-                MovementSpec(self.accs[1], Money(-100, other_cur))
-            )
-        )
-        assert pvector(other_cur.get_transactions(self.dt)) == v(trans)
-        assert pvector(self.currency.get_transactions(self.dt)) == pvector()
 
 
 class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):
@@ -158,3 +138,42 @@ class CurrencyTestCase_get_price(CurrencyModelTestCase):
     def test_last(self):
         self.dt = self.price_changes[-1].date
         assert self.call() == self.price_changes[-1].new_price
+
+
+class TestCurrencyPriceChange(CurrencyModelTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.set_up_price_changes()
+        self.moneys = v(Money(100, self.currency), Money(-100, self.currency))
+        self.movs_specs = pvector(
+            MovementSpec(a, m) for a, m in zip(self.accs, self.moneys)
+        )
+
+    def make_trans_at(self, dt):
+        return TransactionFactory()("_", dt, self.movs_specs)
+
+    def test_get_future_price_changes_none(self):
+        assert pvector(self.price_changes[-1].get_future_price_changes()) == v()
+
+    def test_get_future_price_changes_three(self):
+        assert pvector(self.price_changes[0].get_future_price_changes()) ==\
+            self.price_changes[1:]
+
+    def test_get_affected_transactions_none(self):
+        for x in self.price_changes:
+            assert pvector(x.get_affected_transactions()) == v()
+
+    def test_get_affected_transactions_one(self):
+        trans = self.make_trans_at(self.price_changes[0].date)
+        assert pvector(self.price_changes[0].get_affected_transactions()) ==\
+            v(trans)
+        assert pvector(self.price_changes[1].get_affected_transactions()) == v()
+
+    def test_get_affected_transactions_leave_out_if_not_same_cur(self):
+        other_cur = CurrencyFactory()("C", 12)
+        moneys = v(Money(100, other_cur), Money(-100, other_cur))
+        movs_specs = pvector(MovementSpec(a, m) for a, m in zip(self.accs, moneys))
+        TransactionFactory()("_", self.price_changes[-1].date, movs_specs)
+        for price_change in self.price_changes:
+            assert pvector(price_change.get_affected_transactions()) == v()

@@ -17,3 +17,7 @@ class Money():
         value = self.get_value(date_)
         new_quantity = int(round(value / new_currency.get_price(date_)))
         return attr.evolve(self, currency=new_currency, quantity=new_quantity)
+
+    def revert(self):
+        """ Returns self with the quantity's sign inverted """
+        return attr.evolve(self, quantity=-self.quantity)

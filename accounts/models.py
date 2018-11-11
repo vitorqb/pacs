@@ -63,7 +63,13 @@ class Account(MPTTModel):
     # Methods
     #
     def allows_children(self):
+        """ Returns True if this account can be the parent of other accounts,
+        else False"""
         return self.acc_type.children_allowed
+
+    def allows_movements(self):
+        """ Returns True if this account can have movements, else False """
+        return self.acc_type.movements_allowed
 
 
 class AccTypeEnum(Enum):

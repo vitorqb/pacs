@@ -24,6 +24,7 @@ class TablePopulator():
 
     def __call__(self):
         """ Populates the db, creating all uncreated objects """
+        self._created_objects = v()
         self._printfun(f"Creating objects... ", end="")
         to_create = pvector(x for x in self._model_data if not self._exists_fun(x))
         for data in to_create:

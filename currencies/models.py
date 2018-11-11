@@ -31,6 +31,9 @@ class Currency(m.Model):
     #
     # Methods
     #
+    # !!!! TODO
+    # When a price changes, all future transactions that involve the
+    # currency have to be rebalanced.
     def new_price_change(self, date_, new_price):
         """ Register's a price change for a currency and returns. """
         self._assert_not_imutable()

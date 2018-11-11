@@ -10,11 +10,10 @@ class AccountFactory():
     pass
 
 
-# !!!! TODO -> Add population of Account
 class Account(MPTTModel):
     """ An Account, a tree structure to host transactions. """
     name = NameField()
-    acc_type = m.ForeignKey('AccountType')
+    acc_type = m.ForeignKey('AccountType', on_delete=m.CASCADE)
     parent = TreeForeignKey(
         'self',
         on_delete=m.CASCADE,
@@ -24,7 +23,6 @@ class Account(MPTTModel):
     )
 
 
-# !!!! TODO -> Add population of AccountType
 class AccountType(m.Model):
     """ A possible account type """
     name = NameField()

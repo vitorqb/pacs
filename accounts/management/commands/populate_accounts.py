@@ -29,7 +29,8 @@ account_type_populator = TablePopulator(
 
 ACCOUNT_DATA = freeze([
     {'name': 'Root Account',
-     'acc_type_name': 'Root'}
+     'acc_type_name': 'Root',
+     'parent': None}
 ])
 
 

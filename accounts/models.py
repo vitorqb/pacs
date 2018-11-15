@@ -91,3 +91,9 @@ class AccountType(m.Model):
 def get_root_acc():
     """ Returns the root account """
     return Account.objects.get(name="Root Account")
+
+
+def get_currency_price_change_rebalance_acc():
+    """ Returns the account used to rebalance transactions on currency price
+    changes """
+    return Account.objects.get(name="Currency Price Change Compensation")

@@ -5,6 +5,7 @@ from django.db.transaction import atomic
 from django.core.exceptions import ValidationError
 from common.models import full_clean_and_save
 from currencies.money import Money
+from currencies.models import get_default_currency
 from accounts.models import Account
 
 
@@ -48,9 +49,23 @@ class Transaction(m.Model):
 
     def set_movements(self, movements_specs):
         """ Set's movements, using an iterable of MovementSpec """
+        # !!!! TODO -> Erase old movements?
         self._validate_movements_specs(movements_specs)
         for mov_spec in movements_specs:
             self._convert_specs(mov_spec)
+        full_clean_and_save(self)
+
+    def rebalance(self, rebalancing_account):
+        """ Rebalances the transaction, creating a new movement for
+        `rebalancing_account` that forces the value of the transaction
+        to be zero. Usually called when a new price change is created
+        that changes the value of this transaction """
+        value = sum(x.get_money().get_value(self.date) for x in self.get_movements())
+        if value == 0:
+            return
+        money = Money(value, get_default_currency()).revert()
+        mov_spec = MovementSpec(rebalancing_account, money)
+        self._convert_specs(mov_spec)
         full_clean_and_save(self)
 
     def _validate_movements_specs(self, movements_specs):

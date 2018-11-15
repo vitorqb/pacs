@@ -24,7 +24,8 @@ class PopulateAccountTestCase(TestCase):
 
         self.acc_data = freeze([
             {'name': 'Root Account',
-             'acc_type_name': 'Root'}
+             'acc_type_name': 'Root',
+             'parent_name': None}
         ])
         self.acc_populator = evolve(
             account_populator,
@@ -47,5 +48,6 @@ class PopulateAccountTestCase(TestCase):
         assert len(self.acc_populator._created_objects) == 1
         acc = self.acc_populator._created_objects[0]
         assert acc.name == self.acc_data[0]['name']
+        assert acc.parent is None
         assert acc.acc_type == \
             AccountType.objects.get(name=self.acc_data[0]['acc_type_name'])

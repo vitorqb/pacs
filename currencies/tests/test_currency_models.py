@@ -2,8 +2,10 @@ from datetime import date, timedelta
 from pyrsistent import v, pvector
 from django.core.exceptions import ValidationError
 from common.test import TestCase
+from common.test_utils import TransactionBuilder
 from currencies.money import Money
 from currencies.models import CurrencyFactory
+from currencies.management.commands.populate_currencies import currency_populator
 from movements.models import TransactionFactory, MovementSpec
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.management.commands.populate_accounts import (
@@ -18,6 +20,7 @@ class CurrencyModelTestCase(TestCase):
         super().setUp()
         account_type_populator()
         account_populator()
+        currency_populator()
         self.currency = CurrencyFactory()(name="Yen", base_price=2)
         self.accs = pvector(
             AccountFactory()(x, AccTypeEnum.LEAF, get_root_acc())
@@ -82,6 +85,21 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
     def test_zero_value_raises_err(self):
         self.new_price = -0.01
         self.assertRaisesRegex(ValidationError, 'new_price.+positive', self.call)
+
+    def test_new_price_changes_rebalance_transactions(self):
+        trans = TransactionBuilder()()
+        date_ = trans.get_date()
+        assert len(trans.get_movements()) == 2
+        assert sum(x.get_money().get_value(date_) for x in trans.get_movements()) == 0
+
+        curr = trans.get_movements()[0].get_money().currency
+        price_change_date = date_ - timedelta(days=1)
+        curr.new_price_change(price_change_date, 9283)
+
+        # New movement should have been created
+        assert len(trans.get_movements()) == 3
+        # must be balanced
+        assert sum(x.get_money().get_value(date_) for x in trans.get_movements()) == 0
 
 
 class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):

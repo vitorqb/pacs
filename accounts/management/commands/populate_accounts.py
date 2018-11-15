@@ -30,13 +30,24 @@ account_type_populator = TablePopulator(
 ACCOUNT_DATA = freeze([
     {'name': 'Root Account',
      'acc_type_name': 'Root',
-     'parent': None}
+     'parent_name': None},
+    {'name': 'Currency Price Change Compensation',
+     'acc_type_name': 'Leaf',
+     'parent_name': 'Root Account'}
 ])
 
 
 def _populate_account(data):
     acc_type = AccountType.objects.get(name=data['acc_type_name'])
     data = data.remove('acc_type_name').set('acc_type', acc_type)
+
+    parent = (
+        None
+        if data['parent_name'] is None else
+        Account.objects.get(name=data['parent_name'])
+    )
+    data = data.remove('parent_name').set('parent', parent)
+
     return Account.objects.create(**data)
 
 

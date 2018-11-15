@@ -1,10 +1,9 @@
-from pyrsistent import pvector
 import attr
 from django.db.transaction import atomic
 import django.db.models as m
 from django.core.exceptions import ValidationError
 from common.models import NameField, PriceField, full_clean_and_save, extract_pks
-from movements.models import Transaction, Movement
+from accounts.models import get_currency_price_change_rebalance_acc
 
 
 # ------------------------------------------------------------------------------
@@ -45,7 +44,8 @@ class Currency(m.Model):
             new_price=new_price,
             currency=self
         ))
-        self._rebalance_transactions_on_price_change(price_change)
+        for trans in price_change.get_affected_transactions():
+            trans.rebalance(get_currency_price_change_rebalance_acc())
         return price_change
 
     def get_price(self, date_):
@@ -86,11 +86,6 @@ class Currency(m.Model):
             m = self.ERR_MSGS['IMUTABLE_CURRENCY'].format(self.name)
             raise ValidationError(dict(price_change=m))
 
-    def _rebalance_transactions_on_price_change(self, price_change):
-        """ Iterates through all transactions afected by a price change and
-        calls rebalance on them """
-        assert False
-
 
 class CurrencyPriceChange(m.Model):
     """ The event of a change in a currency price """
@@ -105,6 +100,8 @@ class CurrencyPriceChange(m.Model):
     def get_affected_transactions(self):
         """ Retrieves all transactions which have their values affected
         by this price change """
+        # !!!! TODO -> Move to Transaction.objects
+        from movements.models import Transaction
         movements_pks = extract_pks(self.currency.get_movements())
         next_price_change = self.get_future_price_changes().first()
 

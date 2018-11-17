@@ -1,8 +1,8 @@
-from pyrsistent import pmap
+from pyrsistent import pmap, v, pvector
 import attr
 from itertools import count
 from accounts.models import AccTypeEnum, get_root_acc, AccountFactory
-from currencies.models import CurrencyFactory
+from currencies.models import CurrencyFactory, get_default_currency
 from currencies.money import Money
 from movements.models import TransactionFactory, MovementSpec
 from datetime import date
@@ -66,6 +66,24 @@ class CurrencyBuilder():
 
 
 @attr.s()
+class MovementSpecBuilder():
+    """ Facilitates the creation of MovementSpecs for tests """
+
+    # A callable that generates an account
+    account_maker = attr.ib(factory=AccountBuilder)
+
+    # A callable that produces a money
+    money_maker = attr.ib(default=lambda: Money(100, get_default_currency()))
+
+    def __call__(self, **kwargs):
+        args_dct = DictCompleter({
+            'account': self.account_maker,
+            'money': self.money_maker
+        })(kwargs)
+        return MovementSpec(**args_dct)
+
+
+@attr.s()
 class TransactionBuilder():
     """ Facilitates the creation of transactions for tests """
 
@@ -117,6 +135,7 @@ class DictCompleter:
 
     def __call__(self, initial_args):
         args_dct = pmap(initial_args)
-        for attrnm, cllble in self.attrnm_callable_dct.items():
-            args_dct = args_dct.set(attrnm, cllble())
+        missing = pvector(x for x in self.attrnm_callable_dct if x not in args_dct)
+        for attrnm in missing:
+            args_dct = args_dct.set(attrnm, self.attrnm_callable_dct[attrnm]())
         return args_dct

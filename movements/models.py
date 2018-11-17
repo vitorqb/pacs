@@ -24,6 +24,31 @@ class TransactionFactory():
         return trans
 
 
+class TransactionQuerySet(m.QuerySet):
+
+    def filter_affected_by_price_change(self, price_change):
+        """ Filters all transactions that were affected by a price change.
+        Affected means that their values depend on that price change. """
+        qset = self\
+            .filter_more_than_one_currency()\
+            .filter_by_currency(price_change.get_currency())\
+            .filter(date__gte=price_change.get_date())
+        if price_change.has_next_price_change():
+            qset = qset.filter(date__lt=price_change.get_next_price_chnage().date)
+        return qset
+
+    def filter_more_than_one_currency(self):
+        """ Filters only by transactions that contain more than
+        one currency """
+        return self\
+            .annotate(currency_count=m.Count('movement__currency', True))\
+            .filter(currency_count__gt=1)
+
+    def filter_by_currency(self, cur):
+        """ Returns only transactions for which a movement uses a currency """
+        return self.filter(movement__currency=cur)
+
+
 class Transaction(m.Model):
     """
     A group of Movements whose values sums up to 0.
@@ -34,9 +59,20 @@ class Transaction(m.Model):
         'SINGLE_ACCOUNT': "A Transaction can not have a single Account."
     })
 
+    #
+    # Fields
+    #
     description = m.TextField()
     date = m.DateField()
 
+    #
+    # Django Magic
+    #
+    objects = TransactionQuerySet.as_manager()
+
+    #
+    # Methods
+    #
     def get_description(self):
         return self.description
 

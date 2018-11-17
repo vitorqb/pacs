@@ -6,6 +6,7 @@ from copy import deepcopy
 
 class CentsField(m.IntegerField):
     """ Represents cents of currencies """
+    # !!!! TODO -> Represent as Decimal!
     pass
 
 
@@ -38,3 +39,10 @@ def full_clean_and_save(x):
 
 def extract_pks(x):
     return pvector(x.values_list('pk', flat=True))
+
+
+def list_to_queryset(lst):
+    """ Converts a list of objects into a queryset. """
+    if len(lst) == 0:
+        return m.QuerySet().none()
+    return type(lst[0]).objects.filter(pk__in=[x.pk for x in lst])

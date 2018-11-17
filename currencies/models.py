@@ -97,6 +97,18 @@ class CurrencyPriceChange(m.Model):
     class Meta:
         unique_together = ('date', 'currency')
 
+    def get_currency(self):
+        return self.currency
+
+    def get_date(self):
+        return self.date
+
+    def has_next_price_change(self):
+        return self.get_future_price_changes().exists()
+
+    def get_next_price_chnage(self):
+        return self.get_future_price_changes().first()
+
     def get_affected_transactions(self):
         """ Retrieves all transactions which have their values affected
         by this price change """

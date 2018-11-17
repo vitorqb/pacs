@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from pyrsistent import v, pvector
 from django.core.exceptions import ValidationError
 from common.test import TestCase
-from common.test_utils import TransactionBuilder
+from common.test_utils import TransactionBuilder, CurrencyBuilder
 from currencies.money import Money
 from currencies.models import CurrencyFactory
 from currencies.management.commands.populate_currencies import currency_populator
@@ -195,3 +195,23 @@ class TestCurrencyPriceChange(CurrencyModelTestCase):
         TransactionFactory()("_", self.price_changes[-1].date, movs_specs)
         for price_change in self.price_changes:
             assert pvector(price_change.get_affected_transactions()) == v()
+
+    def test_has_next_price_change_true(self):
+        assert self.price_changes[0].has_next_price_change()
+
+    def test_has_next_price_change_false(self):
+        assert not self.price_changes[-1].has_next_price_change()
+
+    def test_has_next_price_change_multiple_currencies(self):
+        other_cur = CurrencyBuilder()()
+        price_change_another_cur = other_cur.new_price_change(
+            date(2100, 1, 1),
+            2
+        )
+
+        assert price_change_another_cur.get_date() > \
+            self.price_changes[-1].get_date()
+        assert price_change_another_cur.get_currency() !=\
+            self.price_changes[-1].get_currency()
+
+        assert not self.price_changes[-1].has_next_price_change()

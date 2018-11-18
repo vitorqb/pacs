@@ -34,7 +34,7 @@ class TransactionQuerySet(m.QuerySet):
             .filter_by_currency(price_change.get_currency())\
             .filter(date__gte=price_change.get_date())
         if price_change.has_next_price_change():
-            qset = qset.filter(date__lt=price_change.get_next_price_chnage().date)
+            qset = qset.filter(date__lt=price_change.get_next_price_change().date)
         return qset
 
     def filter_more_than_one_currency(self):

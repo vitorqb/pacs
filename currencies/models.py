@@ -38,14 +38,18 @@ class Currency(m.Model):
         """
         Register's a price change for a currency and returns.
         """
+        from movements.models import Transaction
+        rebalance_acc = get_currency_price_change_rebalance_acc()
         self._assert_not_imutable()
         price_change = full_clean_and_save(CurrencyPriceChange(
             date=date_,
             new_price=new_price,
             currency=self
         ))
-        for trans in price_change.get_affected_transactions():
-            trans.rebalance(get_currency_price_change_rebalance_acc())
+        for trans in Transaction.objects.filter_affected_by_price_change(
+                price_change
+        ):
+            trans.rebalance(rebalance_acc)
         return price_change
 
     def get_price(self, date_):
@@ -63,10 +67,6 @@ class Currency(m.Model):
             .order_by('-date')\
             .filter(date__lte=dt)\
             .first()
-
-    def get_movements(self):
-        """ Returns a queryset of Movement with this currency """
-        return self.movement_set.all()
 
     def price_changes_iter(self):
         """ Returns an iterator through price changes in chronological
@@ -106,25 +106,8 @@ class CurrencyPriceChange(m.Model):
     def has_next_price_change(self):
         return self.get_future_price_changes().exists()
 
-    def get_next_price_chnage(self):
+    def get_next_price_change(self):
         return self.get_future_price_changes().first()
-
-    def get_affected_transactions(self):
-        """ Retrieves all transactions which have their values affected
-        by this price change """
-        # !!!! TODO -> Move to Transaction.objects
-        from movements.models import Transaction
-        movements_pks = extract_pks(self.currency.get_movements())
-        next_price_change = self.get_future_price_changes().first()
-
-        qset = Transaction.objects.all()
-        qset = qset.filter(movement__pk__in=movements_pks)
-        qset = qset.filter(date__gte=self.date)
-        if next_price_change is not None:
-            qset = qset.filter(date__lt=next_price_change.date)
-        qset = qset.distinct()
-
-        return qset
 
     def get_future_price_changes(self):
         """ Return an ordered queryset of price changes for the same currency

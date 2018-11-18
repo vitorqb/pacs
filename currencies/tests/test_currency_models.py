@@ -178,24 +178,6 @@ class TestCurrencyPriceChange(CurrencyModelTestCase):
         assert pvector(self.price_changes[0].get_future_price_changes()) ==\
             self.price_changes[1:]
 
-    def test_get_affected_transactions_none(self):
-        for x in self.price_changes:
-            assert pvector(x.get_affected_transactions()) == v()
-
-    def test_get_affected_transactions_one(self):
-        trans = self.make_trans_at(self.price_changes[0].date)
-        assert pvector(self.price_changes[0].get_affected_transactions()) ==\
-            v(trans)
-        assert pvector(self.price_changes[1].get_affected_transactions()) == v()
-
-    def test_get_affected_transactions_leave_out_if_not_same_cur(self):
-        other_cur = CurrencyFactory()("C", 12)
-        moneys = v(Money(100, other_cur), Money(-100, other_cur))
-        movs_specs = pvector(MovementSpec(a, m) for a, m in zip(self.accs, moneys))
-        TransactionFactory()("_", self.price_changes[-1].date, movs_specs)
-        for price_change in self.price_changes:
-            assert pvector(price_change.get_affected_transactions()) == v()
-
     def test_has_next_price_change_true(self):
         assert self.price_changes[0].has_next_price_change()
 

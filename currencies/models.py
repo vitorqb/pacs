@@ -2,7 +2,7 @@ import attr
 from django.db.transaction import atomic
 import django.db.models as m
 from django.core.exceptions import ValidationError
-from common.models import NameField, PriceField, full_clean_and_save, extract_pks
+from common.models import NameField, new_price_field, full_clean_and_save, extract_pks, DECIMAL_PLACES
 from accounts.models import get_currency_price_change_rebalance_acc
 
 
@@ -27,7 +27,7 @@ class Currency(m.Model):
     # Fields
     #
     name = NameField()
-    base_price = PriceField()
+    base_price = new_price_field()
     imutable = m.BooleanField(default=False)
 
     #
@@ -43,7 +43,7 @@ class Currency(m.Model):
         self._assert_not_imutable()
         price_change = full_clean_and_save(CurrencyPriceChange(
             date=date_,
-            new_price=new_price,
+            new_price=new_price.quantize(DECIMAL_PLACES),
             currency=self
         ))
         for trans in Transaction.objects.filter_affected_by_price_change(
@@ -92,7 +92,7 @@ class CurrencyPriceChange(m.Model):
 
     date = m.DateField()
     currency = m.ForeignKey(Currency, on_delete=m.CASCADE)
-    new_price = PriceField()
+    new_price = new_price_field()
 
     class Meta:
         unique_together = ('date', 'currency')

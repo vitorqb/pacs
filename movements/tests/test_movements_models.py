@@ -1,3 +1,4 @@
+from decimal import Decimal
 from pyrsistent import v, freeze, pvector
 from django.core.exceptions import ValidationError
 from common.models import list_to_queryset
@@ -42,7 +43,7 @@ class TestTransactionQueryset_filter_affected_by_price_change(
     def setUp(self):
         super().setUp()
         self.date = date(2017, 2, 3)
-        self.new_price = 1.2
+        self.new_price = Decimal('1.2')
         self.currency = self.euro
         self.price_change = self.euro.new_price_change(self.date, self.new_price)
 
@@ -108,7 +109,7 @@ class TestTransactionQueryset_filter_affected_by_price_change(
             .get_movements()[0]\
             .get_money()\
             .currency\
-            .new_price_change(future_date, 2)
+            .new_price_change(future_date, Decimal(2))
 
         res = Transaction.objects.filter_affected_by_price_change(self.price_change)
         assert trans not in res
@@ -221,6 +222,6 @@ class TestTransactionFactory(MovementsModelsTestCase):
 class TestMovementModel(MovementsModelsTestCase):
 
     def test_get_money(self):
-        quantity, currency = 25, self.euro
+        quantity, currency = Decimal(25), self.euro
         mov = Movement(quantity=quantity, currency=currency)
         assert mov.get_money() == Money(quantity, currency)

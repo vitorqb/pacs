@@ -1,24 +1,26 @@
+from decimal import Decimal
 from pyrsistent import pvector
 import django.db.models as m
 from django.core.validators import MinValueValidator
 from copy import deepcopy
 
 
-class CentsField(m.IntegerField):
-    """ Represents cents of currencies """
-    # !!!! TODO -> Represent as Decimal!
-    pass
+N_DECIMAL_PLACES = 5
+DECIMAL_PLACES = Decimal('10') ** -N_DECIMAL_PLACES
 
 
-class PriceField(m.FloatField):
+def new_cents_field():
+    """ Returns a new field to be used as cents """
+    return m.DecimalField(max_digits=20, decimal_places=N_DECIMAL_PLACES)
 
-    min_value_validator = MinValueValidator(0, "Prices must be positive")
 
-    def __init__(self, *args, **kwargs):
-        validators = deepcopy(kwargs.pop('validators', []))
-        if self.min_value_validator not in validators:
-            validators.append(self.min_value_validator)
-        return super().__init__(*args, **kwargs, validators=validators)
+def new_price_field():
+    """ Returns a Fied to be used as price """
+    return m.DecimalField(
+        validators=[MinValueValidator(0, "Prices must be positive")],
+        max_digits=20,
+        decimal_places=N_DECIMAL_PLACES
+    )
 
 
 class NameField(m.CharField):

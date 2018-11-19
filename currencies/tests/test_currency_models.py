@@ -1,3 +1,4 @@
+from decimal import Decimal
 from datetime import date, timedelta
 from pyrsistent import v, pvector
 from django.core.exceptions import ValidationError
@@ -30,9 +31,9 @@ class CurrencyModelTestCase(TestCase):
     def set_up_price_changes(self):
         self.price_changes = pvector([
             self.currency.new_price_change(d, p)
-            for d, p in ((date(2016, 1, 1), 1.8),
-                         (date(2016, 2, 2), 2),
-                         (date(2017, 1, 13), 1.2))
+            for d, p in ((date(2016, 1, 1), Decimal('1.8')),
+                         (date(2016, 2, 2), Decimal('2')),
+                         (date(2017, 1, 13), Decimal('1.2')))
         ])
 
 
@@ -62,7 +63,7 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
     def setUp(self):
         super().setUp()
         self.dt = date(2018, 1, 1)
-        self.new_price = 2.50
+        self.new_price = Decimal('2.50')
         self.accs = pvector(
             AccountFactory()(x, AccTypeEnum.LEAF, get_root_acc())
             for x in ("D", "E")
@@ -83,7 +84,7 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
         self.assertRaisesRegex(ValidationError, 'Date.+exists', self.call)
 
     def test_zero_value_raises_err(self):
-        self.new_price = -0.01
+        self.new_price = Decimal(-0.01)
         self.assertRaisesRegex(ValidationError, 'new_price.+positive', self.call)
 
     def test_new_price_changes_rebalance_transactions(self):
@@ -94,7 +95,7 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
 
         curr = trans.get_movements()[0].get_money().currency
         price_change_date = date_ - timedelta(days=1)
-        curr.new_price_change(price_change_date, 9283)
+        curr.new_price_change(price_change_date, Decimal(9283))
 
         # New movement should have been created
         assert len(trans.get_movements()) == 3
@@ -108,7 +109,7 @@ class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):
         assert list(self.currency.price_changes_iter()) == []
 
     def test_one_long(self):
-        dt, new_price = date(2018, 12, 1), 2.5
+        dt, new_price = date(2018, 12, 1), Decimal('2.5')
         price_change = self.currency.new_price_change(dt, new_price)
         assert list(self.currency.price_changes_iter()) == [price_change]
 
@@ -188,7 +189,7 @@ class TestCurrencyPriceChange(CurrencyModelTestCase):
         other_cur = CurrencyBuilder()()
         price_change_another_cur = other_cur.new_price_change(
             date(2100, 1, 1),
-            2
+            Decimal(2)
         )
 
         assert price_change_another_cur.get_date() > \

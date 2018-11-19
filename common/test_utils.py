@@ -1,3 +1,4 @@
+from decimal import Decimal
 from pyrsistent import pmap, v, pvector
 import attr
 from itertools import count
@@ -52,7 +53,7 @@ class CurrencyBuilder():
     name_maker = attr.ib(default=lambda: next(_currency_name_generator))
 
     # A base_price to use
-    base_price = attr.ib(default=2.2)
+    base_price = attr.ib(default=Decimal('2.20'))
 
     # A CurrencyFactory to used
     currency_factory =  attr.ib(factory=CurrencyFactory)

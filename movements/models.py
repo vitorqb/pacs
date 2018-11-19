@@ -1,9 +1,10 @@
+from decimal import Decimal
 import attr
 from pyrsistent import freeze, v
 import django.db.models as m
 from django.db.transaction import atomic
 from django.core.exceptions import ValidationError
-from common.models import full_clean_and_save
+from common.models import full_clean_and_save, new_cents_field
 from currencies.money import Money
 from currencies.models import get_default_currency
 from accounts.models import Account
@@ -97,7 +98,7 @@ class Transaction(m.Model):
         to be zero. Usually called when a new price change is created
         that changes the value of this transaction """
         value = sum(x.get_money().get_value(self.date) for x in self.get_movements())
-        if value == 0:
+        if value.quantize(Decimal(1)) == 0:
             return
         money = Money(value, get_default_currency()).revert()
         mov_spec = MovementSpec(rebalancing_account, money)
@@ -105,7 +106,8 @@ class Transaction(m.Model):
         full_clean_and_save(self)
 
     def _validate_movements_specs(self, movements_specs):
-        if not sum(x.get_value(self.date) for x in movements_specs) == 0:
+        value = sum(x.get_value(self.date) for x in movements_specs)
+        if not value.quantize(Decimal(1)) == 0:
             raise ValidationError(self.ERR_MSGS['UNBALANCED_MOVEMENTS'])
         if len(set(x.account for x in movements_specs)) <= 1:
             raise ValidationError(self.ERR_MSGS['SINGLE_ACCOUNT'])
@@ -158,7 +160,7 @@ class Movement(m.Model):
     transaction = m.ForeignKey(Transaction, on_delete=m.CASCADE)
     # currency + quantity forms Money
     currency = m.ForeignKey('currencies.Currency', on_delete=m.CASCADE)
-    quantity = m.IntegerField()
+    quantity = new_cents_field()
 
     #
     # django magic

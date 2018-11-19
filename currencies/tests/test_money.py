@@ -1,3 +1,4 @@
+from decimal import Decimal
 from currencies.models import Currency, get_default_currency
 from currencies.money import Money
 from currencies.management.commands.populate_currencies import currency_populator
@@ -18,9 +19,9 @@ class MoneyTestCase(TestCase):
 class TestMoney(MoneyTestCase):
 
     def test_get_value_base(self):
-        assert self.euro.get_price(self.dt) == 1.13
-        assert self.money.get_value(self.dt) == int(round(250 * 1.13))
+        assert self.euro.get_price(self.dt) == Decimal('1.13')
+        assert self.money.get_value(self.dt) == Decimal(250) * Decimal('1.13')
 
     def test_convert_base(self):
         assert self.money.convert(self.dollar, self.dt) == \
-            Money(int(250 * 1.13), self.dollar)
+            Money(Decimal(250) * Decimal('1.13'), self.dollar)

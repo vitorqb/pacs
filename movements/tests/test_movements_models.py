@@ -3,7 +3,7 @@ from pyrsistent import v, freeze, pvector
 from django.core.exceptions import ValidationError
 from common.models import list_to_queryset
 from common.test import TestCase
-from common.test_utils import TransactionBuilder, MovementSpecBuilder, CurrencyBuilder
+from common.test_utils import TransactionBuilder, MovementSpecBuilder, CurrencyBuilder, AccountBuilder
 from movements.models import Movement, MovementSpec, TransactionFactory, Transaction
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.management.commands.populate_accounts import (
@@ -217,6 +217,25 @@ class TestTransactionFactory(MovementsModelsTestCase):
         errmsg = Transaction.ERR_MSGS['SINGLE_ACCOUNT']
         with self.assertRaisesMessage(ValidationError, errmsg):
             self.call()
+
+
+class TestTransactionModel(MovementsModelsTestCase):
+
+    def test_set_movements_base(self):
+        cur = CurrencyBuilder()()
+        acc_builder = AccountBuilder()
+        values = ((Decimal(1) / Decimal(3)), (Decimal(2) / Decimal(3)), Decimal(-1))
+        moneys = [Money(val, cur) for val in values]
+        accs = (acc_builder(), acc_builder(), acc_builder())
+        mov_specs = [MovementSpec(acc, money) for acc, money in zip(accs, moneys)]
+        trans = TransactionBuilder()()
+        trans.set_movements(mov_specs)
+        assert len(trans.get_movements()) == 3
+        movs = trans.get_movements()
+        assert list(x.get_money() for x in movs) == \
+            list(x.money for x in mov_specs)
+        assert list(x.get_account() for x in movs) == \
+            list(x.account for x in mov_specs)
 
 
 class TestMovementModel(MovementsModelsTestCase):

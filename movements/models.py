@@ -84,9 +84,10 @@ class Transaction(m.Model):
         """ Returns a queryset with all movements for this transaction """
         return self.movement_set.all()
 
+    @atomic
     def set_movements(self, movements_specs):
         """ Set's movements, using an iterable of MovementSpec """
-        # !!!! TODO -> Erase old movements?
+        self.movement_set.all().delete()
         self._validate_movements_specs(movements_specs)
         for mov_spec in movements_specs:
             self._convert_specs(mov_spec)

@@ -2,7 +2,12 @@ import attr
 from django.db.transaction import atomic
 import django.db.models as m
 from django.core.exceptions import ValidationError
-from common.models import NameField, new_price_field, full_clean_and_save, extract_pks, DECIMAL_PLACES
+from common.models import (
+    NameField,
+    new_price_field,
+    full_clean_and_save,
+    DECIMAL_PLACES
+)
 from accounts.models import get_currency_price_change_rebalance_acc
 
 

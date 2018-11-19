@@ -2,7 +2,6 @@ from decimal import Decimal
 from pyrsistent import pvector
 import django.db.models as m
 from django.core.validators import MinValueValidator
-from copy import deepcopy
 
 
 N_DECIMAL_PLACES = 5

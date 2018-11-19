@@ -3,7 +3,12 @@ from pyrsistent import v, freeze, pvector
 from django.core.exceptions import ValidationError
 from common.models import list_to_queryset
 from common.test import TestCase
-from common.test_utils import TransactionBuilder, MovementSpecBuilder, CurrencyBuilder, AccountBuilder
+from common.test_utils import (
+    TransactionBuilder,
+    MovementSpecBuilder,
+    CurrencyBuilder,
+    AccountBuilder
+)
 from movements.models import Movement, MovementSpec, TransactionFactory, Transaction
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.management.commands.populate_accounts import (

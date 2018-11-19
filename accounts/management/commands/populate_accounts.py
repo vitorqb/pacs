@@ -53,12 +53,12 @@ def _populate_account(data):
 
 account_populator = TablePopulator(
     _populate_account,
-    lambda x: AccountType.objects.filter(name=x['name']).exists(),
+    lambda x: Account.objects.filter(name=x['name']).exists(),
     ACCOUNT_DATA
 )
 
 
-class PopulateAccounts(BaseCommand):
+class Command(BaseCommand):
     help = "Populates the Account and AccountType tables with default entires"
 
     def handle(self, *args, **kwargs):

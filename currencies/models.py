@@ -73,11 +73,6 @@ class Currency(m.Model):
             .filter(date__lte=dt)\
             .first()
 
-    def price_changes_iter(self):
-        """ Returns an iterator through price changes in chronological
-        order """
-        yield from self.currencypricechange_set.all().order_by('date')
-
     def _assert_not_imutable(self):
         if self.imutable:
             m = self.ERR_MSGS['IMUTABLE_CURRENCY'].format(self.name)

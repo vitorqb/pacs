@@ -103,17 +103,6 @@ class CurrencyTestCase_new_price_change(CurrencyModelTestCase):
         assert sum(x.get_money().get_value(date_) for x in trans.get_movements()) == 0
 
 
-class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):
-
-    def test_empty(self):
-        assert list(self.currency.price_changes_iter()) == []
-
-    def test_one_long(self):
-        dt, new_price = date(2018, 12, 1), Decimal('2.5')
-        price_change = self.currency.new_price_change(dt, new_price)
-        assert list(self.currency.price_changes_iter()) == [price_change]
-
-
 class CurrencyTestCase_get_price(CurrencyModelTestCase):
 
     def setUp(self):

@@ -52,16 +52,12 @@ class CurrencyBuilder():
     # A callable that returns a valid currency name
     name_maker = attr.ib(default=lambda: next(_currency_name_generator))
 
-    # A base_price to use
-    base_price = attr.ib(default=Decimal('2.20'))
-
     # A CurrencyFactory to used
-    currency_factory =  attr.ib(factory=CurrencyFactory)
+    currency_factory = attr.ib(factory=CurrencyFactory)
 
     def __call__(self, **kwargs):
         args_dct = DictCompleter({
             'name': self.name_maker,
-            'base_price': lambda: self.base_price
         })(kwargs)
         return self.currency_factory(**args_dct)
 
@@ -104,10 +100,9 @@ class TransactionBuilder():
     def _movements_specs_maker_default(self, *args, **kwargs):
         accounts = [AccountBuilder()(), AccountBuilder()()]
         currencies = [CurrencyBuilder()(), CurrencyBuilder()()]
-        base_money = Money(185, currencies[0])
         moneys = [
-            base_money,
-            base_money.convert(currencies[1], self.date).revert()
+            Money(185, currencies[0]),
+            Money(150, currencies[1])
         ]
         return lambda: [MovementSpec(a, m) for a, m in zip(accounts, moneys)]
 

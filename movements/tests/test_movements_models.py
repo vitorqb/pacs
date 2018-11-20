@@ -32,95 +32,12 @@ class MovementsModelsTestCase(TestCase):
         self.real = Currency.objects.get(name="Real")
 
     def build_two_movement_specs(self, quantity, currencies, date_):
-        """ Returns two movement specs whose values sum up to 0 """
+        """ Returns two movement specs"""
         mov_spec_builder = MovementSpecBuilder()
-        mov_specs = v(mov_spec_builder(money=Money(quantity, currencies[0])))
-        return mov_specs.append(mov_spec_builder(
-                money=mov_specs[0].money.convert(currencies[1], date_).revert()
-            )
+        return v(
+            mov_spec_builder(money=Money(quantity, currencies[0])),
+            mov_spec_builder(money=Money(-quantity, currencies[1]))
         )
-
-
-class TestTransactionQueryset_filter_affected_by_price_change(
-        MovementsModelsTestCase
-):
-
-    def setUp(self):
-        super().setUp()
-        self.date = date(2017, 2, 3)
-        self.new_price = Decimal('1.2')
-        self.currency = self.euro
-        self.price_change = self.euro.new_price_change(self.date, self.new_price)
-
-        self.mov_spec_builder = MovementSpecBuilder()
-        self.trans_builder = TransactionBuilder()
-
-    def test_empty(self):
-        empty_qset = Transaction.objects.none()
-        assert list(empty_qset.filter_affected_by_price_change(self.price_change))\
-            == list(empty_qset)
-
-    def test_transactions_before_date_not_affected(self):
-        date_ = self.date - timedelta(days=1)
-        mov_specs = self.build_two_movement_specs(
-            100,
-            (self.currency, self.real),
-            date_
-        )
-        trans = TransactionBuilder()(movements_specs=mov_specs, date_=date_)
-
-        res = Transaction.objects.filter_affected_by_price_change(self.price_change)
-        assert trans not in res
-
-    def test_transaction_at_date_shows_up(self):
-        date_ = self.date + timedelta(days=1)
-        mov_specs = self.build_two_movement_specs(
-            250,
-            (self.real, self.currency),
-            date_
-        )
-        trans = TransactionBuilder()(movements_specs=mov_specs)
-
-        res = Transaction.objects.filter_affected_by_price_change(self.price_change)
-        assert trans in res
-
-    def test_transaction_with_single_currency_not_affected(self):
-        mov_specs = self.build_two_movement_specs(
-            100,
-            (self.real, self.real),
-            self.date
-        )
-        trans = TransactionBuilder()(movements_specs=mov_specs)
-        assert len(set(x.get_money().currency for x in trans.get_movements())) == 1
-
-        res = Transaction.objects.filter_affected_by_price_change(self.price_change)
-        assert trans not in res
-
-    def test_transactions_at_same_day_affected(self):
-        mov_specs = self.build_two_movement_specs(
-            120,
-            (self.real, self.euro),
-            self.date
-        )
-        trans = TransactionBuilder()(movements_specs=mov_specs, date_=self.date)
-
-        res = Transaction.objects.filter_affected_by_price_change(self.price_change)
-        assert trans in res
-
-    def test_not_affected_if_has_future_price_change(self):
-        future_date = self.date + timedelta(days=2)
-        trans = TransactionBuilder()(date_=future_date)
-        new_price_change = trans\
-            .get_movements()[0]\
-            .get_money()\
-            .currency\
-            .new_price_change(future_date, Decimal(2))
-
-        res = Transaction.objects.filter_affected_by_price_change(self.price_change)
-        assert trans not in res
-
-        res = Transaction.objects.filter_affected_by_price_change(new_price_change)
-        assert trans in res
 
 
 class TestTransactionQueryset_filter_more_than_one_currency(
@@ -178,7 +95,7 @@ class TestTransactionFactory(MovementsModelsTestCase):
         # Force second money to exactly offset the first.
         self.moneys = freeze([
             Money(100, self.euro),
-            Money(100, self.euro).convert(self.real, self.date_).revert()
+            Money(-100, self.euro)
         ])
         self.data = freeze({
             "description": "Hola",
@@ -205,15 +122,6 @@ class TestTransactionFactory(MovementsModelsTestCase):
             assert mov.get_date() == trans.get_date()
             assert mov.get_money() == mov_spec.money
 
-    def test_fails_if_movements_values_dont_sum_to_zero(self):
-        self.data_update(movements_specs=v(
-            MovementSpec(self.accs[0], Money(100, self.euro)),
-            MovementSpec(self.accs[1], Money(-99, self.euro))
-        ))
-        errmsg = Transaction.ERR_MSGS['UNBALANCED_MOVEMENTS']
-        with self.assertRaisesMessage(ValidationError, errmsg):
-            self.call()
-
     def test_fails_if_movements_have_a_single_acc(self):
         self.data_update(movements_specs=v(
             MovementSpec(self.accs[0], Money(100, self.euro)),
@@ -222,6 +130,9 @@ class TestTransactionFactory(MovementsModelsTestCase):
         errmsg = Transaction.ERR_MSGS['SINGLE_ACCOUNT']
         with self.assertRaisesMessage(ValidationError, errmsg):
             self.call()
+
+    def test_fails_on_unbalanced_movements_and_single_account(self):
+        assert False
 
 
 class TestTransactionModel(MovementsModelsTestCase):

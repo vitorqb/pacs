@@ -56,7 +56,6 @@ class Transaction(m.Model):
     Movements can only be created and manipulated via transactions.
     """
     ERR_MSGS = freeze({
-        'UNBALANCED_MOVEMENTS': "Movements in Transaction don't sum up to 0.",
         'SINGLE_ACCOUNT': "A Transaction can not have a single Account."
     })
 
@@ -107,9 +106,6 @@ class Transaction(m.Model):
         full_clean_and_save(self)
 
     def _validate_movements_specs(self, movements_specs):
-        value = sum(x.get_value(self.date) for x in movements_specs)
-        if not value.quantize(Decimal(1)) == 0:
-            raise ValidationError(self.ERR_MSGS['UNBALANCED_MOVEMENTS'])
         if len(set(x.account for x in movements_specs)) <= 1:
             raise ValidationError(self.ERR_MSGS['SINGLE_ACCOUNT'])
 
@@ -138,9 +134,6 @@ class MovementSpec():
             return ValidationError(m)
 
     money = attr.ib()
-
-    def get_value(self, date_):
-        return self.money.get_value(date_)
 
 
 class MovementManager(m.Manager):

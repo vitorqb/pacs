@@ -14,10 +14,9 @@ class TestPopulateCurrencies(ManagementCommandTestCase):
     def setUp(self):
         super().setUp()
         self.name = "Yen"
-        self.price = 210
         self.populator = attr.evolve(
             currency_populator,
-            model_data=v(m(name=self.name, base_price=self.price))
+            model_data=v(m(name=self.name))
         )
 
     def test_base(self):
@@ -25,9 +24,8 @@ class TestPopulateCurrencies(ManagementCommandTestCase):
         self.populator()
         yen = Currency.objects.get(name=self.name)
         assert yen.name == self.name
-        assert yen.base_price == self.price
 
     def test_skip(self):
-        yen = CurrencyFactory()(name=self.name, base_price=self.price)
+        yen = CurrencyFactory()(name=self.name)
         self.populator()
         assert Currency.objects.get(name=self.name) == yen

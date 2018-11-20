@@ -1,4 +1,3 @@
-from decimal import Decimal
 from django.core.management import BaseCommand
 from pyrsistent import m, v
 from common.models import full_clean_and_save
@@ -7,9 +6,9 @@ from currencies.models import Currency
 
 
 CURRENCIES_DATA = v(
-    m(name="Dollar", base_price=1, imutable=True),
-    m(name="Euro", base_price=Decimal('1.13')),
-    m(name="Real", base_price=Decimal('0.27'))
+    m(name="Dollar", imutable=True),
+    m(name="Euro"),
+    m(name="Real")
 )
 
 

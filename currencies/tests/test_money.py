@@ -17,11 +17,4 @@ class MoneyTestCase(TestCase):
 
 
 class TestMoney(MoneyTestCase):
-
-    def test_get_value_base(self):
-        assert self.euro.get_price(self.dt) == Decimal('1.13')
-        assert self.money.get_value(self.dt) == Decimal(250) * Decimal('1.13')
-
-    def test_convert_base(self):
-        assert self.money.convert(self.dollar, self.dt) == \
-            Money(Decimal(250) * Decimal('1.13'), self.dollar)
+    pass

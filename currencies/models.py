@@ -30,10 +30,8 @@ class Currency(m.Model):
     #
     # Methods
     #
-    def _assert_not_imutable(self):
-        if self.imutable:
-            m = self.ERR_MSGS['IMUTABLE_CURRENCY'].format(self.name)
-            raise ValidationError(dict(price_change=m))
+    def get_name(self):
+        return self.name
 
 
 # ------------------------------------------------------------------------------

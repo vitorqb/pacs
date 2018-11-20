@@ -1,6 +1,6 @@
 from decimal import Decimal
 import attr
-from pyrsistent import freeze, v
+from pyrsistent import freeze
 import django.db.models as m
 from django.db.transaction import atomic
 from django.core.exceptions import ValidationError
@@ -27,17 +27,6 @@ class TransactionFactory():
 
 class TransactionQuerySet(m.QuerySet):
 
-    def filter_affected_by_price_change(self, price_change):
-        """ Filters all transactions that were affected by a price change.
-        Affected means that their values depend on that price change. """
-        qset = self\
-            .filter_more_than_one_currency()\
-            .filter_by_currency(price_change.get_currency())\
-            .filter(date__gte=price_change.get_date())
-        if price_change.has_next_price_change():
-            qset = qset.filter(date__lt=price_change.get_next_price_change().date)
-        return qset
-
     def filter_more_than_one_currency(self):
         """ Filters only by transactions that contain more than
         one currency """
@@ -52,11 +41,16 @@ class TransactionQuerySet(m.QuerySet):
 
 class Transaction(m.Model):
     """
-    A group of Movements whose values sums up to 0.
+    A logical group of movements, representing money that is transfered out
+    some accounts and in other accounts.
     Movements can only be created and manipulated via transactions.
     """
     ERR_MSGS = freeze({
-        'SINGLE_ACCOUNT': "A Transaction can not have a single Account."
+        'SINGLE_ACCOUNT': "A Transaction can not have a single Account.",
+        'UNBALANCED_SINGLE_CURRENCY': (
+            "If all movements of a Transaction have a single currency, then"
+            " the transaction must be balanced, having 0 value."
+        )
     })
 
     #
@@ -92,22 +86,16 @@ class Transaction(m.Model):
             self._convert_specs(mov_spec)
         full_clean_and_save(self)
 
-    def rebalance(self, rebalancing_account):
-        """ Rebalances the transaction, creating a new movement for
-        `rebalancing_account` that forces the value of the transaction
-        to be zero. Usually called when a new price change is created
-        that changes the value of this transaction """
-        value = sum(x.get_money().get_value(self.date) for x in self.get_movements())
-        if value.quantize(Decimal(1)) == 0:
-            return
-        money = Money(value, get_default_currency()).revert()
-        mov_spec = MovementSpec(rebalancing_account, money)
-        self._convert_specs(mov_spec)
-        full_clean_and_save(self)
-
     def _validate_movements_specs(self, movements_specs):
         if len(set(x.account for x in movements_specs)) <= 1:
             raise ValidationError(self.ERR_MSGS['SINGLE_ACCOUNT'])
+        # If movements have a single currency, the value must sum up to 0
+        if len(set(x.money.currency for x in movements_specs)) == 1:
+            value = sum(x.money.quantity for x in movements_specs)
+            if value.quantize(Decimal(1)) != 0:
+                raise ValidationError(
+                    self.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
+                )
 
     def _convert_specs(self, mov_spec):
         """ Converts a MovementSpec into a Movement for self. """

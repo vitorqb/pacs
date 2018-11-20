@@ -17,4 +17,8 @@ class MoneyTestCase(TestCase):
 
 
 class TestMoney(MoneyTestCase):
-    pass
+
+    def test_base(self):
+        money = Money('10.24', self.euro)
+        assert money.quantity == Decimal('10.24')
+        assert money.currency == self.euro

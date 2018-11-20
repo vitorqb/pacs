@@ -132,7 +132,16 @@ class TestTransactionFactory(MovementsModelsTestCase):
             self.call()
 
     def test_fails_on_unbalanced_movements_and_single_account(self):
-        assert False
+        self.data_update(movements_specs=v(
+            MovementSpec(self.accs[0], Money(100, self.euro)),
+            MovementSpec(self.accs[1], Money(-99, self.euro))
+        ))
+        errmsg = Transaction.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
+        self.assertRaisesMessage(
+            ValidationError,
+            errmsg,
+            self.call
+        )
 
 
 class TestTransactionModel(MovementsModelsTestCase):

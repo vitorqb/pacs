@@ -114,27 +114,6 @@ class CurrencyTestCase_price_changes_iter(CurrencyModelTestCase):
         assert list(self.currency.price_changes_iter()) == [price_change]
 
 
-class CurrencyTestCase_price_changes_iter_until(CurrencyModelTestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.set_up_price_changes()
-
-    def test_none(self):
-        dt = self.price_changes[0].date - timedelta(days=1)
-        assert list(self.currency.price_changes_iter_until(dt)) == []
-
-    def test_one(self):
-        dt = self.price_changes[0].date
-        assert list(self.currency.price_changes_iter_until(dt)) == \
-            self.price_changes[:1]
-
-    def test_all(self):
-        dt = self.price_changes[2].date
-        assert list(self.currency.price_changes_iter_until(dt)) == \
-            self.price_changes
-
-
 class CurrencyTestCase_get_price(CurrencyModelTestCase):
 
     def setUp(self):

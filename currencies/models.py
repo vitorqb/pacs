@@ -78,14 +78,6 @@ class Currency(m.Model):
         order """
         yield from self.currencypricechange_set.all().order_by('date')
 
-    def price_changes_iter_until(self, date_):
-        """ Iterates through price changes until a date (included) """
-        yield from self\
-            .currencypricechange_set\
-            .all()\
-            .filter(date__lte=date_)\
-            .order_by('date')
-
     def _assert_not_imutable(self):
         if self.imutable:
             m = self.ERR_MSGS['IMUTABLE_CURRENCY'].format(self.name)

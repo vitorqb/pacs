@@ -31,9 +31,6 @@ ACCOUNT_DATA = freeze([
     {'name': 'Root Account',
      'acc_type_name': 'Root',
      'parent_name': None},
-    {'name': 'Currency Price Change Compensation',
-     'acc_type_name': 'Leaf',
-     'parent_name': 'Root Account'}
 ])
 
 

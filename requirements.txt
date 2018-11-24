@@ -5,3 +5,4 @@ pytest-django==3.4.3
 attrs==18.2.0
 pyrsistent==0.14.5
 django-mptt==0.9.1
+requests==2.20.1

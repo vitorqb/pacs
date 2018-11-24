@@ -15,10 +15,11 @@ from accounts.management.commands.populate_accounts import (
     account_populator,
     account_type_populator
 )
-from currencies.models import Currency
 from currencies.money import Money
 from currencies.management.commands.populate_currencies import currency_populator
-from datetime import date, timedelta
+from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
+from .factories import MovementSpecTestFactory
+from datetime import date
 
 
 class MovementsModelsTestCase(TestCase):
@@ -28,16 +29,6 @@ class MovementsModelsTestCase(TestCase):
         currency_populator()
         account_type_populator()
         account_populator()
-        self.euro = Currency.objects.get(name="Euro")
-        self.real = Currency.objects.get(name="Real")
-
-    def build_two_movement_specs(self, quantity, currencies, date_):
-        """ Returns two movement specs"""
-        mov_spec_builder = MovementSpecBuilder()
-        return v(
-            mov_spec_builder(money=Money(quantity, currencies[0])),
-            mov_spec_builder(money=Money(-quantity, currencies[1]))
-        )
 
 
 class TestTransactionQueryset_filter_more_than_one_currency(
@@ -45,21 +36,20 @@ class TestTransactionQueryset_filter_more_than_one_currency(
 ):
 
     def test_contains(self):
-        mov_specs = self.build_two_movement_specs(
-            150,
-            (self.euro, self.real),
-            date(2018, 1, 1)
-        )
+        mov_specs = freeze(MovementSpecTestFactory.create_batch(2))
+        assert len(set(x.money.currency for x in mov_specs)) > 1
         trans = TransactionBuilder()(movements_specs=mov_specs)
         res = list_to_queryset([trans]).filter_more_than_one_currency()
         assert list(res) == [trans]
 
     def test_does_not_contains(self):
-        mov_specs = self.build_two_movement_specs(
-            120,
-            (self.real, self.real),
-            date(1027, 1, 1)
+        cur = CurrencyTestFactory()
+        moneys = v(MoneyTestFactory(currency=cur))
+        moneys = moneys.append(
+            MoneyTestFactory(quantity=-moneys[0].quantity, currency=cur)
         )
+        mov_specs = pvector(MovementSpecTestFactory(money=m) for m in moneys)
+        assert len(set(x.money.currency for x in mov_specs)) == 1
         trans = TransactionBuilder()(movements_specs=mov_specs)
         res = list_to_queryset([trans]).filter_more_than_one_currency()
         assert list(res) == []
@@ -68,15 +58,13 @@ class TestTransactionQueryset_filter_more_than_one_currency(
 class TestTransactionQueryset_filter_by_currency(MovementsModelsTestCase):
 
     def test_true(self):
-        mov_specs = self.build_two_movement_specs(
-            150,
-            (self.euro, self.real),
-            date(2018, 1, 1)
-        )
+        curs = CurrencyTestFactory.create_batch(2)
+        moneys = pvector(MoneyTestFactory(currency=c) for c in curs)
+        mov_specs = pvector(MovementSpecTestFactory(money=m) for m in moneys)
         trans = TransactionBuilder()(movements_specs=mov_specs)
-        assert list(list_to_queryset([trans]).filter_by_currency(self.euro)) ==\
+        assert list(list_to_queryset([trans]).filter_by_currency(curs[0])) ==\
             [trans]
-        assert list(list_to_queryset([trans]).filter_by_currency(self.real)) ==\
+        assert list(list_to_queryset([trans]).filter_by_currency(curs[1])) ==\
             [trans]
         other_cur = CurrencyBuilder()()
         assert list(list_to_queryset([trans]).filter_by_currency(other_cur)) ==\
@@ -93,9 +81,10 @@ class TestTransactionFactory(MovementsModelsTestCase):
             AccountFactory()("B", AccTypeEnum.LEAF, get_root_acc())
         ])
         # Force second money to exactly offset the first.
+        self.cur = CurrencyTestFactory()
         self.moneys = freeze([
-            Money(100, self.euro),
-            Money(-100, self.euro)
+            Money(100, self.cur),
+            Money(-100, self.cur)
         ])
         self.data = freeze({
             "description": "Hola",
@@ -124,8 +113,8 @@ class TestTransactionFactory(MovementsModelsTestCase):
 
     def test_fails_if_movements_have_a_single_acc(self):
         self.data_update(movements_specs=v(
-            MovementSpec(self.accs[0], Money(100, self.euro)),
-            MovementSpec(self.accs[0], Money(-100, self.euro))
+            MovementSpec(self.accs[0], Money(100, self.cur)),
+            MovementSpec(self.accs[0], Money(-100, self.cur))
         ))
         errmsg = Transaction.ERR_MSGS['SINGLE_ACCOUNT']
         with self.assertRaisesMessage(ValidationError, errmsg):
@@ -133,8 +122,8 @@ class TestTransactionFactory(MovementsModelsTestCase):
 
     def test_fails_on_unbalanced_movements_and_single_account(self):
         self.data_update(movements_specs=v(
-            MovementSpec(self.accs[0], Money(100, self.euro)),
-            MovementSpec(self.accs[1], Money(-99, self.euro))
+            MovementSpec(self.accs[0], Money(100, self.cur)),
+            MovementSpec(self.accs[1], Money(-99, self.cur))
         ))
         errmsg = Transaction.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
         self.assertRaisesMessage(
@@ -166,6 +155,7 @@ class TestTransactionModel(MovementsModelsTestCase):
 class TestMovementModel(MovementsModelsTestCase):
 
     def test_get_money(self):
-        quantity, currency = Decimal(25), self.euro
+        quantity = Decimal(25)
+        currency = CurrencyTestFactory()
         mov = Movement(quantity=quantity, currency=currency)
         assert mov.get_money() == Money(quantity, currency)

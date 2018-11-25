@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
+from .models import Currency
+from .serializers import CurrencySerializer
 
-# Create your views here.
+
+class CurrencyViewSet(ModelViewSet):
+    queryset = Currency.objects.all()
+    serializer_class = CurrencySerializer

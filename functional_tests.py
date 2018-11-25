@@ -28,7 +28,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         """ Asserts that a Response has a 2xx status code """
         assert str(resp.status_code)[0] == "2", \
             f"Response for {resp.url} had status code " +\
-            f"{resp.status_code} and not 2xx"
+            f"{resp.status_code} and not 2xx. \nContent: {resp.content}"
 
     def get_json(self, url):
         """
@@ -170,8 +170,8 @@ class FunctionalTests(StaticLiveServerTestCase):
             self.post_json("/accounts/", raw_data) for raw_data in accs_raw_data
         ]
 
-        # And the Euro currency
-        euro_raw_data = {"name": "Euro"}
+        # And the Yen currency
+        euro_raw_data = {"name": "Yen"}
         euro = self.post_json("/currencies/", euro_raw_data)
 
         # And it's first transaction ever!
@@ -201,3 +201,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         get_trans_resp = self.get_json("/transactions/")
         assert len(get_trans_resp) == 1
         assert get_trans_resp()[0]['date'] == trans_raw_data['date']
+
+        self.fail("Finish tests!")
+
+        # And the movement shows up in the report for that account

@@ -19,10 +19,12 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from accounts.views import AccountViewSet
+from currencies.views import CurrencyViewSet
 
 
 router = DefaultRouter()
 router.register(r'accounts', AccountViewSet, 'accounts')
+router.register(r'currencies', CurrencyViewSet, 'currencies')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

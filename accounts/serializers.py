@@ -23,7 +23,6 @@ class AccTypeField(Field):
         return value.value
 
 
-# !!!! TODO -> Make Serializer behave as we want it to
 class AccountSerializer(ModelSerializer):
     acc_type = AccTypeField(source="get_acc_type", required=False)
 
@@ -36,7 +35,6 @@ class AccountSerializer(ModelSerializer):
         validated_data['acc_type'] = validated_data.pop('get_acc_type')
         return AccountFactory()(**validated_data)
 
-    # !!!! TODO -> Make this method serious
     def update(self, instance, validated_data):
         if 'get_acc_type' in validated_data:
             raise ValidationError({'acc_type': 'This field is imutable'})

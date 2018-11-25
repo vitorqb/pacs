@@ -69,13 +69,12 @@ class Account(MPTTModel):
     def get_name(self):
         return self.name
 
-    # !!!! TODO -> Implement this correctly
     def set_name(self, x):
         self.name = x
         full_clean_and_save(self)
 
-    # !!!! TODO -> Test and implement
     def get_parent(self):
+        """ Returns the parent. Can be None for the Root Account. """
         return self.parent
 
     def set_parent(self, parent):
@@ -89,8 +88,9 @@ class Account(MPTTModel):
         full_clean_and_save(self)
 
     def get_acc_type(self):
-        """ Returns a AccTypeEnum. The AccountType class is internal and
-        should not be seen by the outside world. """
+        """ Getter for acc_type. Notice that instead of returning an
+        AccountType objects, we return AccTypeEnum. This is because
+        AccountType should only be known by this module. """
         for acc_type in AccTypeEnum:
             if acc_type.value == self.acc_type.name:
                 return acc_type

@@ -24,12 +24,34 @@ class FunctionalTests(StaticLiveServerTestCase):
         account_populator()
         currency_populator()
 
-    def get_json(self, url):
-        """ Makes a request, ensures that it returns 2**, and parses the json """
-        resp = requests.get(f"{self.live_server_url}/accounts/")
+    def assert_response_status_okay(self, resp):
+        """ Asserts that a Response has a 2xx status code """
         assert str(resp.status_code)[0] == "2", \
             f"Response for {url} had status code {resp.status_code} and not 2xx"
+
+    def get_json(self, url):
+        """ Makes a get request, ensures that it returns 2**, and parses the json """
+        resp = requests.get(f"{self.live_server_url}{url}")
+        self.assert_response_status_okay(resp)
         return resp.json()
+
+    def post_json(self, url, json={}):
+        """ Makes a json request, ensures it returns 2**, and parses the json """
+        resp = requests.post(f"{self.live_server_url}{url}", json=json)
+        self.assert_response_status_okay(resp)
+        return resp.json()
+
+    def patch_json(self, url, json={}):
+        """ Makes a json request, ensures it returns 2**, and parses the json """
+        resp = requests.patch(f"{self.live_server_url}{url}", json=json)
+        self.assert_response_status_okay(resp)
+        return resp.json()
+
+    def assert_is_acc_name(self, name):
+        """ Asserts that name is an acc name returned by a get request """
+        accs = self.get_json('/accounts/')
+        assert any(x['name'] == name for x in accs), \
+            f"'{name}' not found on account names '{accs}'"
 
     def test_creates_an_account_hierarchy(self):
         # The user enters and only sees the default accounts there
@@ -46,23 +68,15 @@ class FunctionalTests(StaticLiveServerTestCase):
             "acc_type": "Branch",
             "parent": root_acc_pk
         }
-        expenses_resp = requests.post(
-            f"{self.live_server_url}/accounts/",
-            json=expenses_acc
-        )
-        assert expenses_resp.status_code == 201
+        expenses_json = self.post_json("/accounts/", expenses_acc)
 
-        expenses_resp_pk = expenses_resp.json()['pk']
+        expenses_pk = expenses_json['pk']
         supermarket_acc = {
             "name": "Supermarket",
             "acc_type": "Leaf",
-            "parent": expenses_resp_pk
+            "parent": expenses_pk
         }
-        supermarket_resp = requests.post(
-            f"{self.live_server_url}/accounts/",
-            json=supermarket_acc
-        )
-        assert supermarket_resp.status_code == 201
+        self.post_json("/accounts/", supermarket_acc)
 
     def test_user_changes_name_of_account(self):
         # The user had previously creates an account
@@ -70,22 +84,16 @@ class FunctionalTests(StaticLiveServerTestCase):
         AccountTestFactory(name=orig_name)
 
         # Which he sees when he opens the app
-        resp = requests.get(f"{self.live_server_url}/accounts/")
-        assert orig_name in [x['name'] for x in resp.json()]
-        acc_data = next(x for x in resp.json() if x['name'] == orig_name)
+        accs_json = self.get_json("/accounts/")
+        assert orig_name in [x['name'] for x in accs_json]
+        acc_data = next(x for x in accs_json if x['name'] == orig_name)
 
         # It now decides to change the name
         new_name = "Current Account (La Caixa)"
-        resp = requests.patch(
-            f"{self.live_server_url}/accounts/{acc_data['pk']}/",
-            json={"name": new_name}
-        )
-        assert resp.status_code == 200, resp.content
+        self.patch_json(f"/accounts/{acc_data['pk']}/", {"name": new_name})
 
         # And he sees it worked, and he is happy
-        # !!!! SEMLL -> Repeated
-        resp = requests.get(f"{self.live_server_url}/accounts/")
-        assert new_name in [x['name'] for x in resp.json()]
+        self.assert_is_acc_name(new_name)
 
     def test_user_changes_account_hierarchy(self):
         # The user had previously created an Current Account whose
@@ -106,14 +114,12 @@ class FunctionalTests(StaticLiveServerTestCase):
         # |    |   `-- Current Account LaCaixa
 
         # It currects the name of the existant account
-        resp = requests.patch(
-            f"{self.live_server_url}/accounts/{cur_acc.pk}/",
-            json={"name": "Current Account Itau"}
+        self.patch_json(
+            f"/accounts/{cur_acc.pk}/",
+            {"name": "Current Account Itau"}
         )
-        assert resp.status_code == 200, resp.content
         # And sees that it worked
-        resp = requests.get(f"{self.live_server_url}/accounts/")
-        assert "Current Account Itau" in [x['name'] for x in resp.json()]
+        self.assert_is_acc_name("Current Account Itau")
 
         # He creates the new father for it
         new_cur_acc_data = {
@@ -121,33 +127,24 @@ class FunctionalTests(StaticLiveServerTestCase):
             "parent": root.pk,
             "acc_type": "Branch"
         }
-        resp = requests.post(
-            f"{self.live_server_url}/accounts/",
-            json=new_cur_acc_data
-        )
-        assert resp.status_code == 201, resp.content
+        resp_data = self.post_json("/accounts/", new_cur_acc_data)
+        new_cur_acc_pk = resp_data['pk']
         # And sees that it worked
-        resp = requests.get(f"{self.live_server_url}/accounts/")
-        assert "Current Account" in [x['name'] for x in resp.json()]
-        new_cur_acc_pk = next(
-            x['pk'] for x in resp.json() if x['name'] == "Current Account"
-        )
+        self.assert_is_acc_name(new_cur_acc_data['name'])
 
         # He sets the old acc to have this father
-        resp = requests.patch(
-            f"{self.live_server_url}/accounts/{cur_acc.pk}/",
+        resp_data = self.patch_json(
+            f"/accounts/{cur_acc.pk}/",
             json={"parent": new_cur_acc_pk}
         )
-        assert resp.status_code == 200, resp.content
-        assert resp.json()['parent'] == new_cur_acc_pk
+        assert resp_data['parent'] == new_cur_acc_pk
 
         # And creates the new account
-        resp = requests.post(
-            f"{self.live_server_url}/accounts/",
+        self.post_json(
+            "/accounts/",
             json={
                 "name": "Current Account LaCaixa",
                 "parent": new_cur_acc_pk,
                 "acc_type": "Leaf"
             }
         )
-        assert resp.status_code, 200

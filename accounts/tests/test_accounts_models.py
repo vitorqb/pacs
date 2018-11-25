@@ -8,6 +8,7 @@ from accounts.models import (
     AccountType,
     get_root_acc
 )
+from .factories import AccountTestFactory
 from accounts.management.commands.populate_accounts import (
     account_populator,
     account_type_populator
@@ -65,3 +66,15 @@ class TestAccountFactory(AccountsModelTestCase):
         errmsg = AccountFactory.ERR_MSGS['NULL_PARENT']
         with self.assertRaisesMessage(ValidationError, errmsg):
             self.call()
+
+
+class TestAccount(AccountsModelTestCase):
+
+    def test_get_acc_type(self):
+        acc = AccountTestFactory()
+        exp_acc_type = next(
+            x
+            for x in AccTypeEnum
+            if x.value == acc.acc_type.name
+        )
+        assert acc.get_acc_type() == exp_acc_type

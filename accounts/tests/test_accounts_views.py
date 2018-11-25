@@ -3,7 +3,7 @@ from django.urls.base import resolve
 from rest_framework.test import APIRequestFactory
 
 from common.test import PacsTestCase
-from accounts.models import Account, get_root_acc
+from accounts.models import Account, get_root_acc, AccTypeEnum
 from accounts.serializers import AccountSerializer
 from accounts.views import AccountViewSet
 from accounts.tests.factories import AccountTestFactory
@@ -79,6 +79,18 @@ class TestAccountViewset(AccountViewTestCase):
         assert resp.status_code == 200, resp.data
         acc.refresh_from_db()
         assert acc.get_name() == new_name
+
+    def test_patch_account_type_raises_error(self):
+        self.populate_accounts()
+        acc = AccountTestFactory()
+        new_type = AccTypeEnum.LEAF.value
+        resp = self.client.patch(
+            f"/accounts/{acc.pk}/",
+            {'acc_type': new_type},
+        )
+        assert resp.status_code == 400
+        assert len(resp.data) == 1
+        assert "acc_type" in resp.data
 
     def test_delete_account(self):
         self.populate_accounts()

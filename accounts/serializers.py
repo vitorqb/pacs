@@ -30,8 +30,19 @@ class AccountSerializer(ModelSerializer):
     class Meta:
         model = Account
         fields = ['pk', 'name', 'acc_type', 'parent']
+        read_only_fields = ['pk']
 
     # !!!! TODO -> Make this method serious
     def create(self, validated_data):
         validated_data['acc_type'] = validated_data.pop('get_acc_type')
         return AccountFactory()(**validated_data)
+
+    # !!!! TODO -> Make this method serious
+    def update(self, instance, validated_data):
+        if 'get_acc_type' in validated_data:
+            raise ValidationError({'acc_type': 'This field is imutable'})
+        if 'name' in validated_data:
+            instance.set_name(validated_data['name'])
+        if 'parent' in validated_data:
+            instance.set_parent(validated_data['parent'])
+        return instance

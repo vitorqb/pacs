@@ -18,14 +18,14 @@ class AccTypeField(Field):
                 return acc_type
         raise ValidationError(f"Unkown account type {data}")
 
-    # !!!! TODO -> Really make this method
     def to_representation(self, value):
-        return "Branch"
+        """ Maps a AccTypeEnum to a string."""
+        return value.value
 
 
 # !!!! TODO -> Make Serializer behave as we want it to
 class AccountSerializer(ModelSerializer):
-    acc_type = AccTypeField()
+    acc_type = AccTypeField(source="get_acc_type")
 
     class Meta:
         model = Account
@@ -33,4 +33,5 @@ class AccountSerializer(ModelSerializer):
 
     # !!!! TODO -> Make this method serious
     def create(self, validated_data):
+        validated_data['acc_type'] = validated_data.pop('get_acc_type')
         return AccountFactory()(**validated_data)

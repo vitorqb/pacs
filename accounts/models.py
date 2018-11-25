@@ -66,6 +66,12 @@ class Account(MPTTModel):
     def get_name(self):
         return self.name
 
+    # !!!! TODO -> Really implement this
+    def get_acc_type(self):
+        """ Returns a AccTypeEnum. The AccountType class is internal and
+        should not be seen by the outside world. """
+        return AccTypeEnum.ROOT
+
     def allows_children(self):
         """ Returns True if this account can be the parent of other accounts,
         else False"""

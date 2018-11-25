@@ -23,3 +23,8 @@ class TestAccTypeField(PacsTestCase):
         assert unkown_type not in set(x.value for x in AccTypeEnum)
         with self.assertRaises(ValidationError):
             self.field.to_internal_value(unkown_type)
+
+    def test_to_representation(self):
+        for acc_type in AccTypeEnum:
+            with self.subTest(acc_type=acc_type):
+                assert self.field.to_representation(acc_type) == acc_type.value

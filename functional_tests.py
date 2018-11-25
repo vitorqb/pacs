@@ -27,10 +27,13 @@ class FunctionalTests(StaticLiveServerTestCase):
     def assert_response_status_okay(self, resp):
         """ Asserts that a Response has a 2xx status code """
         assert str(resp.status_code)[0] == "2", \
-            f"Response for {url} had status code {resp.status_code} and not 2xx"
+            f"Response for {resp.url} had status code " +\
+            f"{resp.status_code} and not 2xx"
 
     def get_json(self, url):
-        """ Makes a get request, ensures that it returns 2**, and parses the json """
+        """
+        Makes a get request, ensures that it returns 2**, and parses the json
+        """
         resp = requests.get(f"{self.live_server_url}{url}")
         self.assert_response_status_okay(resp)
         return resp.json()
@@ -148,3 +151,53 @@ class FunctionalTests(StaticLiveServerTestCase):
                 "acc_type": "Leaf"
             }
         )
+
+    def test_first_transaction(self):
+        # The user creates two accounts
+        accs_raw_data = [
+            {
+                "name": "Salary",
+                "acc_type": "Leaf",
+                "parent": get_root_acc().pk
+            },
+            {
+                "name": "Money",
+                "acc_type": "Leaf",
+                "parent": get_root_acc().pk
+            }
+        ]
+        accs = [
+            self.post_json("/accounts/", raw_data) for raw_data in accs_raw_data
+        ]
+
+        # And the Euro currency
+        euro_raw_data = {"name": "Euro"}
+        euro = self.post_json("/currencies/", euro_raw_data)
+
+        # And it's first transaction ever!
+        trans_raw_data = {
+            "description": "Earned some money!",
+            "date": "2018-01-01",
+            "movements_specs": [
+                {
+                    "account": accs[0]['pk'],
+                    "money": {
+                        "quantity": -1000,
+                        "currency": euro['pk']
+                    }
+                },
+                {
+                    "account": accs[1]['pk'],
+                    "money": {
+                        "quantity": 1000,
+                        "currency": euro['pk']
+                    }
+                },
+            ]
+        }
+        self.post_json("/transactions/", trans_raw_data)
+
+        # Which now appears when querying for all transactions
+        get_trans_resp = self.get_json("/transactions/")
+        assert len(get_trans_resp) == 1
+        assert get_trans_resp()[0]['date'] == trans_raw_data['date']

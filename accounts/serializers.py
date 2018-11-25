@@ -25,7 +25,7 @@ class AccTypeField(Field):
 
 # !!!! TODO -> Make Serializer behave as we want it to
 class AccountSerializer(ModelSerializer):
-    acc_type = AccTypeField(source="get_acc_type")
+    acc_type = AccTypeField(source="get_acc_type", required=False)
 
     class Meta:
         model = Account

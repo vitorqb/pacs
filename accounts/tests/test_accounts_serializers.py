@@ -1,7 +1,7 @@
 from rest_framework.exceptions import ValidationError
 
 from common.test import PacsTestCase
-from accounts.models import AccTypeEnum, Account, get_root_acc
+from accounts.models import AccTypeEnum, Account, get_root_acc, AccountType
 from accounts.serializers import AccTypeField, AccountSerializer
 from accounts.management.commands.populate_accounts import account_populator, account_type_populator
 from .factories import AccountTestFactory
@@ -32,7 +32,7 @@ class TestAccTypeField(PacsTestCase):
                 assert self.field.to_representation(acc_type) == acc_type.value
 
 
-class TestAccountSerializer(PacsTestCase):
+class TestAccountSerializer_creation(PacsTestCase):
 
     def setUp(self):
         super().setUp()
@@ -66,3 +66,50 @@ class TestAccountSerializer(PacsTestCase):
         self.data['pk'] = 123
         acc = self.create()
         assert acc.pk != self.data['pk']
+
+
+class TestAccountSerializer_update(PacsTestCase):
+    def setUp(self):
+        super().setUp()
+        account_type_populator()
+        account_populator()
+        self.acc = AccountTestFactory()
+        self.data = {}
+
+    def update(self):
+        """ Updates using serializer and self.data """
+        ser = AccountSerializer(self.acc, data=self.data, partial=True)
+        ser.is_valid(True)
+        return ser.save()
+
+    def test_acc_type_is_imutable(self):
+        self.data['acc_type'] = AccTypeEnum.BRANCH
+        with self.assertRaises(ValidationError) as e:
+            self.update()
+        assert 'acc_type' in e.exception.detail
+
+    def test_update_name_and_parent(self):
+        other_acc = AccountTestFactory(
+            acc_type=AccountType.objects.get(name=AccTypeEnum.BRANCH.value)
+        )
+        new_name = "New name"
+        assert self.acc.get_name != new_name
+
+        self.data['parent'] = other_acc.pk
+        self.data['name'] = "New name"
+        self.update()
+
+        self.acc.refresh_from_db()
+        assert self.acc.get_name() == new_name
+        assert self.acc.get_parent() == other_acc
+
+    def test_update_parent_that_cant_have_child_raises_err(self):
+        new_parent = AccountTestFactory(
+            acc_type=AccountType.objects.get(name=AccTypeEnum.LEAF.value)
+        )
+        assert new_parent.allows_children() is False
+
+        self.data['parent'] = new_parent.pk
+        with self.assertRaises(ValidationError) as e:
+            self.update()
+        assert 'parent' in e.exception.detail

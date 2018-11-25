@@ -1,6 +1,8 @@
 from attr import evolve
 from pyrsistent import freeze
-from django.core.exceptions import ValidationError
+
+from rest_framework.exceptions import ValidationError
+
 from common.test import PacsTestCase
 from accounts.models import (
     AccountFactory,

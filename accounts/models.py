@@ -1,8 +1,11 @@
 from enum import Enum
 from pyrsistent import freeze
 import attr
+
 import django.db.models as m
-from django.core.exceptions import ValidationError
+
+from rest_framework.exceptions import ValidationError
+
 from mptt.models import MPTTModel, TreeForeignKey
 from common.models import NameField, full_clean_and_save
 
@@ -71,8 +74,18 @@ class Account(MPTTModel):
         self.name = x
         full_clean_and_save(self)
 
-    # !!!! TODO -> Implement this correctly
+    # !!!! TODO -> Test and implement
+    def get_parent(self):
+        return self.parent
+
+    # !!!! TODO -> Make AccountFactory call this method
     def set_parent(self, x):
+        if x is None:
+            msg = {'parent': AccountFactory.ERR_MSGS['NULL_PARENT']}
+            raise ValidationError(msg)
+        if not x.allows_children():
+            msg = AccountFactory.ERR_MSGS['PARENT_CHILD_NOT_ALLOWED']
+            raise ValidationError({'parent': msg.format(x)})
         self.parent = x
         full_clean_and_save(self)
 

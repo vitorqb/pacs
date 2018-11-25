@@ -2,7 +2,7 @@ from decimal import Decimal
 from pyrsistent import v, freeze, pvector
 from django.core.exceptions import ValidationError
 from common.models import list_to_queryset
-from common.test import TestCase
+from common.test import PacsTestCase
 from common.test_utils import (
     TransactionBuilder,
     MovementSpecBuilder,
@@ -22,7 +22,7 @@ from .factories import MovementSpecTestFactory
 from datetime import date
 
 
-class MovementsModelsTestCase(TestCase):
+class MovementsModelsTestCase(PacsTestCase):
 
     def setUp(self):
         super().setUp()

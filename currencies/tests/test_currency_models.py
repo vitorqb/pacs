@@ -1,5 +1,5 @@
 from pyrsistent import pvector
-from common.test import TestCase
+from common.test import PacsTestCase
 from currencies.models import CurrencyFactory, Currency, get_default_currency
 from currencies.management.commands.populate_currencies import currency_populator
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
@@ -9,7 +9,7 @@ from accounts.management.commands.populate_accounts import (
 )
 
 
-class CurrencyModelTestCase(TestCase):
+class CurrencyModelTestCase(PacsTestCase):
 
     def setUp(self):
         super().setUp()

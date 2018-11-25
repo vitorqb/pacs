@@ -63,6 +63,9 @@ class Account(MPTTModel):
     #
     # Methods
     #
+    def get_name(self):
+        return self.name
+
     def allows_children(self):
         """ Returns True if this account can be the parent of other accounts,
         else False"""

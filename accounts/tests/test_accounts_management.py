@@ -1,6 +1,6 @@
 from attr import evolve
 from pyrsistent import freeze
-from common.test import TestCase
+from common.test import PacsTestCase
 from accounts.management.commands.populate_accounts import (
     account_populator,
     account_type_populator
@@ -8,7 +8,7 @@ from accounts.management.commands.populate_accounts import (
 from accounts.models import AccountType
 
 
-class PopulateAccountTestCase(TestCase):
+class PopulateAccountTestCase(PacsTestCase):
     def setUp(self):
         super().setUp()
         self.acc_type_data = freeze([

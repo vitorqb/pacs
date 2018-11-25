@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
+from accounts.models import Account
+from accounts.serializers import AccountSerializer
 
-# Create your views here.
+
+class AccountViewSet(ModelViewSet):
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer

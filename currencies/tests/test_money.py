@@ -2,11 +2,11 @@ from decimal import Decimal
 from currencies.models import Currency, get_default_currency
 from currencies.money import Money
 from currencies.management.commands.populate_currencies import currency_populator
-from common.test import TestCase
+from common.test import PacsTestCase
 from common.utils import utcdatetime
 
 
-class MoneyTestCase(TestCase):
+class MoneyTestCase(PacsTestCase):
     def setUp(self):
         super().setUp()
         currency_populator()

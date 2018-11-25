@@ -23,7 +23,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         """ Makes a request, ensures that it returns 2**, and parses the json """
         resp = requests.get(f"{self.live_server_url}/accounts/")
         assert str(resp.status_code)[0] == "2", \
-            f"Response had status code {resp.status_code} and not 2xx"
+            f"Response for {url} had status code {resp.status_code} and not 2xx"
         return resp.json()
 
     def test_creates_an_account_hierarchy(self):

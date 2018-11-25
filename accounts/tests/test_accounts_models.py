@@ -1,7 +1,7 @@
 from attr import evolve
 from pyrsistent import freeze
 from django.core.exceptions import ValidationError
-from common.test import TestCase
+from common.test import PacsTestCase
 from accounts.models import (
     AccountFactory,
     AccTypeEnum,
@@ -14,7 +14,7 @@ from accounts.management.commands.populate_accounts import (
 )
 
 
-class AccountsModelTestCase(TestCase):
+class AccountsModelTestCase(PacsTestCase):
     def setUp(self):
         super().setUp()
         account_type_populator()

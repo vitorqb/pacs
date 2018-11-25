@@ -1,11 +1,11 @@
 import attr
-from common.test import TestCase
+from common.test import PacsTestCase
 from currencies.models import Currency, CurrencyFactory
 from currencies.management.commands.populate_currencies import currency_populator
 from pyrsistent import m, v
 
 
-class ManagementCommandTestCase(TestCase):
+class ManagementCommandTestCase(PacsTestCase):
     pass
 
 

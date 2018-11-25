@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 from common.test import PacsTestCase
 from accounts.models import (
+    Account,
     AccountFactory,
     AccTypeEnum,
     AccountType,
@@ -58,14 +59,14 @@ class TestAccountFactory(AccountsModelTestCase):
 
     def test_invalid_parent_raises_err(self):
         self.data['parent'].acc_type.children_allowed = False
-        errmsg = AccountFactory.ERR_MSGS['PARENT_CHILD_NOT_ALLOWED']
+        errmsg = Account.ERR_MSGS['PARENT_CHILD_NOT_ALLOWED']
         errmsg = errmsg.format(self.data['parent'])
         with self.assertRaisesMessage(ValidationError, errmsg):
             self.call()
 
     def test_parent_cant_be_null(self):
         self.update_data(parent=None)
-        errmsg = AccountFactory.ERR_MSGS['NULL_PARENT']
+        errmsg = Account.ERR_MSGS['NULL_PARENT']
         with self.assertRaisesMessage(ValidationError, errmsg):
             self.call()
 

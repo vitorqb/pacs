@@ -18,8 +18,6 @@ class AccountFactory():
         'ACC_TYPE_NEW_ACCOUNTS_NOT_ALLOWED': (
             'Account type "{}" does not allow new accounts'
         ),
-        'NULL_PARENT': '`parent` can not be None.',
-        'PARENT_CHILD_NOT_ALLOWED': 'Parent account {} does not allows children.'
     })
 
     def __call__(self, name, acc_type, parent):
@@ -28,24 +26,18 @@ class AccountFactory():
         assert acc_type in AccTypeEnum
         acc_type_obj = AccountType.objects.get(name=acc_type.value)
         self._validate_acc_type_obj(acc_type_obj)
-        self._validate_parent(parent)
-        return full_clean_and_save(Account(
+        acc = Account(
             name=name,
             acc_type=acc_type_obj,
-            parent=parent
-        ))
+        )
+        acc.full_clean()
+        acc.set_parent(parent)
+        return full_clean_and_save(acc)
 
     def _validate_acc_type_obj(self, acc_type_obj):
         if acc_type_obj.new_accounts_allowed is False:
             m = self.ERR_MSGS['ACC_TYPE_NEW_ACCOUNTS_NOT_ALLOWED']
             raise ValidationError(m.format(acc_type_obj.name))
-
-    def _validate_parent(self, parent):
-        if parent is None:
-            raise ValidationError(self.ERR_MSGS['NULL_PARENT'])
-        if parent.allows_children() is False:
-            m = self.ERR_MSGS['PARENT_CHILD_NOT_ALLOWED']
-            raise ValidationError(m.format(parent))
 
 
 class Account(MPTTModel):
@@ -64,6 +56,14 @@ class Account(MPTTModel):
     )
 
     #
+    # Constants
+    #
+    ERR_MSGS = freeze({
+        'NULL_PARENT': '`parent` can not be None.',
+        'PARENT_CHILD_NOT_ALLOWED': 'Parent account {} does not allows children.'
+    })
+
+    #
     # Methods
     #
     def get_name(self):
@@ -78,15 +78,14 @@ class Account(MPTTModel):
     def get_parent(self):
         return self.parent
 
-    # !!!! TODO -> Make AccountFactory call this method
-    def set_parent(self, x):
-        if x is None:
-            msg = {'parent': AccountFactory.ERR_MSGS['NULL_PARENT']}
+    def set_parent(self, parent):
+        if parent is None:
+            msg = {'parent': self.ERR_MSGS['NULL_PARENT']}
             raise ValidationError(msg)
-        if not x.allows_children():
-            msg = AccountFactory.ERR_MSGS['PARENT_CHILD_NOT_ALLOWED']
-            raise ValidationError({'parent': msg.format(x)})
-        self.parent = x
+        if not parent.allows_children():
+            msg = self.ERR_MSGS['PARENT_CHILD_NOT_ALLOWED']
+            raise ValidationError({'parent': msg.format(parent)})
+        self.parent = parent
         full_clean_and_save(self)
 
     def get_acc_type(self):

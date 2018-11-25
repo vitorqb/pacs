@@ -32,7 +32,6 @@ class AccountSerializer(ModelSerializer):
         fields = ['pk', 'name', 'acc_type', 'parent']
         read_only_fields = ['pk']
 
-    # !!!! TODO -> Make this method serious
     def create(self, validated_data):
         validated_data['acc_type'] = validated_data.pop('get_acc_type')
         return AccountFactory()(**validated_data)

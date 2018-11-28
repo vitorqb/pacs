@@ -71,8 +71,6 @@ class TestTransactionView(MovementsViewsTestCase):
             TransactionSerializer(transactions[0]).data
 
     # !!!! TODO -> Add test not allowing creating transactions that have a single
-    # !!!! currency but unmatched values.
-    # !!!! TODO -> Add test not allowing creating transactions that have a single
     # !!!! account.
     def test_post_single_transaction(self):
         # !!!! TODO -> Dont hardcode 'Leaf' here. Instead allow passing
@@ -108,6 +106,22 @@ class TestTransactionView(MovementsViewsTestCase):
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json(), resp.json()
         assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
+            resp.json()['movements_specs']
+
+    def test_patch_transaction_with_single_currency_but_unmatched_values_err(self):
+        # Same currency, unmatched values!
+        trans = TransactionTestFactory()
+        moneys = [Money(100, self.cur), Money(-98, self.cur)]
+        movements_specs = [MovementSpecTestFactory(money=m) for m in moneys]
+        resp = self.client.patch(
+            f'/transactions/{trans.pk}/',
+            {'movements_specs': [
+                MovementSpecSerializer(m).data for m in movements_specs
+            ]}
+        )
+        assert resp.status_code == 400
+        assert 'movements_specs' in resp.json()
+        assert Transaction.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY'] in \
             resp.json()['movements_specs']
 
     def test_patch_transaction(self):

@@ -115,9 +115,9 @@ class Transaction(m.Model):
         if len(set(x.money.currency for x in movements_specs)) == 1:
             value = sum(x.money.quantity for x in movements_specs)
             if value.quantize(Decimal(1)) != 0:
-                raise ValidationError(
-                    self.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
-                )
+                msg = self.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
+                field = 'movements_specs'
+                raise ValidationError({field: msg})
 
     def _convert_specs(self, mov_spec):
         """ Converts a MovementSpec into a Movement for self. """

@@ -19,7 +19,7 @@ class MovementSpecTestFactory(f.Factory):
     money = f.SubFactory(MoneyTestFactory)
 
 
-class TransactionTestFactory(f.Factory):
+class TransactionTestFactory(f.DjangoModelFactory):
     class Meta:
         model = Transaction
 

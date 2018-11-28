@@ -10,12 +10,19 @@ from movements.models import Transaction, MovementSpec
 from .factories import TransactionTestFactory
 from accounts.tests.factories import AccountTestFactory
 from accounts.models import AccountType
+from accounts.management.commands.populate_accounts import (
+    account_type_populator,
+    account_populator
+)
 from currencies.tests.factories import CurrencyTestFactory
 from currencies.money import Money
 
 
 class MovementsViewsTestCase(PacsTestCase):
-    pass
+
+    def populate_accounts(self):
+        account_type_populator()
+        account_populator()
 
 
 class TestTransactionView(MovementsViewsTestCase):
@@ -26,7 +33,7 @@ class TestTransactionView(MovementsViewsTestCase):
     def test_url_for_specific_transaction_resolves_to_view(self):
         resolver = resolve('/transactions/12/')
         assert resolver.func.cls == TransactionViewSet
-        assert resolver.kwargs == {'pk': 12}
+        assert resolver.kwargs == {'pk': '12'}
 
     def test_get_transactions(self):
         TransactionTestFactory.create_batch(5)
@@ -35,7 +42,7 @@ class TestTransactionView(MovementsViewsTestCase):
 
     def test_get_single_transaction(self):
         transactions = TransactionTestFactory.create_batch(2)
-        assert self.client.get(f'/transactions/{transactions[0].pk}/') == \
+        assert self.client.get(f'/transactions/{transactions[0].pk}/').json() == \
             TransactionSerializer(transactions[0]).data
 
     # !!!! TODO -> Add test not allowing creating transactions that are empty
@@ -46,6 +53,7 @@ class TestTransactionView(MovementsViewsTestCase):
     def test_post_single_transaction(self):
         # !!!! TODO -> Dont hardcode 'Leaf' here. Instead allow passing
         # !!!! AccTypeEnum.LEAF to the factory.
+        self.populate_accounts()
         acc_type_leaf = AccountType.objects.get(name="Leaf")
         accs = AccountTestFactory.create_batch(2, acc_type=acc_type_leaf)
         cur = CurrencyTestFactory()
@@ -62,7 +70,7 @@ class TestTransactionView(MovementsViewsTestCase):
                 },
                 {
                     "account": accs[1].pk,
-                    "Money": {
+                    "money": {
                         "quantity": -200,
                         "currency": cur.pk
                     }
@@ -70,23 +78,22 @@ class TestTransactionView(MovementsViewsTestCase):
             ]
         }
         resp = self.client.post('/transactions/', data)
-        assert resp['date'] == '2018-12-21'
-        assert resp['description'] == data['description']
+        assert resp.status_code == 201, resp.data
+        assert resp.json()['date'] == '2018-12-21'
+        assert resp.json()['description'] == data['description']
 
-        obj = Transaction.objects.get(pk=resp['pk'])
+        obj = Transaction.objects.get(pk=resp.json()['pk'])
 
         assert obj.get_description() == 'A'
         assert obj.date == date(2018, 12, 21)
 
-        movements = obj.get_movements().order_by('-value')
-        assert movements[0].get_account() == accs[0]
-        assert movements[0].get_money().get_value() == 200
-        assert movements[0].get_money().get_currency() == cur
-        assert movements[1].get_account() == accs[1]
-        assert movements[1].get_money().get_value() == -200
-        assert movements[1].get_money().get_currency() == cur
+        assert obj.get_movements() == [
+            MovementSpec(accs[0], Money(200, cur)),
+            MovementSpec(accs[1], Money(-200, cur))
+        ]
 
     def test_patch_transaction(self):
+        self.populate_accounts()
         acc_type_leaf = AccountType.objects.get(name="Leaf")
         accs = AccountTestFactory.create_batch(3, acc_type=acc_type_leaf)
         cur = CurrencyTestFactory()
@@ -98,14 +105,14 @@ class TestTransactionView(MovementsViewsTestCase):
         )]
         resp = self.client.patch(
             f'/transactions/{trans.pk}/',
-            {'movements': new_movements}
+            {'movements_specs': new_movements}
         )
         assert resp.status_code == 200, resp.data
         trans.refresh_from_db()
 
-        movements = trans.get_movements().order_by('-value')
+        movements = trans.get_movements()
         assert len(movements) == 3
-        assert [x.get_money() for x in movements] == \
+        assert [x.money for x in movements] == \
             [Money(100, cur), Money(50, cur), Money(-150, cur)]
 
     def test_delete_transaction(self):

@@ -1,6 +1,6 @@
 from decimal import Decimal
 import attr
-from pyrsistent import freeze
+from pyrsistent import freeze, pvector, v
 import django.db.models as m
 from django.db.transaction import atomic
 from django.core.exceptions import ValidationError
@@ -83,8 +83,13 @@ class Transaction(m.Model):
 
     # !!!! SMELL -> Return movement spec, and not movement?
     def get_movements(self):
-        """ Returns a queryset with all movements for this transaction """
-        return self.movement_set.all()
+        """ Returns a list of MovementSpec with all movements for this
+        transaction """
+        movements = self.movement_set.all()
+        # !!!! TODO -> MovementSpec.from_movement()
+        return pvector(
+            MovementSpec(m.get_account(), m.get_money()) for m in movements
+        )
 
     @atomic
     def set_movements(self, movements_specs):

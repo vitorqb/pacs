@@ -1,7 +1,8 @@
 from rest_framework.serializers import (
     ModelSerializer,
     Serializer,
-    PrimaryKeyRelatedField
+    PrimaryKeyRelatedField,
+    ListSerializer
 )
 from .models import Transaction, MovementSpec, TransactionFactory
 from accounts.models import Account
@@ -21,13 +22,19 @@ class MovementSpecSerializer(Serializer):
 
 
 class TransactionSerializer(ModelSerializer):
-    movements_specs = MovementSpecSerializer(source='get_movements', many=True)
+    movements_specs = ListSerializer(
+        child=MovementSpecSerializer(),
+        source='get_movements'
+    )
 
     class Meta:
         model = Transaction
         # !!!! SMELL -> Change movements_specs -> movements?
         fields = ['pk', 'description', 'date', 'movements_specs']
         read_only_fields = ['pk']
+
+    def is_valid(self, *args, **kwargs):
+        super().is_valid(*args, **kwargs)
 
     def create(self, validated_data):
         movements_data = validated_data.pop('get_movements')

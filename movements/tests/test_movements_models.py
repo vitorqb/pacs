@@ -104,12 +104,7 @@ class TestTransactionFactory(MovementsModelsTestCase):
         trans = self.call()
         assert trans.get_date() == self.data['date_']
         assert trans.get_description() == self.data['description']
-        movements = pvector(trans.get_movements().order_by('account__name'))
-        for mov, mov_spec in zip(movements, self.data['movements_specs']):
-            assert mov.get_account() == mov_spec.account
-            assert mov.get_transaction() == trans
-            assert mov.get_date() == trans.get_date()
-            assert mov.get_money() == mov_spec.money
+        assert trans.get_movements() == self.data['movements_specs']
 
     def test_fails_if_movements_have_a_single_acc(self):
         self.data_update(movements_specs=v(
@@ -143,13 +138,9 @@ class TestTransactionModel(MovementsModelsTestCase):
         accs = (acc_builder(), acc_builder(), acc_builder())
         mov_specs = [MovementSpec(acc, money) for acc, money in zip(accs, moneys)]
         trans = TransactionBuilder()()
+        assert trans.get_movements() != mov_specs
         trans.set_movements(mov_specs)
-        assert len(trans.get_movements()) == 3
-        movs = trans.get_movements()
-        assert list(x.get_money() for x in movs) == \
-            list(x.money for x in mov_specs)
-        assert list(x.get_account() for x in movs) == \
-            list(x.account for x in mov_specs)
+        assert trans.get_movements() == mov_specs
 
 
 class TestMovementModel(MovementsModelsTestCase):

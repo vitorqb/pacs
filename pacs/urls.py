@@ -20,11 +20,13 @@ from rest_framework.routers import DefaultRouter
 
 from accounts.views import AccountViewSet
 from currencies.views import CurrencyViewSet
+from movements.views import TransactionViewSet
 
 
 router = DefaultRouter()
 router.register(r'accounts', AccountViewSet, 'accounts')
 router.register(r'currencies', CurrencyViewSet, 'currencies')
+router.register(r'transactions', TransactionViewSet, 'transactions')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

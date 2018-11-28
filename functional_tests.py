@@ -212,7 +212,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         # Which now appears when querying for all transactions
         get_trans_resp = self.get_json("/transactions/")
         assert len(get_trans_resp) == 1
-        assert get_trans_resp()[0]['date'] == trans_raw_data['date']
+        assert get_trans_resp[0]['date'] == trans_raw_data['date']
 
         self.fail("Finish tests!")
 

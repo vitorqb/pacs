@@ -3,7 +3,7 @@ omit =
      */migrations/*
      */test_*
      tasks.py
-     wsgi.py
+     pacs/wsgi.py
      manage.py
 
 [report]
@@ -11,5 +11,5 @@ omit =
      */migrations/*
      */tests/*
      tasks.py
-     wsgi.py
+     pacs/wsgi.py
      manage.py

@@ -213,7 +213,3 @@ class FunctionalTests(StaticLiveServerTestCase):
         get_trans_resp = self.get_json("/transactions/")
         assert len(get_trans_resp) == 1
         assert get_trans_resp[0]['date'] == trans_raw_data['date']
-
-        self.fail("Finish tests!")
-
-        # And the movement shows up in the report for that account

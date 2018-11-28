@@ -2,8 +2,20 @@
 from rest_framework.exceptions import ValidationError
 
 from common.test import PacsTestCase
-from currencies.serializers import CurrencySerializer
+from currencies.serializers import CurrencySerializer, MoneySerializer
 from currencies.models import Currency
+from currencies.money import Money
+from .factories import CurrencyTestFactory
+
+
+class TestMoneySerializer(PacsTestCase):
+
+    def test_create_base(self):
+        cur = CurrencyTestFactory()
+        data = {'quantity': 2.21, 'currency': cur.pk}
+        ser = MoneySerializer(data=data)
+        assert ser.is_valid(), ser.errors
+        assert ser.save() == Money(2.21, cur)
 
 
 class TestCurrencySerializer_create(PacsTestCase):

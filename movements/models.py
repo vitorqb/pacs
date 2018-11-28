@@ -70,9 +70,18 @@ class Transaction(m.Model):
     def get_description(self):
         return self.description
 
+    def set_description(self, x):
+        self.description = x
+        full_clean_and_save(self)
+
     def get_date(self):
         return self.date
 
+    def set_date(self, x):
+        self.date = x
+        full_clean_and_save(self)
+
+    # !!!! SMELL -> Return movement spec, and not movement?
     def get_movements(self):
         """ Returns a queryset with all movements for this transaction """
         return self.movement_set.all()

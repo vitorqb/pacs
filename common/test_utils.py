@@ -9,6 +9,8 @@ from movements.models import TransactionFactory, MovementSpec
 from datetime import date
 
 
+# !!!! SMELL -> Remove this entire file??
+
 _account_name_generator = (f"_test_account_{i}" for i in count())
 
 

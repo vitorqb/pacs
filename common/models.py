@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator
 
 
 N_DECIMAL_PLACES = 5
+N_DECIMAL_MAX_DIGITS = 20
 DECIMAL_PLACES = Decimal('10') ** -N_DECIMAL_PLACES
 
 
@@ -17,7 +18,7 @@ def new_price_field():
     """ Returns a Fied to be used as price """
     return m.DecimalField(
         validators=[MinValueValidator(0, "Prices must be positive")],
-        max_digits=20,
+        max_digits=N_DECIMAL_MAX_DIGITS,
         decimal_places=N_DECIMAL_PLACES
     )
 

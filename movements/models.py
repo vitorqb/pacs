@@ -90,10 +90,7 @@ class Transaction(m.Model):
         """ Returns a list of MovementSpec with all movements for this
         transaction """
         movements = self.movement_set.all()
-        # !!!! TODO -> MovementSpec.from_movement()
-        return pvector(
-            MovementSpec(m.get_account(), m.get_money()) for m in movements
-        )
+        return pvector(MovementSpec.from_movement(m) for m in movements)
 
     @atomic
     def set_movements(self, movements_specs):

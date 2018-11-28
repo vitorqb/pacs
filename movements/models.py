@@ -1,9 +1,11 @@
 from decimal import Decimal
 import attr
 from pyrsistent import freeze, pvector, v
+
 import django.db.models as m
 from django.db.transaction import atomic
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
+
 from common.models import full_clean_and_save, new_cents_field
 from currencies.money import Money
 from currencies.models import get_default_currency
@@ -50,6 +52,9 @@ class Transaction(m.Model):
         'UNBALANCED_SINGLE_CURRENCY': (
             "If all movements of a Transaction have a single currency, then"
             " the transaction must be balanced, having 0 value."
+        ),
+        'TWO_OR_MORE_MOVEMENTS': (
+            "A transactions must have two or more movements."
         )
     })
 
@@ -81,7 +86,6 @@ class Transaction(m.Model):
         self.date = x
         full_clean_and_save(self)
 
-    # !!!! SMELL -> Return movement spec, and not movement?
     def get_movements(self):
         """ Returns a list of MovementSpec with all movements for this
         transaction """
@@ -101,6 +105,10 @@ class Transaction(m.Model):
         full_clean_and_save(self)
 
     def _validate_movements_specs(self, movements_specs):
+        if len(movements_specs) < 2:
+            raise ValidationError(
+                {'movements_specs': self.ERR_MSGS['TWO_OR_MORE_MOVEMENTS']}
+            )
         if len(set(x.account for x in movements_specs)) <= 1:
             raise ValidationError(self.ERR_MSGS['SINGLE_ACCOUNT'])
         # If movements have a single currency, the value must sum up to 0

@@ -2,12 +2,14 @@ from datetime import date
 
 from django.urls import resolve
 
+from rest_framework.exceptions import ValidationError
+
 from common.test import PacsTestCase
 
 from movements.views import TransactionViewSet
 from movements.serializers import TransactionSerializer, MovementSpecSerializer
 from movements.models import Transaction, MovementSpec
-from .factories import TransactionTestFactory
+from .factories import TransactionTestFactory, MovementSpecTestFactory
 from accounts.tests.factories import AccountTestFactory
 from accounts.models import AccountType
 from accounts.management.commands.populate_accounts import (
@@ -48,7 +50,6 @@ class TestTransactionView(MovementsViewsTestCase):
         assert self.client.get(f'/transactions/{transactions[0].pk}/').json() == \
             TransactionSerializer(transactions[0]).data
 
-    # !!!! TODO -> Add test not allowing creating transactions that are empty
     # !!!! TODO -> Add test not allowing creating transactions that have a single
     # !!!! currency but unmatched values.
     # !!!! TODO -> Add test not allowing creating transactions that have a single
@@ -87,6 +88,33 @@ class TestTransactionView(MovementsViewsTestCase):
             MovementSpec(accs[0], Money(200, cur)),
             MovementSpec(accs[1], Money(-200, cur))
         ]
+
+    def test_post_transaction_with_empty_movements_returns_error(self):
+        data = {
+            'description': 'B',
+            'date': date(1993, 11, 23),
+            'movements_specs': []
+        }
+        resp = self.client.post('/transactions/', data)
+        assert resp.status_code == 400
+        assert 'movements_specs' in resp.json(), resp.json()
+        assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
+            resp.json()['movements_specs']
+
+    def test_post_transaction_with_one_single_movements_returns_error(self):
+        self.populate_accounts()
+        data = {
+            'description': 'B',
+            'date': date(1993, 11, 23),
+            'movements_specs': [
+                MovementSpecSerializer(MovementSpecTestFactory()).data
+            ]
+        }
+        resp = self.client.post('/transactions/', data)
+        assert resp.status_code == 400
+        assert 'movements_specs' in resp.json(), resp.json()
+        assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
+            resp.json()['movements_specs']
 
     def test_patch_transaction(self):
         self.populate_accounts()

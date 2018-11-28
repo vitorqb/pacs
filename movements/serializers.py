@@ -24,12 +24,11 @@ class MovementSpecSerializer(Serializer):
 class TransactionSerializer(ModelSerializer):
     movements_specs = ListSerializer(
         child=MovementSpecSerializer(),
-        source='get_movements'
+        source='get_movements_specs'
     )
 
     class Meta:
         model = Transaction
-        # !!!! SMELL -> Change movements_specs -> movements?
         fields = ['pk', 'description', 'date', 'movements_specs']
         read_only_fields = ['pk']
 
@@ -37,7 +36,7 @@ class TransactionSerializer(ModelSerializer):
         super().is_valid(*args, **kwargs)
 
     def create(self, validated_data):
-        movements_data = validated_data.pop('get_movements')
+        movements_data = validated_data.pop('get_movements_specs')
         validated_data['movements_specs'] = [
             MovementSpecSerializer().create(mov_data)
             for mov_data in movements_data
@@ -48,8 +47,8 @@ class TransactionSerializer(ModelSerializer):
     def update(self, instance, validated_data):
         if 'date' in validated_data:
             instance.set_date(validated_data['date'])
-        if 'get_movements' in validated_data:
-            movements_data = validated_data.pop('get_movements')
+        if 'get_movements_specs' in validated_data:
+            movements_data = validated_data.pop('get_movements_specs')
             movements = [
                 MovementSpecSerializer().create(mov_data)
                 for mov_data in movements_data

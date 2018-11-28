@@ -85,7 +85,7 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
         trans = self.create()
         assert trans.get_description() == self.data['description']
         assert trans.get_date() == self.data['date']
-        movements = trans.get_movements()
+        movements = trans.get_movements_specs()
         assert movements == [
             MovementSpec(self.accs[0], Money(10, self.curs[0])),
             MovementSpec(self.accs[1], Money(-8, self.curs[1])),
@@ -109,7 +109,7 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
         self.data['movements_specs'][1]['money']['quantity'] = Decimal(-100)
 
         new_obj = self.update(obj)
-        movements = new_obj.get_movements()
+        movements = new_obj.get_movements_specs()
         assert all(mov.money.currency == self.curs[1] for mov in movements)
         assert [mov.money.quantity for mov in movements] == \
             [Decimal(100), Decimal(-100)]

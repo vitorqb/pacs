@@ -101,7 +101,7 @@ class TestTransactionFactory(MovementsModelsTestCase):
         trans = self.call()
         assert trans.get_date() == self.data['date_']
         assert trans.get_description() == self.data['description']
-        assert trans.get_movements() == self.data['movements_specs']
+        assert trans.get_movements_specs() == self.data['movements_specs']
 
     def test_fails_if_movements_have_a_single_acc(self):
         self.data_update(movements_specs=v(
@@ -134,9 +134,18 @@ class TestTransactionModel(MovementsModelsTestCase):
         accs = AccountTestFactory.create_batch(3)
         mov_specs = [MovementSpec(acc, money) for acc, money in zip(accs, moneys)]
         trans = TransactionTestFactory()
-        assert trans.get_movements() != mov_specs
+        assert trans.get_movements_specs() != mov_specs
         trans.set_movements(mov_specs)
-        assert trans.get_movements() == mov_specs
+        assert trans.get_movements_specs() == mov_specs
+
+
+class TestMovementSpec(MovementsModelsTestCase):
+
+    def test_from_movement(self):
+        transactions = TransactionTestFactory()
+        mov = transactions.movement_set.all()[0]
+        assert MovementSpec.from_movement(mov) == \
+            MovementSpec(mov.get_account(), mov.get_money())
 
 
 class TestMovementModel(MovementsModelsTestCase):

@@ -86,7 +86,7 @@ class Transaction(m.Model):
         self.date = x
         full_clean_and_save(self)
 
-    def get_movements(self):
+    def get_movements_specs(self):
         """ Returns a list of MovementSpec with all movements for this
         transaction """
         movements = self.movement_set.all()
@@ -147,6 +147,11 @@ class MovementSpec():
             return ValidationError(m)
 
     money = attr.ib()
+
+    @classmethod
+    def from_movement(cls, mov):
+        """ Creates a MovementSpec from a Movement """
+        return MovementSpec(mov.get_account(), mov.get_money())
 
 
 class MovementManager(m.Manager):

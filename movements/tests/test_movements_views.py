@@ -81,7 +81,7 @@ class TestTransactionView(MovementsViewsTestCase):
         assert obj.get_description() == 'A'
         assert obj.date == date(2018, 12, 21)
 
-        assert obj.get_movements() == [
+        assert obj.get_movements_specs() == [
             MovementSpec(self.accs[0], Money(200, self.cur)),
             MovementSpec(self.accs[1], Money(-200, self.cur))
         ]
@@ -149,7 +149,7 @@ class TestTransactionView(MovementsViewsTestCase):
         assert resp.status_code == 200, resp.data
         trans.refresh_from_db()
 
-        movements = trans.get_movements()
+        movements = trans.get_movements_specs()
         assert len(movements) == 3
         assert [x.money for x in movements] == \
             [Money(100, cur), Money(50, cur), Money(-150, cur)]

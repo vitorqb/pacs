@@ -13,7 +13,10 @@ from currencies.management.commands.populate_currencies import (
     currency_populator,
     CURRENCIES_DATA
 )
-
+from currencies.tests.factories import CurrencyTestFactory
+from currencies.money import Money
+from movements.tests.factories import TransactionTestFactory
+from movements.models import MovementSpec
 
 
 class FunctionalTests(StaticLiveServerTestCase):
@@ -213,3 +216,21 @@ class FunctionalTests(StaticLiveServerTestCase):
         get_trans_resp = self.get_json("/transactions/")
         assert len(get_trans_resp) == 1
         assert get_trans_resp[0]['date'] == trans_raw_data['date']
+
+    def test_check_balance_and_add_transaction(self):
+        # The user has two accounts he uses, with two transactions between them
+        cur = CurrencyTestFactory()
+        accs = AccountTestFactory.create_batch(2, acc_type=AccTypeEnum.LEAF)
+        transactions = [
+            TransactionTestFactory(movements_specs=[
+                MovementSpec(accs[0], Money(100, cur)),
+                MovementSpec(accs[1], Money(-100, cur))
+            ]),
+            TransactionTestFactory(movements_specs=[
+                MovementSpec(accs[0], Money(22, cur)),
+                MovementSpec(accs[1], Money(-22, cur))
+            ])
+        ]
+
+        # He enters and see the transactions
+        self.fail()

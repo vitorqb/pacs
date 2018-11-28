@@ -1,7 +1,7 @@
 """ Test factories for Accounts """
 import factory as f
 from faker import Faker
-from accounts.models import Account, AccountType, get_root_acc
+from accounts.models import Account, AccountType, get_root_acc, AccTypeEnum, AccountFactory
 
 
 # Custom faker w/ controlable seed
@@ -14,5 +14,9 @@ class AccountTestFactory(f.DjangoModelFactory):
         model = Account
 
     name = f.Sequence(lambda *a: faker.name())
-    acc_type = f.LazyAttribute(lambda *a: AccountType.objects.get(name='Leaf'))
+    acc_type = f.LazyAttribute(lambda *a: AccTypeEnum.LEAF)
     parent = f.LazyAttribute(lambda *a: get_root_acc())
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        return AccountFactory()(*args, **kwargs)

@@ -11,7 +11,7 @@ from movements.serializers import TransactionSerializer, MovementSpecSerializer
 from movements.models import Transaction, MovementSpec
 from .factories import TransactionTestFactory, MovementSpecTestFactory
 from accounts.tests.factories import AccountTestFactory
-from accounts.models import AccountType
+from accounts.models import AccountType, AccTypeEnum
 from accounts.management.commands.populate_accounts import (
     account_type_populator,
     account_populator
@@ -34,8 +34,10 @@ class TestTransactionView(MovementsViewsTestCase):
         super().setUp()
         # Some default data for the post request
         self.populate_accounts()
-        self.acc_type_leaf = AccountType.objects.get(name="Leaf")
-        self.accs = AccountTestFactory.create_batch(2, acc_type=self.acc_type_leaf)
+        self.accs = AccountTestFactory.create_batch(
+            2,
+            acc_type=AccTypeEnum.LEAF
+        )
         self.cur = CurrencyTestFactory()
         self.moneys = [Money(200, self.cur), Money(-200, self.cur)]
         self.movements_specs = [
@@ -133,8 +135,10 @@ class TestTransactionView(MovementsViewsTestCase):
             resp.json()['movements_specs']
 
     def test_patch_transaction(self):
-        acc_type_leaf = AccountType.objects.get(name="Leaf")
-        accs = AccountTestFactory.create_batch(3, acc_type=acc_type_leaf)
+        accs = AccountTestFactory.create_batch(
+            3,
+            acc_type=AccTypeEnum.LEAF
+        )
         cur = CurrencyTestFactory()
         trans = TransactionTestFactory()
         new_movements = [MovementSpecSerializer(x).data for x in (

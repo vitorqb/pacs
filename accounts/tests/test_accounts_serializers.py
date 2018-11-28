@@ -89,9 +89,7 @@ class TestAccountSerializer_update(PacsTestCase):
         assert 'acc_type' in e.exception.detail
 
     def test_update_name_and_parent(self):
-        other_acc = AccountTestFactory(
-            acc_type=AccountType.objects.get(name=AccTypeEnum.BRANCH.value)
-        )
+        other_acc = AccountTestFactory(acc_type=AccTypeEnum.BRANCH)
         new_name = "New name"
         assert self.acc.get_name != new_name
 
@@ -104,9 +102,7 @@ class TestAccountSerializer_update(PacsTestCase):
         assert self.acc.get_parent() == other_acc
 
     def test_update_parent_that_cant_have_child_raises_err(self):
-        new_parent = AccountTestFactory(
-            acc_type=AccountType.objects.get(name=AccTypeEnum.LEAF.value)
-        )
+        new_parent = AccountTestFactory(acc_type=AccTypeEnum.LEAF)
         assert new_parent.allows_children() is False
 
         self.data['parent'] = new_parent.pk

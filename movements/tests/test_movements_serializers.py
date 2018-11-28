@@ -6,7 +6,7 @@ from common.test import PacsTestCase
 from movements.serializers import TransactionSerializer, MovementSpecSerializer
 from movements.models import MovementSpec, Movement
 from accounts.tests.factories import AccountTestFactory
-from accounts.models import AccountType
+from accounts.models import AccountType, AccTypeEnum
 from accounts.management.commands.populate_accounts import (
     account_type_populator,
     account_populator
@@ -27,8 +27,7 @@ class TestMovementSpecSerializer(MovementsSerializersTestCase):
 
     def setUp(self):
         super().setUp()
-        acc_type_leaf = AccountType.objects.get(name='Leaf')
-        self.acc = AccountTestFactory(acc_type=acc_type_leaf)
+        self.acc = AccountTestFactory(acc_type=AccTypeEnum.LEAF)
         self.money = MoneyTestFactory()
         self.data = {
             "account": self.acc.pk,
@@ -49,8 +48,10 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
 
     def setUp(self):
         super().setUp()
-        acc_type_leaf = AccountType.objects.get(name='Leaf')
-        self.accs = AccountTestFactory.create_batch(3, acc_type=acc_type_leaf)
+        self.accs = AccountTestFactory.create_batch(
+            3,
+            acc_type=AccTypeEnum.LEAF
+        )
         self.curs = CurrencyTestFactory.create_batch(2)
         self.moneys = [
             Money(10, self.curs[0]),

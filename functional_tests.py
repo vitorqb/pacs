@@ -115,7 +115,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         cur_acc = AccountTestFactory(
             name="Current Account",
             parent=root,
-            acc_type=AccountType.objects.get(name="Leaf")
+            acc_type=AccTypeEnum.LEAF
         )
 
         # Now it wants to have Current Accounts as a child of Root, and

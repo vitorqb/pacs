@@ -94,7 +94,7 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
     def test_update_description(self):
         obj = self.create()
 
-        self.data['description'] = 'Aloha!!!!'
+        self.data['description'] = 'Alohasdsa'
         new_obj = self.update(obj)
 
         assert new_obj.pk == obj.pk

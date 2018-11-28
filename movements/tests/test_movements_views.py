@@ -30,6 +30,27 @@ class MovementsViewsTestCase(PacsTestCase):
 
 class TestTransactionView(MovementsViewsTestCase):
 
+    def setUp(self):
+        super().setUp()
+        # Some default data for the post request
+        self.populate_accounts()
+        self.acc_type_leaf = AccountType.objects.get(name="Leaf")
+        self.accs = AccountTestFactory.create_batch(2, acc_type=self.acc_type_leaf)
+        self.cur = CurrencyTestFactory()
+        self.moneys = [Money(200, self.cur), Money(-200, self.cur)]
+        self.movements_specs = [
+            MovementSpec(self.accs[0], self.moneys[0]),
+            MovementSpec(self.accs[1], self.moneys[1])
+        ]
+        self.post_data = {
+            'description': 'A',
+            'date': date(2018, 12, 21),
+            'movements_specs': [
+                MovementSpecSerializer(self.movements_specs[0]).data,
+                MovementSpecSerializer(self.movements_specs[1]).data
+            ]
+        }
+
     def test_url_resolves_to_view_function(self):
         assert resolve('/transactions/').func.cls == TransactionViewSet
 
@@ -45,7 +66,6 @@ class TestTransactionView(MovementsViewsTestCase):
             [TransactionSerializer(x).data for x in Transaction.objects.all()]
 
     def test_get_single_transaction(self):
-        self.populate_accounts()
         transactions = TransactionTestFactory.create_batch(2)
         assert self.client.get(f'/transactions/{transactions[0].pk}/').json() == \
             TransactionSerializer(transactions[0]).data
@@ -57,27 +77,10 @@ class TestTransactionView(MovementsViewsTestCase):
     def test_post_single_transaction(self):
         # !!!! TODO -> Dont hardcode 'Leaf' here. Instead allow passing
         # !!!! AccTypeEnum.LEAF to the factory.
-        self.populate_accounts()
-        acc_type_leaf = AccountType.objects.get(name="Leaf")
-        accs = AccountTestFactory.create_batch(2, acc_type=acc_type_leaf)
-        cur = CurrencyTestFactory()
-        moneys = [Money(200, cur), Money(-200, cur)]
-        movements_specs = [
-            MovementSpec(accs[0], moneys[0]),
-            MovementSpec(accs[1], moneys[1])
-        ]
-        data = {
-            'description': 'A',
-            'date': date(2018, 12, 21),
-            'movements_specs': [
-                MovementSpecSerializer(movements_specs[0]).data,
-                MovementSpecSerializer(movements_specs[1]).data
-            ]
-        }
-        resp = self.client.post('/transactions/', data)
+        resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 201, resp.data
         assert resp.json()['date'] == '2018-12-21'
-        assert resp.json()['description'] == data['description']
+        assert resp.json()['description'] == self.post_data['description']
 
         obj = Transaction.objects.get(pk=resp.json()['pk'])
 
@@ -85,39 +88,29 @@ class TestTransactionView(MovementsViewsTestCase):
         assert obj.date == date(2018, 12, 21)
 
         assert obj.get_movements() == [
-            MovementSpec(accs[0], Money(200, cur)),
-            MovementSpec(accs[1], Money(-200, cur))
+            MovementSpec(self.accs[0], Money(200, self.cur)),
+            MovementSpec(self.accs[1], Money(-200, self.cur))
         ]
 
     def test_post_transaction_with_empty_movements_returns_error(self):
-        data = {
-            'description': 'B',
-            'date': date(1993, 11, 23),
-            'movements_specs': []
-        }
-        resp = self.client.post('/transactions/', data)
+        self.post_data['movements_specs'] = []
+        resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json(), resp.json()
         assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
             resp.json()['movements_specs']
 
     def test_post_transaction_with_one_single_movements_returns_error(self):
-        self.populate_accounts()
-        data = {
-            'description': 'B',
-            'date': date(1993, 11, 23),
-            'movements_specs': [
-                MovementSpecSerializer(MovementSpecTestFactory()).data
-            ]
-        }
-        resp = self.client.post('/transactions/', data)
+        self.post_data['movements_specs'] = [
+            MovementSpecSerializer(MovementSpecTestFactory()).data
+        ]
+        resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json(), resp.json()
         assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
             resp.json()['movements_specs']
 
     def test_patch_transaction(self):
-        self.populate_accounts()
         acc_type_leaf = AccountType.objects.get(name="Leaf")
         accs = AccountTestFactory.create_batch(3, acc_type=acc_type_leaf)
         cur = CurrencyTestFactory()
@@ -140,7 +133,6 @@ class TestTransactionView(MovementsViewsTestCase):
             [Money(100, cur), Money(50, cur), Money(-150, cur)]
 
     def test_delete_transaction(self):
-        self.populate_accounts()
         trans = TransactionTestFactory()
         trans_pk = trans.pk
         self.client.delete(f'/transactions/{trans.id}/')

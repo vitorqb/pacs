@@ -16,6 +16,7 @@ from accounts.management.commands.populate_accounts import (
 )
 from currencies.tests.factories import CurrencyTestFactory
 from currencies.money import Money
+from currencies.serializers import MoneySerializer
 
 
 class MovementsViewsTestCase(PacsTestCase):
@@ -59,24 +60,17 @@ class TestTransactionView(MovementsViewsTestCase):
         acc_type_leaf = AccountType.objects.get(name="Leaf")
         accs = AccountTestFactory.create_batch(2, acc_type=acc_type_leaf)
         cur = CurrencyTestFactory()
+        moneys = [Money(200, cur), Money(-200, cur)]
+        movements_specs = [
+            MovementSpec(accs[0], moneys[0]),
+            MovementSpec(accs[1], moneys[1])
+        ]
         data = {
             'description': 'A',
             'date': date(2018, 12, 21),
             'movements_specs': [
-                {
-                    "account": accs[0].pk,
-                    "money": {
-                        "quantity": 200,
-                        "currency": cur.pk
-                    }
-                },
-                {
-                    "account": accs[1].pk,
-                    "money": {
-                        "quantity": -200,
-                        "currency": cur.pk
-                    }
-                }
+                MovementSpecSerializer(movements_specs[0]).data,
+                MovementSpecSerializer(movements_specs[1]).data
             ]
         }
         resp = self.client.post('/transactions/', data)

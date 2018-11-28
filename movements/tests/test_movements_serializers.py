@@ -1,20 +1,19 @@
 from datetime import date
 from decimal import Decimal
 
-# !!!! SMELL -> tests and test_utils?
 from common.test import PacsTestCase
 
 from movements.serializers import TransactionSerializer, MovementSpecSerializer
 from movements.models import MovementSpec, Movement
 from accounts.tests.factories import AccountTestFactory
 from accounts.models import AccountType
-# !!!! SMELL -> A better way to do this?
 from accounts.management.commands.populate_accounts import (
     account_type_populator,
     account_populator
 )
-from currencies.tests.factories import CurrencyTestFactory
+from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
 from currencies.money import Money
+from currencies.serializers import MoneySerializer
 
 
 class MovementsSerializersTestCase(PacsTestCase):
@@ -30,14 +29,10 @@ class TestMovementSpecSerializer(MovementsSerializersTestCase):
         super().setUp()
         acc_type_leaf = AccountType.objects.get(name='Leaf')
         self.acc = AccountTestFactory(acc_type=acc_type_leaf)
-        self.cur = CurrencyTestFactory()
+        self.money = MoneyTestFactory()
         self.data = {
             "account": self.acc.pk,
-            # !!!! SMELL -> User MoneySerializer?
-            "money": {
-                "quantity": 12,
-                "currency": self.cur.pk
-            }
+            "money": MoneySerializer(self.money).data
         }
 
     def create(self):
@@ -47,7 +42,7 @@ class TestMovementSpecSerializer(MovementsSerializersTestCase):
         return ser.save()
 
     def test_create_base(self):
-        assert self.create() == MovementSpec(self.acc, Money(12, self.cur))
+        assert self.create() == MovementSpec(self.acc, self.money)
 
 
 class TransactionSerializerTest(MovementsSerializersTestCase):
@@ -57,24 +52,20 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
         acc_type_leaf = AccountType.objects.get(name='Leaf')
         self.accs = AccountTestFactory.create_batch(3, acc_type=acc_type_leaf)
         self.curs = CurrencyTestFactory.create_batch(2)
+        self.moneys = [
+            Money(10, self.curs[0]),
+            Money(-8, self.curs[1])
+        ]
+        self.movements_specs = [
+            MovementSpec(self.accs[0], self.moneys[0]),
+            MovementSpec(self.accs[1], self.moneys[1])
+        ]
         self.data = {
             'description': 'hola',
             'date': date(1993, 11, 23),
             'movements_specs': [
-                {
-                    "account": self.accs[0].pk,
-                    "money": {
-                        "quantity": 10,
-                        "currency": self.curs[0].pk
-                    }
-                },
-                {
-                    "account": self.accs[1].pk,
-                    "money": {
-                        "quantity": -8,
-                        "currency": self.curs[1].pk
-                    }
-                }
+                MovementSpecSerializer(self.movements_specs[0]).data,
+                MovementSpecSerializer(self.movements_specs[1]).data
             ]
         }
 

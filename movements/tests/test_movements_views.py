@@ -36,11 +36,13 @@ class TestTransactionView(MovementsViewsTestCase):
         assert resolver.kwargs == {'pk': '12'}
 
     def test_get_transactions(self):
+        self.populate_accounts()
         TransactionTestFactory.create_batch(5)
         assert self.client.get('/transactions/').json() == \
             [TransactionSerializer(x).data for x in Transaction.objects.all()]
 
     def test_get_single_transaction(self):
+        self.populate_accounts()
         transactions = TransactionTestFactory.create_batch(2)
         assert self.client.get(f'/transactions/{transactions[0].pk}/').json() == \
             TransactionSerializer(transactions[0]).data
@@ -116,6 +118,7 @@ class TestTransactionView(MovementsViewsTestCase):
             [Money(100, cur), Money(50, cur), Money(-150, cur)]
 
     def test_delete_transaction(self):
+        self.populate_accounts()
         trans = TransactionTestFactory()
         trans_pk = trans.pk
         self.client.delete(f'/transactions/{trans.id}/')

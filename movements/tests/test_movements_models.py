@@ -3,22 +3,17 @@ from pyrsistent import v, freeze, pvector
 from django.core.exceptions import ValidationError
 from common.models import list_to_queryset
 from common.test import PacsTestCase
-from common.test_utils import (
-    TransactionBuilder,
-    MovementSpecBuilder,
-    CurrencyBuilder,
-    AccountBuilder
-)
 from movements.models import Movement, MovementSpec, TransactionFactory, Transaction
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.management.commands.populate_accounts import (
     account_populator,
     account_type_populator
 )
+from accounts.tests.factories import AccountTestFactory
 from currencies.money import Money
 from currencies.management.commands.populate_currencies import currency_populator
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
-from .factories import MovementSpecTestFactory
+from .factories import MovementSpecTestFactory, TransactionTestFactory
 from datetime import date
 
 
@@ -38,7 +33,7 @@ class TestTransactionQueryset_filter_more_than_one_currency(
     def test_contains(self):
         mov_specs = freeze(MovementSpecTestFactory.create_batch(2))
         assert len(set(x.money.currency for x in mov_specs)) > 1
-        trans = TransactionBuilder()(movements_specs=mov_specs)
+        trans = TransactionTestFactory(movements_specs=mov_specs)
         res = list_to_queryset([trans]).filter_more_than_one_currency()
         assert list(res) == [trans]
 
@@ -50,7 +45,7 @@ class TestTransactionQueryset_filter_more_than_one_currency(
         )
         mov_specs = pvector(MovementSpecTestFactory(money=m) for m in moneys)
         assert len(set(x.money.currency for x in mov_specs)) == 1
-        trans = TransactionBuilder()(movements_specs=mov_specs)
+        trans = TransactionTestFactory(movements_specs=mov_specs)
         res = list_to_queryset([trans]).filter_more_than_one_currency()
         assert list(res) == []
 
@@ -61,12 +56,12 @@ class TestTransactionQueryset_filter_by_currency(MovementsModelsTestCase):
         curs = CurrencyTestFactory.create_batch(2)
         moneys = pvector(MoneyTestFactory(currency=c) for c in curs)
         mov_specs = pvector(MovementSpecTestFactory(money=m) for m in moneys)
-        trans = TransactionBuilder()(movements_specs=mov_specs)
+        trans = TransactionTestFactory(movements_specs=mov_specs)
         assert list(list_to_queryset([trans]).filter_by_currency(curs[0])) ==\
             [trans]
         assert list(list_to_queryset([trans]).filter_by_currency(curs[1])) ==\
             [trans]
-        other_cur = CurrencyBuilder()()
+        other_cur = CurrencyTestFactory()
         assert list(list_to_queryset([trans]).filter_by_currency(other_cur)) ==\
             list()
 
@@ -131,13 +126,12 @@ class TestTransactionFactory(MovementsModelsTestCase):
 class TestTransactionModel(MovementsModelsTestCase):
 
     def test_set_movements_base(self):
-        cur = CurrencyBuilder()()
-        acc_builder = AccountBuilder()
+        cur = CurrencyTestFactory()
         values = ((Decimal(1) / Decimal(3)), (Decimal(2) / Decimal(3)), Decimal(-1))
         moneys = [Money(val, cur) for val in values]
-        accs = (acc_builder(), acc_builder(), acc_builder())
+        accs = AccountTestFactory.create_batch(3)
         mov_specs = [MovementSpec(acc, money) for acc, money in zip(accs, moneys)]
-        trans = TransactionBuilder()()
+        trans = TransactionTestFactory()
         assert trans.get_movements() != mov_specs
         trans.set_movements(mov_specs)
         assert trans.get_movements() == mov_specs

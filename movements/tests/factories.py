@@ -1,7 +1,7 @@
 """ Test factories for Movements """
 import factory as f
 from faker import Faker
-from movements.models import MovementSpec, Transaction
+from movements.models import MovementSpec, Transaction, TransactionFactory
 from accounts.tests.factories import AccountTestFactory
 from currencies.tests.factories import MoneyTestFactory
 
@@ -24,4 +24,12 @@ class TransactionTestFactory(f.DjangoModelFactory):
         model = Transaction
 
     description = faker.text()
-    date = faker.date()
+    date_ = faker.date()
+    movements_specs = f.List([
+        f.SubFactory(MovementSpecTestFactory),
+        f.SubFactory(MovementSpecTestFactory)
+    ])
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        return TransactionFactory()(*args, **kwargs)

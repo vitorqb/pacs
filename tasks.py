@@ -1,7 +1,9 @@
 from invoke import task
+import os
 
 
 FUNCTIONAL_TESTS_PATH = "functional_tests.py"
+ROOTDIT = os.path.abspath(os.path.dirname(__file__))
 
 
 @task
@@ -20,3 +22,10 @@ def func_test(c, opts=""):
 def test(c, opts=""):
     """ Runs functional and unit tests """
     c.run(f"pytest . {opts}", pty=True)
+
+
+@task
+def runserver(c):
+    """ Runs the development server """
+    with c.cd(ROOTDIT):
+        c.run(f"python manage.py runserver_plus --print-sql", pty=True)

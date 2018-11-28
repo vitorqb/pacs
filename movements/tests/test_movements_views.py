@@ -71,8 +71,6 @@ class TestTransactionView(MovementsViewsTestCase):
             TransactionSerializer(transactions[0]).data
 
     def test_post_single_transaction(self):
-        # !!!! TODO -> Dont hardcode 'Leaf' here. Instead allow passing
-        # !!!! AccTypeEnum.LEAF to the factory.
         resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 201, resp.data
         assert resp.json()['date'] == '2018-12-21'

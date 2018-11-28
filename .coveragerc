@@ -1,0 +1,15 @@
+[run]
+omit =
+     */migrations/*
+     */test_*
+     tasks.py
+     wsgi.py
+     manage.py
+
+[report]
+omit =
+     */migrations/*
+     */tests/*
+     tasks.py
+     wsgi.py
+     manage.py

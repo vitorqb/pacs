@@ -105,19 +105,22 @@ class Transaction(m.Model):
         full_clean_and_save(self)
 
     def _validate_movements_specs(self, movements_specs):
+        def fail(msg):
+            raise ValidationError({'movements_specs': msg})
+
+        # At least 2 movements are needed
         if len(movements_specs) < 2:
-            raise ValidationError(
-                {'movements_specs': self.ERR_MSGS['TWO_OR_MORE_MOVEMENTS']}
-            )
+            fail(self.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'])
+
+        # Single account is not allowed
         if len(set(x.account for x in movements_specs)) <= 1:
-            raise ValidationError(self.ERR_MSGS['SINGLE_ACCOUNT'])
+            return fail(self.ERR_MSGS['SINGLE_ACCOUNT'])
+
         # If movements have a single currency, the value must sum up to 0
         if len(set(x.money.currency for x in movements_specs)) == 1:
             value = sum(x.money.quantity for x in movements_specs)
             if value.quantize(Decimal(1)) != 0:
-                msg = self.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
-                field = 'movements_specs'
-                raise ValidationError({field: msg})
+                fail(self.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY'])
 
     def _convert_specs(self, mov_spec):
         """ Converts a MovementSpec into a Movement for self. """

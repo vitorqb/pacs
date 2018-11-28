@@ -70,8 +70,6 @@ class TestTransactionView(MovementsViewsTestCase):
         assert self.client.get(f'/transactions/{transactions[0].pk}/').json() == \
             TransactionSerializer(transactions[0]).data
 
-    # !!!! TODO -> Add test not allowing creating transactions that have a single
-    # !!!! account.
     def test_post_single_transaction(self):
         # !!!! TODO -> Dont hardcode 'Leaf' here. Instead allow passing
         # !!!! AccTypeEnum.LEAF to the factory.
@@ -106,6 +104,18 @@ class TestTransactionView(MovementsViewsTestCase):
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json(), resp.json()
         assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
+            resp.json()['movements_specs']
+
+    def test_post_single_account_raises_err(self):
+        acc = AccountTestFactory()
+        movements_specs = MovementSpecTestFactory.create_batch(3, account=acc)
+        self.post_data['movements_specs'] = [
+            MovementSpecSerializer(x).data for x in movements_specs
+        ]
+        resp = self.client.post('/transactions/', self.post_data)
+        assert resp.status_code == 400
+        assert 'movements_specs' in resp.json()
+        assert Transaction.ERR_MSGS['SINGLE_ACCOUNT'] in \
             resp.json()['movements_specs']
 
     def test_patch_transaction_with_single_currency_but_unmatched_values_err(self):

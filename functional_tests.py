@@ -56,13 +56,18 @@ class FunctionalTests(StaticLiveServerTestCase):
         assert any(x['name'] == name for x in accs), \
             f"'{name}' not found on account names '{accs}'"
 
+    def assert_is_not_acc_name(self, name):
+        """ Asserts that name is not an acc name returned by a get request """
+        accs = self.get_json('/accounts/')
+        assert all(x['name'] != name for x in accs), \
+            f"'{name}' found on account names '{accs}'"
+
     def test_creates_an_account_hierarchy(self):
         # The user enters and only sees the default accounts there
         resp_accs = self.get_json('/accounts/')
         assert len(resp_accs) == len(ACCOUNT_DATA)
-        resp_accs_names = set(x['name'] for x in resp_accs)
-        exp_accs_names = set(x['name'] for x in ACCOUNT_DATA)
-        assert resp_accs_names == exp_accs_names
+        assert set(x['name'] for x in resp_accs) == \
+            set(x['name'] for x in ACCOUNT_DATA)
 
         # The user decides to add Expenses and Supermarket
         root_acc_pk = next(x['pk'] for x in resp_accs if x['acc_type'] == 'Root')
@@ -79,7 +84,11 @@ class FunctionalTests(StaticLiveServerTestCase):
             "acc_type": "Leaf",
             "parent": expenses_pk
         }
-        self.post_json("/accounts/", supermarket_acc)
+        resp = self.post_json("/accounts/", supermarket_acc)
+
+        assert resp['parent'] == expenses_pk
+        assert resp['acc_type'] == "Leaf"
+        assert resp['name'] == "Supermarket"
 
     def test_user_changes_name_of_account(self):
         # The user had previously creates an account
@@ -88,7 +97,7 @@ class FunctionalTests(StaticLiveServerTestCase):
 
         # Which he sees when he opens the app
         accs_json = self.get_json("/accounts/")
-        assert orig_name in [x['name'] for x in accs_json]
+        assert orig_name in set(x['name'] for x in accs_json)
         acc_data = next(x for x in accs_json if x['name'] == orig_name)
 
         # It now decides to change the name
@@ -97,6 +106,7 @@ class FunctionalTests(StaticLiveServerTestCase):
 
         # And he sees it worked, and he is happy
         self.assert_is_acc_name(new_name)
+        self.assert_is_not_acc_name(orig_name)
 
     def test_user_changes_account_hierarchy(self):
         # The user had previously created an Current Account whose
@@ -123,6 +133,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         )
         # And sees that it worked
         self.assert_is_acc_name("Current Account Itau")
+        self.assert_is_not_acc_name("Current Account")
 
         # He creates the new father for it
         new_cur_acc_data = {
@@ -151,6 +162,7 @@ class FunctionalTests(StaticLiveServerTestCase):
                 "acc_type": "Leaf"
             }
         )
+        self.assert_is_acc_name("Current Account LaCaixa")
 
     def test_first_transaction(self):
         # The user creates two accounts

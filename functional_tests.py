@@ -1,4 +1,5 @@
 import requests
+from datetime import date
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
@@ -17,6 +18,7 @@ from currencies.tests.factories import CurrencyTestFactory
 from currencies.money import Money
 from movements.tests.factories import TransactionTestFactory
 from movements.models import MovementSpec
+from movements.serializers import TransactionSerializer
 
 
 class FunctionalTests(StaticLiveServerTestCase):
@@ -222,15 +224,67 @@ class FunctionalTests(StaticLiveServerTestCase):
         cur = CurrencyTestFactory()
         accs = AccountTestFactory.create_batch(2, acc_type=AccTypeEnum.LEAF)
         transactions = [
-            TransactionTestFactory(movements_specs=[
-                MovementSpec(accs[0], Money(100, cur)),
-                MovementSpec(accs[1], Money(-100, cur))
-            ]),
-            TransactionTestFactory(movements_specs=[
-                MovementSpec(accs[0], Money(22, cur)),
-                MovementSpec(accs[1], Money(-22, cur))
-            ])
+            TransactionTestFactory(
+                date_=date(2018, 1, 2),
+                movements_specs=[
+                    MovementSpec(accs[0], Money(100, cur)),
+                    MovementSpec(accs[1], Money(-100, cur))
+                ]
+            ),
+            TransactionTestFactory(
+                date_=date(2018, 1, 1),
+                movements_specs=[
+                    MovementSpec(accs[0], Money(22, cur)),
+                    MovementSpec(accs[1], Money(-22, cur))
+                ]
+            )
         ]
+        transactions.sort(key=lambda x: x.get_date(), reverse=True)
+        serialized_transactions = \
+            TransactionSerializer(transactions, many=True).data
 
-        # He enters and see the transactions
-        self.fail()
+        # He also has another two accounts with an unrelated transaction
+        other_accs = AccountTestFactory.create_batch(2, acc_type=AccTypeEnum.LEAF)
+        TransactionTestFactory(
+            date_=date(2017, 1, 2),
+            movements_specs=[
+                MovementSpec(other_accs[0], Money(100, cur)),
+                MovementSpec(other_accs[1], Money(-100, cur))
+            ]
+        )
+
+        # He queries ony for transactions involving acc1, and see the
+        # same ones listed, in chronological order
+        assert self.get_json(f"/transactions/?account_id={accs[0].pk}") == \
+            serialized_transactions
+
+        # He adds a new transaction of 10 cur to acc2
+        new_transaction = self.post_json(
+            f"/transactions/",
+            {
+                "description": "New Transaction",
+                "date": "2018-01-03",
+                "movements_specs": [
+                    {
+                        "account": accs[0].pk,
+                        "money": {
+                            "quantity": 10,
+                            "currency": cur.pk
+                        }
+                    },
+                    {
+                        "account": accs[1].pk,
+                        "money": {
+                            "quantity": -10,
+                            "currency": cur.pk
+                        }
+                    }
+                ]
+            }
+        )
+        serialized_transactions.insert(0, new_transaction)
+
+        # He queries again for transactions involving acc1, and see all
+        # of them listed
+        assert self.get_json(f"/transactions/?account_id={accs[0].pk}") == \
+            serialized_transactions

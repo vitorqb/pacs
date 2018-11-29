@@ -67,6 +67,30 @@ class TestTransactionView(MovementsViewsTestCase):
         assert self.client.get('/transactions/').json() == \
             [TransactionSerializer(x).data for x in Transaction.objects.all()]
 
+    def test_get_transaction_returns_in_chronological_order(self):
+        transactions = TransactionTestFactory.create_batch(3)
+        transactions[0].set_date(date(2000, 1, 3))
+        transactions[1].set_date(date(2000, 1, 1))
+        transactions[2].set_date(date(2000, 1, 2))
+        transactions.sort(key=lambda x: x.get_date(), reverse=True)
+        assert self.client.get('/transactions/').json() == \
+            TransactionSerializer(transactions, many=True).data
+
+    def test_get_transaction_filtered_by_account(self):
+        accs = AccountTestFactory.create_batch(2)
+        other_accs = AccountTestFactory.create_batch(2)
+        transaction = TransactionTestFactory(movements_specs=[
+            MovementSpecTestFactory(account=accs[0]),
+            MovementSpecTestFactory(account=accs[1])
+        ])
+        other_transaction = TransactionTestFactory(movements_specs=[
+            MovementSpecTestFactory(account=other_accs[0]),
+            MovementSpecTestFactory(account=other_accs[1])
+        ])
+        assert self.client.get(f'/transactions/?account_id={accs[0].pk}').json() == \
+            TransactionSerializer([transaction], many=True).data
+
+
     def test_get_single_transaction(self):
         transactions = TransactionTestFactory.create_batch(2)
         assert self.client.get(f'/transactions/{transactions[0].pk}/').json() == \

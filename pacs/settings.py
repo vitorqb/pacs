@@ -21,6 +21,8 @@ if DEBUG:
     SECRET_KEY = 'very_secret_key'
     ALLOWED_HOSTS = []
 else:
+    from dotenv import load_dotenv
+    load_dotenv(f'{BASE_DIR}/.env')
     SECRET_KEY = os.environ['PACS_SECRET_KEY']
     ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
     STATIC_ROOT = os.environ['STATIC_ROOT']

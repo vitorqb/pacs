@@ -51,6 +51,7 @@ def deploy(c):
     _create_directories(c, [site_folder, source_folder])
     _git_clone(c, source_folder)
     _prepare_virtualenv(c, venv_folder, source_folder)
+    c.put('.env', f'{source_folder}.env')
     _prepare_static_files(c, source_folder, venv_folder)
 
 

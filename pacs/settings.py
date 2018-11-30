@@ -25,7 +25,7 @@ else:
     load_dotenv(f'{BASE_DIR}/.env')
     SECRET_KEY = os.environ['PACS_SECRET_KEY']
     ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
-    STATIC_ROOT = os.environ['STATIC_ROOT']
+    STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
 
 
 # Application definition

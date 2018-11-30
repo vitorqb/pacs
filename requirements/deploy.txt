@@ -1,2 +1,1 @@
-python-dotenv==0.9.1
 fabric==2.4.0

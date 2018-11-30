@@ -8,6 +8,7 @@ PACS_REPO_URL=... # the url to the repo (for git clone)
 PACS_ALLOWED_HOSTS=... # A list of allowed hosts
 PACS_SECRET_KEY=... # A secret key
 PACS_STATIC_ROOT=... # STATIC_ROOT for django.
+PACS_GUINICORN_SOCKET=... # Where to put the guinicorn socket
 ```
 
 If it is the first deploy, run (as root):

@@ -14,6 +14,7 @@ COMMIT = os.environ['PACS_COMMIT']
 def prepare_server(c):
     _install_server_deps(c)
     _create_pacs_user(c)
+    c.put(".env", "/home/pacs/.env")
 
 
 def _install_server_deps(c):
@@ -53,6 +54,7 @@ def deploy(c):
     _prepare_virtualenv(c, venv_folder, source_folder)
     c.put('.env', f'{source_folder}.env')
     _prepare_static_files(c, source_folder, venv_folder)
+    _update_db(c, source_folder, venv_folder)
 
 
 def _create_directories(c, dirs):
@@ -77,3 +79,51 @@ def _prepare_virtualenv(c, venv_folder, source_folder):
 def _prepare_static_files(c, source_folder, venv_folder):
     with c.prefix(f"cd {source_folder} && source {venv_folder}bin/activate"):
         c.run("python manage.py collectstatic --no-input")
+
+
+def _update_db(c, source_folder, venv_folder):
+    with c.prefix(f"cd {source_folder} && source {venv_folder}bin/activate"):
+        c.run("python manage.py migrate --no-input")
+
+
+@task
+def post_deploy(c):
+    _setup_nginx(c)
+    _setup_gunicorn(c)
+
+
+def _setup_nginx(c):
+    sites_available_folder = "/home/pacs/sites_avaiable"
+    sites_available_file = f"{sites_available_folder}/pacs"
+    sites_enabled_file = f"/etc/nginx/sites-enabled/pacs"
+    tmp_file = "/home/pacs/tmp_nginx"
+
+    # Set up
+    c.run(f"rm -rf {sites_available_folder} && mkdir -p {sites_available_folder}")
+    c.put("nginx.template.config", tmp_file)
+
+    # Action
+    c.run("export $(grep -v '^#' /home/pacs/.env | xargs -0) &&"
+          " envsubst '$PACS_STATIC_ROOT:$PACS_GUINCORN_SOCKET'"
+          f" < {tmp_file}"
+          f" > {sites_available_file}")
+    c.run(f"cat {sites_available_file}")
+    c.run(f"rm -f {sites_enabled_file} &&"
+          f" ln -s {sites_available_file} {sites_enabled_file}")
+    c.run(f"systemctl reload nginx || systemctl start nginx")
+    c.run(f"nginx -t")
+
+    # Tear down
+    c.run(f"rm {tmp_file}")
+
+
+def _setup_gunicorn(c):
+    tmp_file = "/home/pacs/tmp_gunicorn"
+    systemd_file = "/etc/systemd/system/gunicorn-pacs.service"
+
+    c.put(f"./gunicorn-pacs.template.service", tmp_file)
+    c.run(f"export $(grep -v '^#' /home/pacs/.env | xargs -0) &&"
+          f" envsubst <{tmp_file} >{systemd_file}")
+    c.run(f"cat {systemd_file}")
+    c.run(f"systemctl enable gunicorn-pacs")
+    c.run(f"systemctl reload gunicorn-pacs || systemctl start gunicorn-pacs")

@@ -1,3 +1,4 @@
+import os
 import requests
 from datetime import date
 
@@ -28,6 +29,11 @@ class FunctionalTests(StaticLiveServerTestCase):
         account_type_populator()
         account_populator()
         currency_populator()
+
+        # If there is a PACS_STAGING_SERVER, use
+        staging_server_url = os.environ.get('PACS_STAGING_SERVER')
+        if staging_server_url:
+            self.live_server_url = staging_server_url + "/"
 
     def assert_response_status_okay(self, resp):
         """ Asserts that a Response has a 2xx status code """

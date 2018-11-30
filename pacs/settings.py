@@ -15,17 +15,15 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+DEBUG = os.environ.get('PACS_DEBUG', None) is not None
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '&v&8)vw(v_j=o=a1+3g!&cch&3)cq-1$*2etjt6z505ngtpo1q'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+if DEBUG:
+    SECRET_KEY = 'very_secret_key'
+    ALLOWED_HOSTS = []
+else:
+    SECRET_KEY = os.environ['PACS_SECRET_KEY']
+    ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
+    STATIC_ROOT = os.environ['STATIC_ROOT']
 
 
 # Application definition
@@ -48,9 +46,7 @@ INSTALLED_APPS = [
 ]
 
 if DEBUG:
-    INSTALLED_APPS += [
-        'django_extensions'
-    ]
+    INSTALLED_APPS += ['django_extensions']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

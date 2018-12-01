@@ -25,12 +25,12 @@ if DEBUG:
     SECRET_KEY = 'very_secret_key'
     ALLOWED_HOSTS = []
 else:
+    logger.info("Started with DEBUG=False")
     from dotenv import load_dotenv
     load_dotenv(f'{BASE_DIR}/.env')
     SECRET_KEY = os.environ['PACS_SECRET_KEY']
     ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
     STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
-    logger.info("Started with DEBUG=False")
 
 
 # Application definition
@@ -138,7 +138,7 @@ STATIC_URL = '/static/'
 # Logging
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'handlers': {
         'file': {
             'level': 'DEBUG',

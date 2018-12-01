@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import logging
+logger = logging.getLogger('django')
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,6 +21,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEBUG = os.environ.get('PACS_DEBUG', None) is not None
 
 if DEBUG:
+    logger.info("Started with DEBUG=True")
     SECRET_KEY = 'very_secret_key'
     ALLOWED_HOSTS = []
 else:
@@ -26,6 +30,7 @@ else:
     SECRET_KEY = os.environ['PACS_SECRET_KEY']
     ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
     STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
+    logger.info("Started with DEBUG=False")
 
 
 # Application definition

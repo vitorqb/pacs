@@ -34,7 +34,7 @@ else:
 
 
 # Application definition
-
+# !!!! TODO -> Manage login with email
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

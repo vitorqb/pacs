@@ -22,6 +22,7 @@ from movements.models import MovementSpec
 from movements.serializers import TransactionSerializer
 
 
+# !!!! TODO -> adapt tests to staging server?
 class FunctionalTests(StaticLiveServerTestCase):
 
     def setUp(self):

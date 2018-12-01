@@ -136,10 +136,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # Logging
-if not DEBUG:
+if DEBUG is False:
     LOGGING = {
         'version': 1,
-        'disable_existing_loggers': False,
+        'disable_existing_loggers': True,
         'handlers': {
             'file': {
                 'level': 'DEBUG',

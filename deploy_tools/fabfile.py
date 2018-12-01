@@ -84,6 +84,8 @@ def _prepare_static_files(c, source_folder, venv_folder):
 def _update_db(c, source_folder, venv_folder):
     with c.prefix(f"cd {source_folder} && source {venv_folder}bin/activate"):
         c.run("python manage.py migrate --no-input")
+        c.run("python manage.py populate_accounts")
+        c.run("python manage.py populate_currencies")
 
 
 @task

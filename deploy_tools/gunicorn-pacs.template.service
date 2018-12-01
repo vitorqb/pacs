@@ -5,8 +5,9 @@ Description=Gunicorn for pacs
 Restart=on-failure
 User=pacs
 WorkingDirectory=/home/pacs/source/
+EnvironmentFile=/home/pacs/.env
 ExecStart=/home/pacs/venv/bin/gunicorn \
-  --bind unix:/${PACS_GUINCORN_SOCKET} \
+  --bind=unix:${PACS_GUINCORN_SOCKET} \
   pacs.wsgi:application
 
 [Install]

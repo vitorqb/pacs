@@ -90,6 +90,7 @@ def _update_db(c, source_folder, venv_folder):
 def post_deploy(c):
     _setup_nginx(c)
     _setup_gunicorn(c)
+    c.run("reboot")
 
 
 def _setup_nginx(c):
@@ -126,4 +127,5 @@ def _setup_gunicorn(c):
           f" envsubst <{tmp_file} >{systemd_file}")
     c.run(f"cat {systemd_file}")
     c.run(f"systemctl enable gunicorn-pacs")
-    c.run(f"systemctl reload gunicorn-pacs || systemctl start gunicorn-pacs")
+    c.run(f"systemctl stop gunicorn-pacs || :")
+    c.run(f"systemctl start gunicorn-pacs || :")

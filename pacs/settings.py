@@ -12,25 +12,18 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import logging
-logger = logging.getLogger('django')
-
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-DEBUG = os.environ.get('PACS_DEBUG', None) is not None
+# Loads a .env file, if any
+load_dotenv(os.path.join(BASE_DIR, '.env'), verbose=True)
 
-if DEBUG:
-    logger.info("Started with DEBUG=True")
-    SECRET_KEY = 'very_secret_key'
-    ALLOWED_HOSTS = []
-else:
-    logger.info("Started with DEBUG=False")
-    from dotenv import load_dotenv
-    load_dotenv(f'{BASE_DIR}/.env')
-    SECRET_KEY = os.environ['PACS_SECRET_KEY']
-    ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
-    STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
+DEBUG = os.environ.get('PACS_DEBUG', None) is not None
+SECRET_KEY = os.environ['PACS_SECRET_KEY']
+ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
+STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
 
 
 # Application definition
@@ -92,7 +85,7 @@ WSGI_APPLICATION = 'pacs.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.environ['PACS_DB_FILE'],
     }
 }
 

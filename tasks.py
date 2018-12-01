@@ -3,7 +3,7 @@ import os
 
 
 FUNCTIONAL_TESTS_PATH = "functional_tests.py"
-ROOTDIT = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def run_pytest(c, opts):
@@ -30,5 +30,12 @@ def test(c, opts=""):
 @task
 def runserver(c):
     """ Runs the development server """
-    with c.cd(ROOTDIT):
+    with c.cd(ROOT_DIR):
         c.run(f"python manage.py runserver_plus --print-sql", pty=True)
+
+
+@task
+def migrate(c):
+    """ Runs migrations """
+    with c.cd(ROOT_DIR):
+        c.run(f"python manage.py migrate", pty=True)

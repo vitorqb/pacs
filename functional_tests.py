@@ -2,6 +2,7 @@ import os
 import requests
 from datetime import date
 
+from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 from accounts.management.commands.populate_accounts import (
@@ -73,6 +74,17 @@ class FunctionalTests(StaticLiveServerTestCase):
         accs = self.get_json('/accounts/')
         assert all(x['name'] != name for x in accs), \
             f"'{name}' found on account names '{accs}'"
+
+    def test_unlogged_user_cant_make_queries(self):
+        # The user tries to make a query without the header and sees 403
+        url = f'{self.live_server_url}/accounts/'
+        assert requests.get(url).status_code == 403,\
+            "User should have been unauthorized because of no header!"
+
+        # Then he puts the correct token and it works!
+        headers = {'Authentication': f'Token {settings.ADMINT_TOKEN}'}
+        assert requests.get(url, headers=headers).status_code == 200, \
+            "User should have been successfull becase he has the header"
 
     def test_creates_an_account_hierarchy(self):
         # The user enters and only sees the default accounts there

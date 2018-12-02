@@ -25,9 +25,10 @@ SECRET_KEY = os.environ['PACS_SECRET_KEY']
 ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
 STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
 
+# The Token that allows admin to log in
+ADMIN_TOKEN = os.environ['PACS_ADMIN_TOKEN']
 
 # Application definition
-# !!!! TODO -> Manage login with email
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

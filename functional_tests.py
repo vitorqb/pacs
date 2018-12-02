@@ -56,7 +56,6 @@ class _TestRequests():
         return requests.delete(f"{self.url}{path}", headers=self.headers)
 
 
-# !!!! TODO -> adapt tests to staging server?
 class FunctionalTests(StaticLiveServerTestCase):
 
     def setUp(self):
@@ -64,11 +63,6 @@ class FunctionalTests(StaticLiveServerTestCase):
         account_type_populator()
         account_populator()
         currency_populator()
-
-        # If there is a PACS_STAGING_SERVER, use
-        staging_server_url = os.environ.get('PACS_STAGING_SERVER')
-        if staging_server_url:
-            self.live_server_url = staging_server_url
 
         # Sets up a request session with authorization header
         self.requests = _TestRequests(

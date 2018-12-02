@@ -1,12 +1,12 @@
 from django.conf import settings
 
 from rest_framework.test import APIRequestFactory
-from rest_framework.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied
 
 from unittest.mock import Mock
 
 from common.test import PacsTestCase
-from .middlwares import PacsAuthMiddleware
+from .middleware import PacsAuthMiddleware
 
 
 class TestPacsAuthMiddleware(PacsTestCase):

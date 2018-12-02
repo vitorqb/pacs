@@ -41,9 +41,11 @@ INSTALLED_APPS = [
     'django_filters',
 
     'mptt',
+
     'currencies',
     'accounts',
     'movements',
+    'pacs_auth',
 ]
 
 if DEBUG:
@@ -57,6 +59,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Mine
+    'pacs_auth.middleware.PacsAuthMiddleware'
 ]
 
 ROOT_URLCONF = 'pacs.urls'

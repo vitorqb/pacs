@@ -1,6 +1,6 @@
 from django.conf import settings
 
-from rest_framework.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied
 
 
 class PacsAuthMiddleware:

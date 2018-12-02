@@ -1,5 +1,12 @@
-from rest_framework.test import APITestCase
+from django.conf import settings
+
+from rest_framework.test import APITestCase, APIClient
 
 
 class PacsTestCase(APITestCase):
-    pass
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient(
+            HTTP_AUTHORIZATION=f"Token {settings.ADMIN_TOKEN}"
+        )

@@ -1,3 +1,4 @@
+import attr
 import os
 import requests
 from datetime import date
@@ -23,6 +24,38 @@ from movements.models import MovementSpec
 from movements.serializers import TransactionSerializer
 
 
+@attr.s()
+class _TestRequests():
+    """ A wrapper around `requests` to make requests for the
+    testing server """
+
+    # The base url
+    url = attr.ib()
+
+    # Default headers sent in every request
+    headers = attr.ib()
+
+    def get(self, path):
+        return requests.get(f"{self.url}{path}", headers=self.headers)
+
+    def post(self, path, json={}):
+        return requests.post(
+            f"{self.url}{path}",
+            json=json,
+            headers=self.headers
+        )
+
+    def patch(self, path, json={}):
+        return requests.patch(
+            f"{self.url}{path}",
+            json=json,
+            headers=self.headers
+        )
+
+    def delete(self, path):
+        return requests.delete(f"{self.url}{path}", headers=self.headers)
+
+
 # !!!! TODO -> adapt tests to staging server?
 class FunctionalTests(StaticLiveServerTestCase):
 
@@ -37,29 +70,35 @@ class FunctionalTests(StaticLiveServerTestCase):
         if staging_server_url:
             self.live_server_url = staging_server_url
 
+        # Sets up a request session with authorization header
+        self.requests = _TestRequests(
+            self.live_server_url,
+            {'Authorization': f"Token {settings.ADMIN_TOKEN}"}
+        )
+
     def assert_response_status_okay(self, resp):
         """ Asserts that a Response has a 2xx status code """
         assert str(resp.status_code)[0] == "2", \
             f"Response for {resp.url} had status code " +\
             f"{resp.status_code} and not 2xx. \nContent: {resp.content}"
 
-    def get_json(self, url):
+    def get_json(self, path):
         """
         Makes a get request, ensures that it returns 2**, and parses the json
         """
-        resp = requests.get(f"{self.live_server_url}{url}")
+        resp = self.requests.get(f"{path}")
         self.assert_response_status_okay(resp)
         return resp.json()
 
-    def post_json(self, url, json={}):
+    def post_json(self, path, json={}):
         """ Makes a json request, ensures it returns 2**, and parses the json """
-        resp = requests.post(f"{self.live_server_url}{url}", json=json)
+        resp = self.requests.post(f"{path}", json=json)
         self.assert_response_status_okay(resp)
         return resp.json()
 
-    def patch_json(self, url, json={}):
+    def patch_json(self, path, json={}):
         """ Makes a json request, ensures it returns 2**, and parses the json """
-        resp = requests.patch(f"{self.live_server_url}{url}", json=json)
+        resp = self.requests.patch(f"{path}", json=json)
         self.assert_response_status_okay(resp)
         return resp.json()
 
@@ -77,13 +116,14 @@ class FunctionalTests(StaticLiveServerTestCase):
 
     def test_unlogged_user_cant_make_queries(self):
         # The user tries to make a query without the header and sees 403
-        url = f'{self.live_server_url}/accounts/'
-        assert requests.get(url).status_code == 403,\
+        url = f'/accounts/'
+        self.requests.headers = {}
+        assert self.requests.get(url).status_code == 403,\
             "User should have been unauthorized because of no header!"
 
         # Then he puts the correct token and it works!
-        headers = {'Authentication': f'Token {settings.ADMINT_TOKEN}'}
-        assert requests.get(url, headers=headers).status_code == 200, \
+        self.requests.headers = {'Authorization': f'Token {settings.ADMIN_TOKEN}'}
+        assert self.requests.get(url).status_code == 200, \
             "User should have been successfull becase he has the header"
 
     def test_creates_an_account_hierarchy(self):

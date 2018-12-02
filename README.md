@@ -15,6 +15,7 @@ PACS_ALLOWED_HOSTS=... # comma separated ALLOWED_HOSTS for django settings
 PACS_STATIC_ROOT=... # STATIC_ROOT for django settings.
 PACS_DB_FILE=... # The path to the db file (can be relative to cur dir)
 PACS_ADMIN_TOKEN=... # Token used to login as admin
+PACS_LOG_FILE=... # Where to send logs. May have ~.
 ```
 
 See .env.example for an example.

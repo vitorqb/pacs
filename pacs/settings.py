@@ -142,7 +142,7 @@ if DEBUG is False:
             'file': {
                 'level': 'DEBUG',
                 'class': 'logging.FileHandler',
-                'filename': '/home/pacs/django_debug.log',
+                'filename': os.path.expanduser(os.environ['PACS_LOG_FILE'])
             },
         },
         'loggers': {

@@ -55,6 +55,6 @@ class TestTransactionFilterSet(PacsTestCase):
                 acc_type=AccTypeEnum.LEAF,
                 parent=parents[i]
             )
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             qset = Transaction.objects.all()
-            TransactionFilterSet({'account_id': super_parent.id}, qset).qs
+            list(TransactionFilterSet({'account_id': super_parent.id}, qset).qs)

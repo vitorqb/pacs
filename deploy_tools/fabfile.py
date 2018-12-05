@@ -49,7 +49,7 @@ def deploy(c):
 def _install_server_deps(c):
     """ Install all dependencies from apt-get """
     apt_get_cmd = "apt-get --no-upgrade --assume-yes"
-    deps = 'nginx python3.6 python-virtualenv make'
+    deps = 'nginx python3.6 python-virtualenv make git'
     c.run(f"{apt_get_cmd} update")
     c.run(f'{apt_get_cmd} install {deps}')
 

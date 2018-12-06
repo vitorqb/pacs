@@ -7,7 +7,7 @@ load_dotenv('.env', verbose=True)
 
 
 @task
-def deploy(c, skip_reboot=False):
+def deploy(c):
     """
     Runs a full deploy. This is intended to be indepotent (but we don't make
     any promises). Steps include:
@@ -43,13 +43,7 @@ def deploy(c, skip_reboot=False):
     _update_db(c, venv_folder, source_folder)
     _setup_nginx(c, source_folder)
     _setup_gunicorn(c, source_folder)
-    if skip_reboot is True:
-        c.run("systemctl stop nginx || :")
-        c.run("systemctl start nginx || :")
-        c.run("systemctl stop gunicorn-pacs || :")
-        c.run("systemctl start gunicorn-pacs || :")
-    else:
-        c.run("reboot")
+    c.run("reboot")
 
 
 def _install_server_deps(c):

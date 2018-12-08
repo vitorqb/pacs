@@ -6,3 +6,4 @@ django-mptt==0.9.1
 django-filter==2.0.0
 python-dotenv==0.9.1
 gunicorn==19.9.0
+django-cors-headers==2.4.0

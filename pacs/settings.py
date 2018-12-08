@@ -28,6 +28,9 @@ STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
 # The Token that allows admin to log in
 ADMIN_TOKEN = os.environ['PACS_ADMIN_TOKEN']
 
+# We allow all since we use a security token anyway
+CORS_ORIGIN_ALLOW_ALL = True
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',

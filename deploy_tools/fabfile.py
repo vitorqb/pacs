@@ -25,6 +25,7 @@ def deploy(c):
     repo_url = os.environ['PACS_REPO_URL']
     commit = os.environ['PACS_COMMIT']
     log_file = os.path.expanduser(os.environ['PACS_LOG_FILE'])
+    db_file = os.path.expanduser(os.environ['PACS_DB_FILE'])
     site_folder = f"/home/pacs/site/"
     venv_folder = f"/home/pacs/venv/"
     source_folder = f"/home/pacs/source/"
@@ -38,6 +39,8 @@ def deploy(c):
     c.run(f'ln -s /home/pacs/.env {source_folder}.env')
     # Allows pacs to own the log file
     c.run(f"touch {log_file} && chown pacs {log_file}")
+    # And the database
+    c.run(f"touch {db_file} && chown pacs {db_file}")
     _prepare_virtualenv(c, venv_folder, source_folder)
     _prepare_static_files(c, venv_folder, source_folder)
     _update_db(c, venv_folder, source_folder)

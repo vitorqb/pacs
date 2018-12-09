@@ -143,7 +143,7 @@ STATIC_URL = '/static/'
 if DEBUG is False:
     LOGGING = {
         'version': 1,
-        'disable_existing_loggers': True,
+        'disable_existing_loggers': False,
         'handlers': {
             'file': {
                 'level': 'DEBUG',
@@ -153,6 +153,11 @@ if DEBUG is False:
         },
         'loggers': {
             '': {
+                'handlers': ['file'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+            'django': {
                 'handlers': ['file'],
                 'level': 'DEBUG',
                 'propagate': True,

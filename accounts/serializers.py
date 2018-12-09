@@ -24,7 +24,7 @@ class AccTypeField(Field):
 
 
 class AccountSerializer(ModelSerializer):
-    acc_type = AccTypeField(source="get_acc_type", required=False)
+    acc_type = AccTypeField(source="get_acc_type")
 
     class Meta:
         model = Account

@@ -68,6 +68,14 @@ class TestAccountViewset(AccountViewTestCase):
         assert resp.status_code == 201, resp.data
         assert Account.objects.filter(name="MyAcc").exists()
 
+    def test_post_for_new_account_with_wrong_name(self):
+        self.populate_accounts()
+        # Notice that we are sending accType and not acc_type
+        acc_data = {"name": "MyAcc", "accType": "Leaf", "parent": 1}
+        resp = self.client.post("/accounts/", acc_data)
+        assert resp.status_code == 400
+        assert "acc_type" in resp.json()
+
     def test_patch_account(self):
         self.populate_accounts()
         acc = AccountTestFactory()

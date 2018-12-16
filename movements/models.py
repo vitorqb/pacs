@@ -141,7 +141,7 @@ class MovementSpec():
     def _account_validator(self, attribute, account):
         if account.allows_movements() is False:
             m = "Account '{}' does not allow movements".format(account.name)
-            return ValidationError(m)
+            raise ValidationError(m)
 
     money = attr.ib()
 

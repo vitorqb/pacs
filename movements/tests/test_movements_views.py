@@ -96,6 +96,14 @@ class TestTransactionView(MovementsViewsTestCase):
         assert self.client.get(f'/transactions/{transactions[0].pk}/').json() == \
             TransactionSerializer(transactions[0]).data
 
+    def test_post_with_account_that_does_not_allow_children_raises_err(self):
+        acc_branch = AccountTestFactory(acc_type=AccTypeEnum.BRANCH)
+        assert acc_branch.allows_movements() is False
+        self.post_data['movements_specs'][0]['account'] = acc_branch.pk
+        resp = self.client.post('/transactions/', self.post_data)
+        assert resp.status_code == 400
+        assert 'does not allow movements' in resp.json()[0]
+
     def test_post_single_transaction(self):
         resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 201, resp.data

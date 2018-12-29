@@ -36,6 +36,8 @@ class AccountSerializer(ModelSerializer):
         return AccountFactory()(**validated_data)
 
     def update(self, instance, validated_data):
+        # !!!! TODO -> Only raise ValidationError if acc_type different than
+        # !!!!         the instance one!
         if 'get_acc_type' in validated_data:
             raise ValidationError({'acc_type': 'This field is imutable'})
         if 'name' in validated_data:

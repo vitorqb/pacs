@@ -5,3 +5,4 @@ pytest-cov==2.6.0
 invoke==1.2.0
 django-extensions==2.1.4
 Werkzeug==0.14.1
+isort==4.3.4

@@ -10,10 +10,17 @@ def run_pytest(c, opts):
     c.run(f"pytest {opts} --cov=.", pty=True)
 
 
+def _populate_db(c):
+    with c.cd(ROOT_DIR):
+        c.run("python manage.py populate_accounts")
+        c.run("python manage.py populate_currencies")
+
+
 @task
 def unit_test(c, opts=""):
     """ Calls pytest for all unit tests. """
     run_pytest(c, f"--ignore={FUNCTIONAL_TESTS_PATH} {opts}")
+
 
 @task
 def func_test(c, opts=""):
@@ -28,8 +35,15 @@ def test(c, opts=""):
 
 
 @task
+def populate_db(c):
+    """ Calls the management commands to populate the db """
+    _populate_db(c)
+
+
+@task
 def runserver(c):
     """ Runs the development server """
+    _populate_db(c)
     with c.cd(ROOT_DIR):
         c.run(f"python manage.py runserver_plus --print-sql", pty=True)
 

@@ -1,14 +1,13 @@
-from decimal import Decimal
 import attr
-from pyrsistent import freeze, pvector, v
+from pyrsistent import freeze, pvector
 
 import django.db.models as m
 from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
 
-from common.models import full_clean_and_save, new_cents_field
+from common.models import full_clean_and_save, new_money_quantity_field
+from common.utils import round_decimal
 from currencies.money import Money
-from currencies.models import get_default_currency
 from accounts.models import Account
 
 
@@ -116,7 +115,7 @@ class Transaction(m.Model):
         # If movements have a single currency, the value must sum up to 0
         if len(set(x.money.currency for x in movements_specs)) == 1:
             value = sum(x.money.quantity for x in movements_specs)
-            if value.quantize(Decimal(1)) != 0:
+            if round(value, 3) != 0:
                 fail(self.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY'])
 
     def _convert_specs(self, mov_spec):
@@ -125,7 +124,7 @@ class Transaction(m.Model):
             account=mov_spec.account,
             transaction=self,
             currency=mov_spec.money.currency,
-            quantity=mov_spec.money.quantity
+            quantity=round_decimal(mov_spec.money.quantity)
         ))
 
 
@@ -169,7 +168,7 @@ class Movement(m.Model):
     transaction = m.ForeignKey(Transaction, on_delete=m.CASCADE)
     # currency + quantity forms Money
     currency = m.ForeignKey('currencies.Currency', on_delete=m.CASCADE)
-    quantity = new_cents_field()
+    quantity = new_money_quantity_field()
 
     #
     # django magic

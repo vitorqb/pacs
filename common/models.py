@@ -4,13 +4,19 @@ import django.db.models as m
 from django.core.validators import MinValueValidator
 
 
-N_DECIMAL_PLACES = 5
-N_DECIMAL_MAX_DIGITS = 20
-DECIMAL_PLACES = Decimal('10') ** -N_DECIMAL_PLACES
+# We store decimals with:
+#   - up to 20 digits
+#   - 5 decimal places
+# We COMPARE decimals with:
+#   - 2 decimal places
+N_DECIMAL_PLACES: int = 5
+N_DECIMAL_MAX_DIGITS: int = 20
+DECIMAL_PLACES: int = Decimal('10') ** -N_DECIMAL_PLACES
+N_DECIMAL_COMPARISON: int = 2
 
 
-def new_cents_field():
-    """ Returns a new field to be used as cents """
+def new_money_quantity_field():
+    """ Returns a new field to be used to store currency quantities """
     return m.DecimalField(max_digits=20, decimal_places=N_DECIMAL_PLACES)
 
 

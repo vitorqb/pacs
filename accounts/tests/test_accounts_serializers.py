@@ -83,10 +83,18 @@ class TestAccountSerializer_update(PacsTestCase):
         return ser.save()
 
     def test_acc_type_is_imutable(self):
-        self.data['acc_type'] = AccTypeEnum.BRANCH
+        self.acc = AccountTestFactory(acc_type=AccTypeEnum.LEAF)
+        self.data['acc_type'] = AccTypeEnum.BRANCH.value
         with self.assertRaises(ValidationError) as e:
             self.update()
         assert 'acc_type' in e.exception.detail
+
+    def test_acc_type_does_not_raises_if_equal_to_current(self):
+        self.data['acc_type'] = self.acc.get_acc_type().value
+        try:
+            self.update()
+        except ValidationError as e:
+            self.fail(f"Should not have raised ValidationError: {str(e)}")
 
     def test_update_name_and_parent(self):
         other_acc = AccountTestFactory(acc_type=AccTypeEnum.BRANCH)

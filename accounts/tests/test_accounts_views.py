@@ -90,7 +90,7 @@ class TestAccountViewset(AccountViewTestCase):
 
     def test_patch_account_type_raises_error(self):
         self.populate_accounts()
-        acc = AccountTestFactory()
+        acc = AccountTestFactory(acc_type=AccTypeEnum.BRANCH)
         new_type = AccTypeEnum.LEAF.value
         resp = self.client.patch(
             f"/accounts/{acc.pk}/",

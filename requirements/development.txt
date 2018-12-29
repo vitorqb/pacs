@@ -6,3 +6,5 @@ invoke==1.2.0
 django-extensions==2.1.4
 Werkzeug==0.14.1
 isort==4.3.4
+mypy==0.650
+flake8-mypy==17.8.0

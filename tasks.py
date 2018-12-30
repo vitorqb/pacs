@@ -3,6 +3,7 @@ from functools import partial
 from invoke import task
 from invoke.tasks import Context, Task
 from invoke.runners import Result
+from invoke.exceptions import Exit
 from contextlib import contextmanager
 
 
@@ -26,7 +27,13 @@ class PacsContext:
 
     @contextmanager
     def cd(self, dir_: str):
-        yield self._context.cd(dir_)
+        with self._context.cd(dir_):
+            yield
+
+    @contextmanager
+    def prefix(self, cmd: str):
+        with self._context.prefix(cmd):
+            yield
 
     def run_manage(self, cmd: str, pty: bool = False):
         """ Runs a django management command """
@@ -62,6 +69,26 @@ def _populate_db(c):
 #
 # Tasks
 #
+@pacstask(
+    help={
+        "path": "The path to the virtualenv.",
+        "force": "If set to true, whatever is in path is removed before."
+    }
+)
+def prepare_virtualenv(c, path, force=False):
+    """ Prepares a virtualenv in a path """
+    path_exists = c.run(f'[ -d "{path}" ] || [ -f "{path}" ]').ok
+    if path_exists:
+        if force is not True:
+            raise Exit(f"Path '{path}' exists and force is set to False!")
+        else:
+            c.run(f'rm -rf "{path}"')
+    c.run(f'python -m venv "{path}"')
+    with c.prefix(f'source "{path}/bin/activate"'):
+        c.run(f'pip install --upgrade pip')
+        c.run(f'pip install -r requirements/development.txt')
+
+
 @pacstask()
 def unit_test(c, opts=""):
     """ Calls pytest for all unit tests. """

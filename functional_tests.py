@@ -1,5 +1,4 @@
 import attr
-import os
 import requests
 from datetime import date
 
@@ -12,13 +11,12 @@ from accounts.management.commands.populate_accounts import (
     ACCOUNT_DATA
 )
 from accounts.tests.factories import AccountTestFactory
-from accounts.models import AccTypeEnum, get_root_acc, AccountType
+from accounts.models import AccTypeEnum, get_root_acc
 from currencies.management.commands.populate_currencies import (
     currency_populator,
-    CURRENCIES_DATA
 )
 from currencies.tests.factories import CurrencyTestFactory
-from currencies.money import Money
+from accounting.money import Money
 from movements.tests.factories import TransactionTestFactory
 from movements.models import MovementSpec
 from movements.serializers import TransactionSerializer
@@ -341,3 +339,88 @@ class FunctionalTests(StaticLiveServerTestCase):
         # of them listed
         assert self.get_json(f"/transactions/?account_id={accs[0].pk}") == \
             serialized_transactions
+
+    def test_get_account_journal(self):
+        # The user creates two accounts
+        # !!!! TODO -> Method to query for root account
+        root_acc = next(
+            x for x in self.get_json("/accounts/") if x['acc_type'] == 'Root'
+        )
+        cash_account_data = {
+            "name": "Cash",
+            "acc_type": "Leaf",
+            "parent": root_acc['pk']
+        }
+        cash_account = self.post_json('/accounts/', cash_account_data)
+        bank_account_data = {
+            "name": "Bank",
+            "acc_type": "Leaf",
+            "parent": root_acc['pk']
+        }
+        bank_account = self.post_json('/accounts/', bank_account_data)
+
+        # And two transactions
+        euro = next(
+            x for x in self.get_json("/currencies/") if x['name'] == "Euro"
+        )
+        withdrawal_data = {
+            "description": "withdrawal",
+            "date": "2018-01-01",
+            "movements_specs": [
+                {
+                    "account": bank_account['pk'],
+                    "money": {
+                        "quantity": -100,
+                        "currency": euro['pk']
+                    }
+                },
+                {
+                    "account": cash_account['pk'],
+                    "money": {
+                        "quantity": 100,
+                        "currency": euro['pk']
+                    }
+                }
+            ]
+        }
+        withdrawal = self.post_json('/transactions/', withdrawal_data)
+        deposit_data = {
+            "description": "deposit",
+            "date": "2018-01-02",
+            "movements_specs": [
+                {
+                    "account": cash_account['pk'],
+                    "money": {
+                        "quantity": -25,
+                        "currency": euro['pk']
+                    }
+                },
+                {
+                    "account": bank_account['pk'],
+                    "money": {
+                        "quantity": 25,
+                        "currency": euro['pk']
+                    }
+                }
+            ]
+        }
+        deposit = self.post_json('/transactions/', deposit_data)
+
+        # It queries for the journal of the bank account
+        journal = self.get_json(f'/accounts/{bank_account["pk"]}/journal/')
+
+        # It sees the account pk and both transactions there
+        assert journal['account'] == bank_account['pk']
+        assert len(journal['transactions']) == 2
+
+        # And the balances after each transaction
+        assert journal['balances'][0] == [
+            {"currency": euro['pk'], "quantity": "-100.00000"}
+        ]
+        assert journal['balances'][1] == [
+            {"currency": euro['pk'], "quantity": "-75.00000"}
+        ]
+
+        # And the transactions
+        assert journal['transactions'][0] == withdrawal
+        assert journal['transactions'][1] == deposit

@@ -7,6 +7,7 @@ from movements.filters import TransactionFilterSet
 
 
 class TransactionViewSet(ModelViewSet):
+    # !!!! TODO -> also order by pk
     queryset = Transaction.objects.order_by('-date').all()
     serializer_class = TransactionSerializer
     filter_backends = (filters.DjangoFilterBackend,)

@@ -1,5 +1,6 @@
 from pyrsistent import pvector
 from common.test import PacsTestCase
+from currencies import models as currency_models
 from currencies.models import CurrencyFactory, Currency, get_default_currency
 from currencies.management.commands.populate_currencies import currency_populator
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
@@ -46,6 +47,8 @@ class TestCurrency(CurrencyModelTestCase):
 class TestFun_get_default_currency(CurrencyModelTestCase):
 
     def test_base(self):
+        # Forcely removes cache
+        currency_models._cached_default_currency = None
         dollar = Currency.objects.get(name="Dollar")
         with self.assertNumQueries(1):
             assert get_default_currency() == dollar

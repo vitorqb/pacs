@@ -1,5 +1,7 @@
 from django.urls.base import resolve
 
+from unittest.mock import patch
+
 from rest_framework.test import APIRequestFactory
 
 from common.test import PacsTestCase
@@ -8,6 +10,9 @@ from accounts.serializers import AccountSerializer
 from accounts.views import AccountViewSet
 from accounts.tests.factories import AccountTestFactory
 from accounts.management.commands.populate_accounts import account_populator, account_type_populator
+
+from movements.models import Transaction
+from accounting.balance import Balance
 
 
 class AccountViewTestCase(PacsTestCase):
@@ -32,6 +37,36 @@ class TestAccountViewset(AccountViewTestCase):
         resolver = resolve('/accounts/1/')
         assert resolver.func.cls == AccountViewSet
         assert resolver.kwargs == {'pk': '1'}
+
+    def test_get_count_queries(self):
+        self.populate_accounts()
+        top_accs = AccountTestFactory.create_batch(2, acc_type=AccTypeEnum.BRANCH)
+        lower_accs = [          # noqa
+            *AccountTestFactory.create_batch(
+                3,
+                parent=top_accs[0],
+                acc_type=AccTypeEnum.BRANCH
+            ),
+            *AccountTestFactory.create_batch(
+                2,
+                parent=top_accs[1],
+                acc_type=AccTypeEnum.BRANCH
+            ),
+        ]
+        last_accs = [          # noqa
+            *AccountTestFactory.create_batch(
+                3,
+                parent=lower_accs[0],
+                acc_type=AccTypeEnum.LEAF
+            ),
+            *AccountTestFactory.create_batch(
+                2,
+                parent=lower_accs[2],
+                acc_type=AccTypeEnum.LEAF
+            ),
+        ]
+        with self.assertNumQueries(2):
+            self.client.get('/accounts/')
 
     def test_get_for_list_of_accounts(self):
         self.populate_accounts()
@@ -107,3 +142,30 @@ class TestAccountViewset(AccountViewTestCase):
         resp = self.client.delete(f'/accounts/{acc.pk}/')
         assert resp.status_code == 204
         assert not Account.objects.filter(name=acc.get_name()).exists()
+
+    @patch("accounts.views.JournalSerializer")
+    @patch("accounts.views.Journal")
+    @patch.object(Transaction, "objects")
+    def test_get_journal(
+            self,
+            m_Transaction_objects,
+            m_Journal,
+            m_JournalSerializer
+    ):
+        self.populate_accounts()
+        account = AccountTestFactory()
+        m_JournalSerializer.return_value.data = {"some": "unique value"}
+
+        resp = self.client.get(f"/accounts/{account.pk}/journal/")
+
+        m_qset = Transaction.objects.prefetch_related(
+            "movement_set__currency",
+            "movement_set__account__acc_type"
+        )
+        m_Journal.assert_called_with(
+            account,
+            Balance([]),
+            m_qset.order_by('date').filter_by_account(account)
+        )
+        m_JournalSerializer.assert_called_with(m_Journal())
+        assert resp.json() == m_JournalSerializer().data

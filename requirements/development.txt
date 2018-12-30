@@ -9,3 +9,11 @@ Werkzeug==0.14.1
 isort==4.3.4
 mypy==0.650
 flake8-mypy==17.8.0
+
+# Linting and related
+yapf
+jedi
+rope
+autopep8
+flake8
+black

@@ -52,7 +52,7 @@ def deploy(c):
 def _install_server_deps(c):
     """ Install all dependencies from apt-get """
     apt_get_cmd = "apt-get --no-upgrade --assume-yes"
-    deps = 'nginx python3.6 python-virtualenv make git gettext'
+    deps = 'nginx python3.7 python-virtualenv make git gettext'
     c.run(f"{apt_get_cmd} update")
     c.run(f'{apt_get_cmd} install {deps}')
 
@@ -105,7 +105,7 @@ def _git_clone(c, repo_url, commit, source_folder):
 
 def _prepare_virtualenv(c, venv_folder, source_folder):
     """ Creates a new fresh virtualenv and install all dependencies in it """
-    c.run(f"rm -fr {venv_folder} && virtualenv -p /usr/bin/python3.6 {venv_folder}")
+    c.run(f"rm -fr {venv_folder} && virtualenv -p /usr/bin/python3.7 {venv_folder}")
     with c.prefix(f"cd {source_folder} && source {venv_folder}bin/activate"):
         c.run(f"make requirements")
 

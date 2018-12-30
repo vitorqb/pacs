@@ -1,7 +1,7 @@
 import os
-from decorator import decorate
+from functools import partial
 from invoke import task
-from invoke.tasks import Context
+from invoke.tasks import Context, Task
 from invoke.runners import Result
 from contextlib import contextmanager
 
@@ -33,18 +33,18 @@ class PacsContext:
         self.run(f"python {MANAGE_PATH} {cmd}", pty=pty)
 
 
-def pacstask(*task_args, **task_kwargs):
-    """
-    Same as @task, but parses the first argument to a PacsContext.
-    Differently thank tasks, must ALWAYS be called, even if with no options.
-    i.e. @pacstask() not @pacstask.
-    """
-    def decorator(f):
-        def _pacstask(f, *args, **kwargs):
-            return f(PacsContext(args[0]), *args[1:], **kwargs)
-        out = decorate(f, _pacstask)
-        return task(*task_args, **task_kwargs)(out)
-    return decorator
+class PacsTask(Task):
+    """ We need to subclass otherwise invoke don't detect that it is a Task.
+    We just want to adapt __call__ so that it uses PacsContext instead of
+    Context. """
+    def __call__(self, context: Context, *args, **kwargs):
+        """ Converts the context into a PacsContext """
+        result = self.body(PacsContext(context), *args, **kwargs)
+        self.times_called += 1
+        return result
+
+
+pacstask = partial(task, klass=PacsTask)
 
 
 #

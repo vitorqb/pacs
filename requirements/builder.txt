@@ -1,0 +1,4 @@
+# Those are the requirements to build/deploy!
+invoke
+fabric
+python-dotenv

@@ -4,7 +4,7 @@ from rest_framework.exceptions import ValidationError
 from common.test import PacsTestCase
 from currencies.serializers import CurrencySerializer, MoneySerializer
 from currencies.models import Currency
-from currencies.money import Money
+from accounting.money import Money
 from .factories import CurrencyTestFactory
 
 

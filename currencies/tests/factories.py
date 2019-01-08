@@ -2,7 +2,7 @@
 import factory as f
 from faker import Faker
 from currencies.models import Currency
-from currencies.money import Money
+from accounting.money import Money
 
 
 # Custom faker w/ controlable seed

@@ -12,7 +12,7 @@ from accounts.management.commands.populate_accounts import (
     account_populator
 )
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
-from currencies.money import Money
+from accounting.money import Money
 from currencies.serializers import MoneySerializer
 
 

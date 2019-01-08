@@ -1,6 +1,6 @@
 from rest_framework import serializers as s
+from accounting.money import Money
 from .models import Currency
-from .money import Money
 from common.models import N_DECIMAL_MAX_DIGITS, N_DECIMAL_PLACES
 
 

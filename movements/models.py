@@ -1,5 +1,7 @@
+from __future__ import annotations
 import attr
 from pyrsistent import freeze, pvector
+from typing import List, Dict, Any, Tuple
 
 import django.db.models as m
 from django.db.transaction import atomic
@@ -7,7 +9,9 @@ from rest_framework.exceptions import ValidationError
 
 from common.models import full_clean_and_save, new_money_quantity_field
 from common.utils import round_decimal
-from currencies.money import Money
+from accounting.balance import Balance
+from accounting.money import Money
+from currencies.models import Currency
 from accounts.models import Account
 
 
@@ -27,6 +31,13 @@ class TransactionFactory():
 
 
 class TransactionQuerySet(m.QuerySet):
+
+    def filter_by_account(self, acc):
+        """ Returns only transactions for which a movement uses an account """
+        acc_descendants_pks = list(
+            acc.get_descendants(True).values_list('pk', flat=True)
+        )
+        return self.filter(movement__account__id__in=acc_descendants_pks)
 
     def filter_more_than_one_currency(self):
         """ Filters only by transactions that contain more than
@@ -85,11 +96,23 @@ class Transaction(m.Model):
         self.date = x
         full_clean_and_save(self)
 
-    def get_movements_specs(self):
+    def get_movements_specs(self) -> List[MovementSpec]:
         """ Returns a list of MovementSpec with all movements for this
         transaction """
         movements = self.movement_set.all()
-        return pvector(MovementSpec.from_movement(m) for m in movements)
+        return [MovementSpec.from_movement(m) for m in movements]
+
+    def get_moneys_for_account(self, account: Account) -> List[Money]:
+        """ Returns a list of Money object that represents the impact
+        of this transaction for an account. """
+        acc_descendants_pks = list(
+            account.get_descendants(True).values_list("pk", flat=True)
+        )
+        return [
+            x.money
+            for x in self.get_movements_specs()
+            if x.account.pk in acc_descendants_pks
+        ]
 
     @atomic
     def set_movements(self, movements_specs):
@@ -150,10 +173,42 @@ class MovementSpec():
         return MovementSpec(mov.get_account(), mov.get_money())
 
 
-class MovementManager(m.Manager):
+class MovementQueryset(m.QuerySet):
 
-    def filter_currency(self, cur):
-        return self.filter(currency=cur)
+    def get_balance(self) -> Balance:
+        """ Returns a Balance object considering all movements in this
+        queryset """
+        qset = self.values("currency")
+        qset = qset.annotate(quantity_sum=m.Sum("quantity"))
+        data: List[Dict[str, Any]] = list(qset)
+
+        currencies_ids = set(x['currency'] for x in data)
+        currencies: Dict[int, Currency] = Currency.objects.in_bulk(currencies_ids)
+
+        return Balance([
+            Money(dct['quantity_sum'], currencies[dct['currency']])
+            for dct in data
+        ])
+
+    def get_balance_evolution(
+            self,
+            initial_balance: Balance = Balance([])
+    ) -> List[Tuple['Movement', Balance, Balance]]:
+        """ Given an initial balance, returns a list of movements and
+        balances before in after, in a tuple of the form (Movement,
+        BalanceBefore, BalanceAfter). The list is ordered by date and
+        pk of transaction."""
+        ord_qset = self.order_by("transaction__pk", "transaction__date")
+
+        evolution = []
+        balance_before = initial_balance
+        for movement in ord_qset.iterator():
+            money = movement.get_money()
+            balance_after = balance_before.add_money(money)
+            evolution.append((movement, balance_before, balance_after))
+            balance_before = balance_after
+
+        return evolution
 
 
 class Movement(m.Model):
@@ -167,13 +222,13 @@ class Movement(m.Model):
     account = m.ForeignKey(Account, on_delete=m.CASCADE)
     transaction = m.ForeignKey(Transaction, on_delete=m.CASCADE)
     # currency + quantity forms Money
-    currency = m.ForeignKey('currencies.Currency', on_delete=m.CASCADE)
+    currency = m.ForeignKey(Currency, on_delete=m.CASCADE)
     quantity = new_money_quantity_field()
 
     #
     # django magic
     #
-    objects = MovementManager()
+    objects = MovementQueryset.as_manager()
 
     #
     # Methods

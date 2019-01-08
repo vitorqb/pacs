@@ -1,7 +1,11 @@
+from __future__ import annotations
 import attr
+import typing
 from decimal import Decimal
-from .models import Currency
 from common.utils import decimals_equal
+
+if typing.TYPE_CHECKING:
+    from currencies.models import Currency
 
 
 @attr.s(frozen=True, cmp=False)

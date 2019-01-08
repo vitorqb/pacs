@@ -1,3 +1,4 @@
+# !!!! TODO -> isort entire app
 from decimal import Decimal
 from pyrsistent import v, freeze, pvector
 
@@ -5,17 +6,22 @@ from rest_framework.exceptions import ValidationError
 
 from common.models import list_to_queryset
 from common.test import PacsTestCase
-from movements.models import Movement, MovementSpec, TransactionFactory, Transaction
+from movements.models import (
+    Movement, MovementSpec, TransactionFactory, Transaction
+)
+from accounting.balance import Balance
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.management.commands.populate_accounts import (
     account_populator,
     account_type_populator
 )
 from accounts.tests.factories import AccountTestFactory
-from currencies.money import Money
+from accounting.money import Money
 from currencies.management.commands.populate_currencies import currency_populator
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
-from .factories import MovementSpecTestFactory, TransactionTestFactory
+from .factories import (
+    MovementTestFactory, MovementSpecTestFactory, TransactionTestFactory
+)
 from datetime import date
 
 
@@ -66,6 +72,21 @@ class TestTransactionQueryset_filter_by_currency(MovementsModelsTestCase):
         other_cur = CurrencyTestFactory()
         assert list(list_to_queryset([trans]).filter_by_currency(other_cur)) ==\
             list()
+
+
+class TestTransactionQueryset_filter_by_account(MovementsModelsTestCase):
+
+    def test_base(self):
+        currency = CurrencyTestFactory()
+        account = AccountTestFactory()
+        other_acc = AccountTestFactory()
+        transaction_with = TransactionTestFactory(movements_specs=[
+            MovementSpec(account, Money('10', currency)),
+            MovementSpec(other_acc, Money('-10', currency)),
+        ])
+        transaction_without = TransactionTestFactory.create()
+        assert list(Transaction.objects.filter_by_account(account)) ==\
+            [transaction_with]
 
 
 class TestTransactionFactory(MovementsModelsTestCase):
@@ -155,3 +176,84 @@ class TestMovementModel(MovementsModelsTestCase):
         currency = CurrencyTestFactory()
         mov = Movement(quantity=quantity, currency=currency)
         assert mov.get_money() == Money(quantity, currency)
+
+
+class TestMovementQuerySet_get_balance(MovementsModelsTestCase):
+
+    def test_no_movements(self):
+        qset = Movement.objects.filter(pk=1, id=2)
+        assert qset.get_balance() == Balance([])
+
+    def test_single_currency(self):
+        currency = CurrencyTestFactory()
+        movements_qset = MovementTestFactory.create_batch_qset(3, currency=currency)
+        exp = Balance([Money(
+            quantity=sum(m.quantity for m in movements_qset),
+            currency=currency
+        )])
+        res = movements_qset.get_balance()
+        assert exp == res
+
+    def test_two_currency(self):
+        currencies = CurrencyTestFactory.create_batch(2)
+        movements = [
+            element
+            for list_ in [
+                MovementTestFactory.create_batch_qset(2, currency=c)
+                for c in currencies
+            ]
+            for element in list_
+        ]
+        movements_qset = list_to_queryset(movements)
+        exp = Balance([
+            Money(
+                quantity=sum(
+                    m.quantity for m in movements_qset
+                    if m.currency == c
+                ),
+                currency=c
+            )
+            for c in currencies
+        ])
+        res = movements_qset.get_balance()
+        assert exp == res
+
+
+class TestMovementQuerySet_get_balance_evolution(MovementsModelsTestCase):
+
+    def test_no_movements(self):
+        qset = Movement.objects.filter(pk=1, id=2)
+        assert qset.get_balance_evolution() == []
+
+    def test_one_movement(self):
+        movement = MovementTestFactory()
+        qset = list_to_queryset([movement])
+        assert qset.get_balance_evolution() == [
+            (movement, Balance([]), Balance([movement.get_money()]))
+        ]
+
+    def test_one_with_initial_balance_other_currency(self):
+        currency = CurrencyTestFactory()
+        initial_balance = Balance([Money('123', currency)])
+        movement = MovementTestFactory()
+        qset = list_to_queryset([movement])
+        assert qset.get_balance_evolution(initial_balance) == [
+            (
+                movement,
+                initial_balance,
+                initial_balance.add_money(movement.get_money())
+            )
+        ]
+
+    def test_one_with_initial_balance_same_currency(self):
+        currency = CurrencyTestFactory()
+        initial_balance = Balance([Money('11.12', currency)])
+        movement = MovementTestFactory(currency=currency)
+        qset = list_to_queryset([movement])
+        assert qset.get_balance_evolution(initial_balance) == [
+            (
+                movement,
+                initial_balance,
+                initial_balance.add_money(movement.get_money())
+            )
+        ]

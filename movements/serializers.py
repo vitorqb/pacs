@@ -7,7 +7,7 @@ from rest_framework.serializers import (
 from .models import Transaction, MovementSpec, TransactionFactory
 from accounts.models import Account
 from currencies.serializers import MoneySerializer
-from currencies.money import Money
+from accounting.money import Money
 from currencies.models import Currency
 
 

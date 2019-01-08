@@ -1,24 +1,29 @@
-from rest_framework.serializers import ModelSerializer, Field
 from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import (Field, ModelSerializer,
+                                        PrimaryKeyRelatedField, Serializer)
 
-from .models import Account, AccTypeEnum, AccountFactory
+from currencies.serializers import BalanceSerializer
+from movements.serializers import TransactionSerializer
+
+from .models import Account, AccountFactory, AccTypeEnum
 
 
 class AccTypeField(Field):
     """ Transforms a string into a value in AccTypeEnum """
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: str) -> AccTypeEnum:
         """ Transforms a string into an AccTypeEnum.
         `data` must be a string. The comparison is case insensitive. """
         if not isinstance(data, str):
             raise ValidationError("Expected a string")
         data = data.lower()
+        # !!!! TODO -> Refactor this using constructor
         for acc_type in AccTypeEnum:
             if data == acc_type.value.lower():
                 return acc_type
         raise ValidationError(f"Unkown account type {data}")
 
-    def to_representation(self, value):
+    def to_representation(self, value: AccTypeEnum) -> str:
         """ Maps a AccTypeEnum to a string."""
         return value.value
 
@@ -44,3 +49,11 @@ class AccountSerializer(ModelSerializer):
         if 'parent' in validated_data:
             instance.set_parent(validated_data['parent'])
         return instance
+
+
+class JournalSerializer(Serializer):
+    """ Serializes a Journal. """
+    account = PrimaryKeyRelatedField(read_only=True)
+    initial_balance = BalanceSerializer()
+    transactions = TransactionSerializer(many=True)
+    balances = BalanceSerializer(many=True, source="get_balances")

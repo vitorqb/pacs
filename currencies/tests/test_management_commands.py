@@ -1,8 +1,9 @@
 import attr
+
 from common.test import PacsTestCase
+from currencies.management.commands.populate_currencies import \
+    currency_populator
 from currencies.models import Currency, CurrencyFactory
-from currencies.management.commands.populate_currencies import currency_populator
-from pyrsistent import m, v
 
 
 class ManagementCommandTestCase(PacsTestCase):
@@ -16,7 +17,7 @@ class TestPopulateCurrencies(ManagementCommandTestCase):
         self.name = "Yen"
         self.populator = attr.evolve(
             currency_populator,
-            model_data=v(m(name=self.name))
+            model_data=[{'name': self.name}]
         )
 
     def test_base(self):

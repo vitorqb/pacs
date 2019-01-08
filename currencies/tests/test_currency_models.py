@@ -1,27 +1,14 @@
-from pyrsistent import pvector
 from common.test import PacsTestCase
 from currencies import models as currency_models
-from currencies.models import CurrencyFactory, Currency, get_default_currency
-from currencies.management.commands.populate_currencies import currency_populator
-from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
-from accounts.management.commands.populate_accounts import (
-    account_type_populator,
-    account_populator
-)
+from currencies.management.commands.populate_currencies import \
+    currency_populator
+from currencies.models import Currency, CurrencyFactory, get_default_currency
 
 
 class CurrencyModelTestCase(PacsTestCase):
 
     def setUp(self):
         super().setUp()
-        account_type_populator()
-        account_populator()
-        currency_populator()
-        self.currency = CurrencyFactory()(name="Yen")
-        self.accs = pvector(
-            AccountFactory()(x, AccTypeEnum.LEAF, get_root_acc())
-            for x in ("A", "B")
-        )
 
 
 class TestCurrencyFactory(CurrencyModelTestCase):
@@ -47,6 +34,7 @@ class TestCurrency(CurrencyModelTestCase):
 class TestFun_get_default_currency(CurrencyModelTestCase):
 
     def test_base(self):
+        currency_populator()
         # Forcely removes cache
         currency_models._cached_default_currency = None
         dollar = Currency.objects.get(name="Dollar")

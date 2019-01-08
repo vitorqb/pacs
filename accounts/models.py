@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 from enum import Enum
-from pyrsistent import freeze
+from typing import Dict
+
 import attr
-
 import django.db.models as m
-
+from mptt.models import MPTTModel, TreeForeignKey
 from rest_framework.exceptions import ValidationError
 
-from mptt.models import MPTTModel, TreeForeignKey
 from common.models import NameField, full_clean_and_save
 
 
@@ -14,11 +15,11 @@ from common.models import NameField, full_clean_and_save
 class AccountFactory():
     """ Encapsulates the creation of Account """
 
-    ERR_MSGS = freeze({
+    ERR_MSGS = {
         'ACC_TYPE_NEW_ACCOUNTS_NOT_ALLOWED': (
             'Account type "{}" does not allow new accounts'
         ),
-    })
+    }
 
     def __call__(self, name, acc_type, parent):
         """ Creates a new account. `acc_type` must be one of AccTypeEnum,
@@ -58,26 +59,26 @@ class Account(MPTTModel):
     #
     # Constants
     #
-    ERR_MSGS = freeze({
+    ERR_MSGS: Dict[str, str] = {
         'NULL_PARENT': '`parent` can not be None.',
         'PARENT_CHILD_NOT_ALLOWED': 'Parent account {} does not allows children.'
-    })
+    }
 
     #
     # Methods
     #
-    def get_name(self):
+    def get_name(self) -> str:
         return self.name
 
-    def set_name(self, x):
+    def set_name(self, x: str) -> None:
         self.name = x
         full_clean_and_save(self)
 
-    def get_parent(self):
+    def get_parent(self) -> Account:
         """ Returns the parent. Can be None for the Root Account. """
         return self.parent
 
-    def set_parent(self, parent):
+    def set_parent(self, parent: Account) -> None:
         if parent is None:
             msg = {'parent': self.ERR_MSGS['NULL_PARENT']}
             raise ValidationError(msg)
@@ -87,20 +88,18 @@ class Account(MPTTModel):
         self.parent = parent
         full_clean_and_save(self)
 
-    def get_acc_type(self):
+    def get_acc_type(self) -> AccTypeEnum:
         """ Getter for acc_type. Notice that instead of returning an
         AccountType objects, we return AccTypeEnum. This is because
         AccountType should only be known by this module. """
-        for acc_type in AccTypeEnum:
-            if acc_type.value == self.acc_type.name:
-                return acc_type
+        return AccTypeEnum(self.acc_type.name)
 
-    def allows_children(self):
+    def allows_children(self) -> bool:
         """ Returns True if this account can be the parent of other accounts,
         else False"""
         return self.acc_type.children_allowed
 
-    def allows_movements(self):
+    def allows_movements(self) -> bool:
         """ Returns True if this account can have movements, else False """
         return self.acc_type.movements_allowed
 
@@ -121,12 +120,12 @@ class AccountType(m.Model):
 
 # ------------------------------------------------------------------------------
 # Services
-def get_root_acc():
+def get_root_acc() -> Account:
     """ Returns the root account """
     return Account.objects.get(name="Root Account")
 
 
-def get_currency_price_change_rebalance_acc():
+def get_currency_price_change_rebalance_acc() -> Account:
     """ Returns the account used to rebalance transactions on currency price
     changes """
     return Account.objects.get(name="Currency Price Change Compensation")

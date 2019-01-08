@@ -1,10 +1,9 @@
-from pyrsistent import freeze
 from django.core.management import BaseCommand
 from common.management import TablePopulator
 from accounts.models import Account, AccountType
 
 
-ACCOUNT_TYPE_DATA = freeze([
+ACCOUNT_TYPE_DATA = [
     {'name': "Root",
      'children_allowed': True,
      'movements_allowed': False,
@@ -17,7 +16,7 @@ ACCOUNT_TYPE_DATA = freeze([
      'children_allowed': False,
      'movements_allowed': True,
      'new_accounts_allowed': True},
-])
+]
 
 
 account_type_populator = TablePopulator(
@@ -27,23 +26,22 @@ account_type_populator = TablePopulator(
 )
 
 
-ACCOUNT_DATA = freeze([
+ACCOUNT_DATA = [
     {'name': 'Root Account',
      'acc_type_name': 'Root',
      'parent_name': None},
-])
+]
 
 
 def _populate_account(data):
-    acc_type = AccountType.objects.get(name=data['acc_type_name'])
-    data = data.remove('acc_type_name').set('acc_type', acc_type)
-
-    parent = (
+    data = {**data}
+    data['acc_type'] = AccountType.objects.get(name=data.pop('acc_type_name'))
+    parent_name = data.pop('parent_name')
+    data['parent'] = (
         None
-        if data['parent_name'] is None else
-        Account.objects.get(name=data['parent_name'])
+        if parent_name is None else
+        Account.objects.get(name=parent_name)
     )
-    data = data.remove('parent_name').set('parent', parent)
 
     return Account.objects.create(**data)
 

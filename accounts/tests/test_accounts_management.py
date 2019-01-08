@@ -1,32 +1,30 @@
 from attr import evolve
-from pyrsistent import freeze
-from common.test import PacsTestCase
-from accounts.management.commands.populate_accounts import (
-    account_populator,
-    account_type_populator
-)
+
+from accounts.management.commands.populate_accounts import (account_populator,
+                                                            account_type_populator)
 from accounts.models import AccountType
+from common.test import PacsTestCase
 
 
 class PopulateAccountTestCase(PacsTestCase):
     def setUp(self):
         super().setUp()
-        self.acc_type_data = freeze([
+        self.acc_type_data = [
             {'name': "Root",
              'children_allowed': True,
              'movements_allowed': False,
              'new_accounts_allowed': False}
-        ])
+        ]
         self.acc_type_populator = evolve(
             account_type_populator,
             model_data=self.acc_type_data
         )
 
-        self.acc_data = freeze([
+        self.acc_data = [
             {'name': 'Root Account',
              'acc_type_name': 'Root',
              'parent_name': None}
-        ])
+        ]
         self.acc_populator = evolve(
             account_populator,
             model_data=self.acc_data

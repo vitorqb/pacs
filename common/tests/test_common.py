@@ -1,5 +1,6 @@
 from decimal import Decimal
 from unittest import TestCase
+
 from common.utils import decimals_equal
 
 

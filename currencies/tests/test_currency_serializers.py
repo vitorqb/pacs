@@ -1,10 +1,13 @@
+from unittest.mock import Mock, call, patch
 
 from rest_framework.exceptions import ValidationError
 
 from common.test import PacsTestCase
-from currencies.serializers import CurrencySerializer, MoneySerializer
 from currencies.models import Currency
-from accounting.money import Money
+from currencies.money import Money
+from currencies.serializers import (BalanceSerializer, CurrencySerializer,
+                                    MoneySerializer)
+
 from .factories import CurrencyTestFactory
 
 
@@ -44,3 +47,22 @@ class TestCurrencySerializer_create(PacsTestCase):
         with self.assertRaises(ValidationError) as e:
             self.create()
         assert 'name' in e.exception.detail
+
+
+class TestBalanceSerializer(PacsTestCase):
+
+    @patch.object(MoneySerializer, 'to_representation')
+    def test_serializes_as_list_of_moneys(self, m_to_representation):
+        currency_one, currency_two = Mock(), Mock()
+        balance = Mock()
+        balance.get_moneys.return_value = [
+            Money('20', currency_one),
+            Money('30', currency_two),
+        ]
+        serializer = BalanceSerializer(balance)
+
+        assert serializer.data == [m_to_representation.return_value] * 2
+        assert m_to_representation.call_args_list[0] ==\
+            call(Money('20', currency_one))
+        assert m_to_representation.call_args_list[1] ==\
+            call(Money('30', currency_two))

@@ -1,9 +1,17 @@
+from unittest.mock import Mock, call, patch
+
 from rest_framework.exceptions import ValidationError
 
+from accounts.journal import Journal
+from accounts.management.commands.populate_accounts import (account_populator,
+                                                            account_type_populator)
+from accounts.models import Account, AccTypeEnum, get_root_acc
+from accounts.serializers import (AccountSerializer, AccTypeField,
+                                  JournalSerializer)
 from common.test import PacsTestCase
-from accounts.models import AccTypeEnum, Account, get_root_acc, AccountType
-from accounts.serializers import AccTypeField, AccountSerializer
-from accounts.management.commands.populate_accounts import account_populator, account_type_populator
+from currencies.serializers import BalanceSerializer
+from movements.serializers import TransactionSerializer
+
 from .factories import AccountTestFactory
 
 
@@ -117,3 +125,53 @@ class TestAccountSerializer_update(PacsTestCase):
         with self.assertRaises(ValidationError) as e:
             self.update()
         assert 'parent' in e.exception.detail
+
+
+class TestJournalSerializer(PacsTestCase):
+
+    def test_serializes_account_as_pk(self):
+        account = Mock(pk=12)
+        transaction = Mock(pk=1, get_movements_specs=[])
+        transaction.get_moneys_for_account.return_value = []
+        balance = Mock()
+        balance.get_moneys.return_value = []
+        journal = Journal(account, balance, [transaction])
+        assert JournalSerializer(journal).data['account'] == 12
+
+    @patch.object(BalanceSerializer, "to_representation")
+    def test_serializes_initial_balance(self, m_to_representation):
+        initial_balance = Mock()
+        journal = Journal(Mock(), initial_balance, [])
+        assert JournalSerializer(journal).data['initial_balance'] ==\
+            m_to_representation.return_value
+        assert m_to_representation.call_args == call(initial_balance)
+
+    @patch.object(TransactionSerializer, "to_representation")
+    def test_serializes_transactions(self, m_to_representation):
+        transactions = [Mock(), Mock()]
+        transactions[0].get_moneys_for_account.return_value = []
+        transactions[1].get_moneys_for_account.return_value = []
+
+        balance = Mock()
+        balance.get_moneys.return_value = []
+
+        journal = Journal(Mock(), balance, transactions)
+        assert JournalSerializer(journal).data['transactions'] ==\
+            [m_to_representation(), m_to_representation()]
+        assert m_to_representation.call_args_list[0] ==\
+            call(transactions[0])
+
+    @patch.object(BalanceSerializer, "to_representation")
+    def test_serializes_balances_from_get_balances(
+            self,
+            m_to_representation
+    ):
+        m_Journal = Mock()
+        m_Journal().transactions = []
+        m_Journal().get_balances = [Mock(), Mock()]
+        serializer = JournalSerializer(m_Journal())
+        assert serializer.data['balances'] == [m_to_representation.return_value] * 2
+        assert m_to_representation.call_args_list[1] == \
+            call(m_Journal().get_balances[0])
+        assert m_to_representation.call_args_list[2] == \
+            call(m_Journal().get_balances[1])

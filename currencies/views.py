@@ -1,4 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
+
 from .models import Currency
 from .serializers import CurrencySerializer
 

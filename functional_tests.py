@@ -1,25 +1,22 @@
-import attr
-import requests
 from datetime import date
 
+import attr
+import requests
 from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
-from accounts.management.commands.populate_accounts import (
-    account_type_populator,
-    account_populator,
-    ACCOUNT_DATA
-)
-from accounts.tests.factories import AccountTestFactory
+from accounts.management.commands.populate_accounts import (ACCOUNT_DATA,
+                                                            account_populator,
+                                                            account_type_populator)
 from accounts.models import AccTypeEnum, get_root_acc
-from currencies.management.commands.populate_currencies import (
-    currency_populator,
-)
+from accounts.tests.factories import AccountTestFactory
+from currencies.management.commands.populate_currencies import \
+    currency_populator
+from currencies.money import Money
 from currencies.tests.factories import CurrencyTestFactory
-from accounting.money import Money
-from movements.tests.factories import TransactionTestFactory
 from movements.models import MovementSpec
 from movements.serializers import TransactionSerializer
+from movements.tests.factories import TransactionTestFactory
 
 
 @attr.s()

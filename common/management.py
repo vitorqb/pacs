@@ -1,4 +1,3 @@
-from pyrsistent import v, pvector
 import attr
 
 
@@ -20,15 +19,15 @@ class TablePopulator():
     _printfun = attr.ib(default=print)
 
     # Stores created objects.
-    _created_objects = attr.ib(factory=v, init=False)
+    _created_objects = attr.ib(factory=list, init=False)
 
     def __call__(self):
         """ Populates the db, creating all uncreated objects """
-        self._created_objects = v()
+        self._created_objects = []
         self._printfun(f"Creating objects... ", end="")
-        to_create = pvector(x for x in self._model_data if not self._exists_fun(x))
+        to_create = (x for x in self._model_data if not self._exists_fun(x))
         for data in to_create:
-            self._created_objects += [self._create_fun(data)]
+            self._created_objects.append(self._create_fun(data))
         self._printfun(
             f"Created objects: {[x.name for x in self._created_objects]}"
         )

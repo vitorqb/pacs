@@ -1,15 +1,14 @@
 from django.core.management import BaseCommand
-from pyrsistent import m, v
-from common.models import full_clean_and_save
+
 from common.management import TablePopulator
+from common.models import full_clean_and_save
 from currencies.models import Currency
 
-
-CURRENCIES_DATA = v(
-    m(name="Dollar", imutable=True),
-    m(name="Euro"),
-    m(name="Real")
-)
+CURRENCIES_DATA = [
+    dict(name="Dollar", imutable=True),
+    dict(name="Euro"),
+    dict(name="Real")
+]
 
 
 currency_populator = TablePopulator(

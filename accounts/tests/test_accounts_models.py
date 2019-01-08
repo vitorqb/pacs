@@ -1,21 +1,12 @@
-from attr import evolve
-from pyrsistent import freeze
-
 from rest_framework.exceptions import ValidationError
 
+from accounts.management.commands.populate_accounts import (account_populator,
+                                                            account_type_populator)
+from accounts.models import (Account, AccountFactory, AccountType, AccTypeEnum,
+                             get_root_acc)
 from common.test import PacsTestCase
-from accounts.models import (
-    Account,
-    AccountFactory,
-    AccTypeEnum,
-    AccountType,
-    get_root_acc
-)
+
 from .factories import AccountTestFactory
-from accounts.management.commands.populate_accounts import (
-    account_populator,
-    account_type_populator
-)
 
 
 class AccountsModelTestCase(PacsTestCase):
@@ -29,14 +20,14 @@ class TestAccountFactory(AccountsModelTestCase):
 
     def setUp(self):
         super().setUp()
-        self.data = freeze({
+        self.data = {
             'name': 'My Account',
             'acc_type': AccTypeEnum.BRANCH,
             'parent': get_root_acc()
-        })
+        }
 
     def update_data(self, **kwargs):
-        self.data = self.data.update(kwargs)
+        self.data = {**self.data, **kwargs}
 
     def call(self):
         return AccountFactory()(**self.data)

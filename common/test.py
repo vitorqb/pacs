@@ -1,6 +1,5 @@
 from django.conf import settings
-
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APIClient, APITestCase
 
 
 class PacsTestCase(APITestCase):

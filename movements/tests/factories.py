@@ -2,13 +2,12 @@
 import factory as f
 from django.db.models import QuerySet
 from faker import Faker
-from movements.models import (
-    Movement, MovementSpec, Transaction, TransactionFactory
-)
-from accounts.tests.factories import AccountTestFactory
-from currencies.tests.factories import MoneyTestFactory, CurrencyTestFactory
-from common.models import list_to_queryset
 
+from accounts.tests.factories import AccountTestFactory
+from common.models import list_to_queryset
+from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
+from movements.models import (Movement, MovementSpec, Transaction,
+                              TransactionFactory)
 
 # Custom faker w/ controlable seed
 faker = Faker()

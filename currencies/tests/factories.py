@@ -1,9 +1,9 @@
 """ Test factories for Currencies """
 import factory as f
 from faker import Faker
-from currencies.models import Currency
-from accounting.money import Money
 
+from currencies.models import Currency
+from currencies.money import Money
 
 # Custom faker w/ controlable seed
 faker = Faker()

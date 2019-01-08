@@ -1,8 +1,8 @@
 """ Test factories for Accounts """
 import factory as f
 from faker import Faker
-from accounts.models import Account, AccountType, get_root_acc, AccTypeEnum, AccountFactory
 
+from accounts.models import Account, AccountFactory, AccTypeEnum, get_root_acc
 
 # Custom faker w/ controlable seed
 faker = Faker()

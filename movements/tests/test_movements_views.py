@@ -2,23 +2,18 @@ from datetime import date
 
 from django.urls import resolve
 
-from rest_framework.exceptions import ValidationError
-
-from common.test import PacsTestCase
-
-from movements.views import TransactionViewSet
-from movements.serializers import TransactionSerializer, MovementSpecSerializer
-from movements.models import Transaction, MovementSpec
-from .factories import TransactionTestFactory, MovementSpecTestFactory
+from accounts.management.commands.populate_accounts import (account_populator,
+                                                            account_type_populator)
+from accounts.models import AccTypeEnum
 from accounts.tests.factories import AccountTestFactory
-from accounts.models import AccountType, AccTypeEnum
-from accounts.management.commands.populate_accounts import (
-    account_type_populator,
-    account_populator
-)
+from common.test import PacsTestCase
+from currencies.money import Money
 from currencies.tests.factories import CurrencyTestFactory
-from accounting.money import Money
-from currencies.serializers import MoneySerializer
+from movements.models import MovementSpec, Transaction
+from movements.serializers import MovementSpecSerializer, TransactionSerializer
+from movements.views import TransactionViewSet
+
+from .factories import MovementSpecTestFactory, TransactionTestFactory
 
 
 class MovementsViewsTestCase(PacsTestCase):
@@ -89,7 +84,6 @@ class TestTransactionView(MovementsViewsTestCase):
         ])
         assert self.client.get(f'/transactions/?account_id={accs[0].pk}').json() == \
             TransactionSerializer([transaction], many=True).data
-
 
     def test_get_single_transaction(self):
         transactions = TransactionTestFactory.create_batch(2)

@@ -1,7 +1,14 @@
 from rest_framework import serializers as s
-from accounting.money import Money
-from .models import Currency
 from common.models import N_DECIMAL_MAX_DIGITS, N_DECIMAL_PLACES
+from .money import Money, Balance
+from .models import Currency
+
+
+class CurrencySerializer(s.ModelSerializer):
+    class Meta:
+        model = Currency
+        fields = ['pk', 'name', 'imutable']
+        read_only_fields = ['pk', 'imutable']
 
 
 class MoneySerializer(s.Serializer):
@@ -12,8 +19,8 @@ class MoneySerializer(s.Serializer):
         return Money(**validated_data)
 
 
-class CurrencySerializer(s.ModelSerializer):
-    class Meta:
-        model = Currency
-        fields = ['pk', 'name', 'imutable']
-        read_only_fields = ['pk', 'imutable']
+class BalanceSerializer(s.BaseSerializer):
+
+    def to_representation(self, obj: Balance):
+        moneys = obj.get_moneys()
+        return MoneySerializer(many=True).to_representation(moneys)

@@ -1,18 +1,17 @@
-from django.urls.base import resolve
-
 from unittest.mock import patch
 
+from django.urls.base import resolve
 from rest_framework.test import APIRequestFactory
 
-from common.test import PacsTestCase
-from accounts.models import Account, get_root_acc, AccTypeEnum
+from accounts.management.commands.populate_accounts import (account_populator,
+                                                            account_type_populator)
+from accounts.models import Account, AccTypeEnum, get_root_acc
 from accounts.serializers import AccountSerializer
-from accounts.views import AccountViewSet
 from accounts.tests.factories import AccountTestFactory
-from accounts.management.commands.populate_accounts import account_populator, account_type_populator
-
+from accounts.views import AccountViewSet
+from common.test import PacsTestCase
+from currencies.money import Balance
 from movements.models import Transaction
-from accounting.balance import Balance
 
 
 class AccountViewTestCase(PacsTestCase):
@@ -158,14 +157,16 @@ class TestAccountViewset(AccountViewTestCase):
 
         resp = self.client.get(f"/accounts/{account.pk}/journal/")
 
-        m_qset = Transaction.objects.prefetch_related(
+        # Prepares the queryset for Transactions that should be used
+        m_qset = Transaction.objects
+        m_qset = m_qset.prefetch_related(
             "movement_set__currency",
             "movement_set__account__acc_type"
         )
-        m_Journal.assert_called_with(
-            account,
-            Balance([]),
-            m_qset.order_by('date').filter_by_account(account)
-        )
+        m_qset = m_qset.order_by('date', 'pk')
+        m_qset = m_qset.distinct()
+        m_qset = m_qset.filter_by_account(account)
+
+        m_Journal.assert_called_with(account, Balance([]), m_qset)
         m_JournalSerializer.assert_called_with(m_Journal())
         assert resp.json() == m_JournalSerializer().data

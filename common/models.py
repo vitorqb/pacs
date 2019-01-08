@@ -1,8 +1,8 @@
 from decimal import Decimal
-from pyrsistent import pvector
+from typing import List
+
 import django.db.models as m
 from django.core.validators import MinValueValidator
-
 
 # We store decimals with:
 #   - up to 20 digits
@@ -11,7 +11,7 @@ from django.core.validators import MinValueValidator
 #   - 2 decimal places
 N_DECIMAL_PLACES: int = 5
 N_DECIMAL_MAX_DIGITS: int = 20
-DECIMAL_PLACES: int = Decimal('10') ** -N_DECIMAL_PLACES
+DECIMAL_PLACES: Decimal = Decimal('10') ** -N_DECIMAL_PLACES
 N_DECIMAL_COMPARISON: int = 2
 
 
@@ -39,17 +39,13 @@ class NameField(m.CharField):
         super().__init__(*args, **kwargs)
 
 
-def full_clean_and_save(x):
+def full_clean_and_save(x: m.Model) -> m.Model:
     x.full_clean()
     x.save()
     return x
 
 
-def extract_pks(x):
-    return pvector(x.values_list('pk', flat=True))
-
-
-def list_to_queryset(lst):
+def list_to_queryset(lst: List[m.Model]) -> m.QuerySet:
     """ Converts a list of objects into a queryset. """
     if len(lst) == 0:
         return m.QuerySet().none()

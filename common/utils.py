@@ -1,10 +1,12 @@
-from decimal import Decimal
-from pytz import utc
 from datetime import datetime
+from decimal import Decimal
+
+from pytz import utc
+
 from .models import N_DECIMAL_COMPARISON, N_DECIMAL_PLACES
 
 
-def utcdatetime(*args, **kwargs):
+def utcdatetime(*args, **kwargs) -> datetime:
     return datetime(*args, **kwargs, tzinfo=utc)
 
 

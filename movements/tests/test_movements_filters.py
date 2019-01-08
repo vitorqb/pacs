@@ -1,14 +1,12 @@
-from common.test import PacsTestCase
-
-from accounts.management.commands.populate_accounts import (
-    account_type_populator,
-    account_populator
-)
-from movements.filters import TransactionFilterSet
-from movements.tests.factories import TransactionTestFactory, MovementSpecTestFactory
-from movements.models import Transaction
+from accounts.management.commands.populate_accounts import (account_populator,
+                                                            account_type_populator)
 from accounts.models import AccTypeEnum
 from accounts.tests.factories import AccountTestFactory
+from common.test import PacsTestCase
+from movements.filters import TransactionFilterSet
+from movements.models import Transaction
+from movements.tests.factories import (MovementSpecTestFactory,
+                                       TransactionTestFactory)
 
 
 class TestTransactionFilterSet(PacsTestCase):

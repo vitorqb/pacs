@@ -1,19 +1,16 @@
 from datetime import date
 from decimal import Decimal
 
-from common.test import PacsTestCase
-
-from movements.serializers import TransactionSerializer, MovementSpecSerializer
-from movements.models import MovementSpec, Movement
+from accounts.management.commands.populate_accounts import (account_populator,
+                                                            account_type_populator)
+from accounts.models import AccTypeEnum
 from accounts.tests.factories import AccountTestFactory
-from accounts.models import AccountType, AccTypeEnum
-from accounts.management.commands.populate_accounts import (
-    account_type_populator,
-    account_populator
-)
-from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
-from accounting.money import Money
+from common.test import PacsTestCase
+from currencies.money import Money
 from currencies.serializers import MoneySerializer
+from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
+from movements.models import MovementSpec
+from movements.serializers import MovementSpecSerializer, TransactionSerializer
 
 
 class MovementsSerializersTestCase(PacsTestCase):

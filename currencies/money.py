@@ -1,13 +1,29 @@
 from __future__ import annotations
-import attr
+
 from decimal import Decimal
 from typing import TYPE_CHECKING, List, Set
-from .money import Money
+
+import attr
+
+from common.utils import decimals_equal
 
 if TYPE_CHECKING:
     from currencies.models import Currency
-    from accounts.models import Account
-    from movements.models import Transaction
+
+
+@attr.s(frozen=True, cmp=False)
+class Money():
+    """ A combination of a quantity and a currency. """
+    quantity: Decimal = attr.ib(converter=Decimal)
+    currency: Currency = attr.ib()
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Money):
+            return False
+        return (
+            self.currency == other.currency and
+            decimals_equal(self.quantity, other.quantity)
+        )
 
 
 @attr.s(frozen=True, cmp=False)
@@ -49,26 +65,3 @@ class Balance:
             if self.get_for_currency(currency) != other.get_for_currency(currency):
                 return False
         return True
-
-
-@attr.s(frozen=True)
-class Journal:
-    """ Represents a history of transactions for an account """
-
-    account: Account = attr.ib()
-    # initial_balance is the balance before the first transaction.
-    initial_balance: Balance = attr.ib()
-    # An iterable of all Transaction for this journal. Must be transactions
-    # that include account.
-    transactions: List[Transaction] = attr.ib()
-
-    def get_balances(self) -> List[Balance]:
-        """ Returns a list with the same length as transactions, showing the
-        Balance for the account after the transaction. """
-        out = []
-        current_balance = Balance([])
-        for transaction in self.transactions:
-            moneys = transaction.get_moneys_for_account(self.account)
-            current_balance = current_balance.add_moneys(moneys)
-            out.append(current_balance)
-        return out

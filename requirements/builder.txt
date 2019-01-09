@@ -1,4 +1,4 @@
 # Those are the requirements to build/deploy!
-invoke
+invoke==1.2.0
 fabric
-python-dotenv
+python-dotenv==0.10.1

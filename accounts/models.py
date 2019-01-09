@@ -21,7 +21,12 @@ class AccountFactory():
         ),
     }
 
-    def __call__(self, name, acc_type, parent):
+    def __call__(
+            self,
+            name: str,
+            acc_type: AccTypeEnum,
+            parent: Account
+    ) -> Account:
         """ Creates a new account. `acc_type` must be one of AccTypeEnum,
         and `parent` must be an Account """
         assert acc_type in AccTypeEnum

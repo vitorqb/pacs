@@ -16,12 +16,10 @@ class AccTypeField(Field):
         `data` must be a string. The comparison is case insensitive. """
         if not isinstance(data, str):
             raise ValidationError("Expected a string")
-        data = data.lower()
-        # !!!! TODO -> Refactor this using constructor
-        for acc_type in AccTypeEnum:
-            if data == acc_type.value.lower():
-                return acc_type
-        raise ValidationError(f"Unkown account type {data}")
+        try:
+            return AccTypeEnum(data.lower().capitalize())
+        except ValueError:
+            raise ValidationError(f"Unkown account type {data}")
 
     def to_representation(self, value: AccTypeEnum) -> str:
         """ Maps a AccTypeEnum to a string."""

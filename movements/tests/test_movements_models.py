@@ -13,7 +13,8 @@ from currencies.management.commands.populate_currencies import \
 from currencies.money import Money
 from currencies.tests.factories import CurrencyTestFactory
 from movements.models import (Movement, MovementSpec, Transaction,
-                              TransactionFactory)
+                              TransactionFactory,
+                              TransactionMovementSpecListValidator)
 
 from .factories import TransactionTestFactory
 
@@ -82,7 +83,7 @@ class TestTransactionFactory(MovementsModelsTestCase):
             MovementSpec(self.accs[0], Money(100, self.cur)),
             MovementSpec(self.accs[0], Money(-100, self.cur))
         ])
-        errmsg = Transaction.ERR_MSGS['SINGLE_ACCOUNT']
+        errmsg = TransactionMovementSpecListValidator.ERR_MSGS['SINGLE_ACCOUNT']
         with self.assertRaisesMessage(ValidationError, errmsg):
             self.call()
 
@@ -91,12 +92,25 @@ class TestTransactionFactory(MovementsModelsTestCase):
             MovementSpec(self.accs[0], Money(100, self.cur)),
             MovementSpec(self.accs[1], Money(-99, self.cur))
         ])
-        errmsg = Transaction.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
+        errmsg = TransactionMovementSpecListValidator\
+            .ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
         self.assertRaisesMessage(
             ValidationError,
             errmsg,
             self.call
         )
+
+    def test_fails_if_duplicated_currency_account_pair(self):
+        self.data_update(movements_specs=[
+            MovementSpec(self.accs[0], Money(1, self.cur)),
+            MovementSpec(self.accs[0], Money(1, self.cur)),
+            MovementSpec(self.accs[1], Money(-2, self.cur))
+        ])
+        errmsg = TransactionMovementSpecListValidator.ERR_MSGS[
+            "REPEATED_CURRENCY_ACCOUNT_PAIR"
+        ]
+        with self.assertRaisesMessage(ValidationError, errmsg):
+            self.call()
 
 
 class TestTransactionModel(MovementsModelsTestCase):

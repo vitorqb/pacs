@@ -1,4 +1,3 @@
-# !!!! TODO -> isort entire app
 from datetime import date
 from decimal import Decimal
 

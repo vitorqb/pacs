@@ -26,8 +26,8 @@ class TransactionTestFactory(f.DjangoModelFactory):
     class Meta:
         model = Transaction
 
-    description = faker.text()
-    date_ = faker.date()
+    description = f.LazyFunction(faker.text)
+    date_ = f.LazyFunction(faker.date)
     movements_specs = f.List([
         f.SubFactory(MovementSpecTestFactory),
         f.SubFactory(MovementSpecTestFactory)
@@ -45,7 +45,7 @@ class MovementTestFactory(f.DjangoModelFactory):
     account = f.SubFactory(AccountTestFactory)
     transaction = f.SubFactory(TransactionTestFactory)
     currency = f.SubFactory(CurrencyTestFactory)
-    quantity = faker.pydecimal(left_digits=2)
+    quantity = f.LazyFunction(lambda: faker.pydecimal(left_digits=2))
 
     @classmethod
     def create_batch_qset(cls, n: int, *args, **kwargs) -> QuerySet:

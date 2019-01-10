@@ -58,9 +58,20 @@ class TestTransactionView(MovementsViewsTestCase):
 
     def test_get_transactions(self):
         self.populate_accounts()
-        TransactionTestFactory.create_batch(5)
+
+        Transaction.objects.all().delete()
+
+        transactions = TransactionTestFactory.create_batch(5)
+        transactions.sort(key=lambda x: x.pk, reverse=True)
+        transactions.sort(key=lambda x: x.date, reverse=True)
+
         assert self.client.get('/transactions/').json() == \
-            [TransactionSerializer(x).data for x in Transaction.objects.all()]
+            [TransactionSerializer(x).data for x in transactions]
+
+    def test_get_transactions_count_queries(self):
+        TransactionTestFactory.create_batch(5)
+        with self.assertNumQueries(5):
+            self.client.get('/transactions/')
 
     def test_get_transaction_returns_in_chronological_order(self):
         transactions = TransactionTestFactory.create_batch(3)

@@ -95,7 +95,7 @@ class Transaction(m.Model):
     def get_movements_specs(self) -> List[MovementSpec]:
         """ Returns a list of MovementSpec with all movements for this
         transaction """
-        movements = self.movement_set.all().iterator()
+        movements = self.movement_set.all()
         return [MovementSpec.from_movement(m) for m in movements]
 
     def get_moneys_for_account(self, account: Account) -> List[Money]:

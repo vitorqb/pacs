@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List
+from decimal import Decimal
+from typing import TYPE_CHECKING, Dict, List, NoReturn
 
 import attr
 import django.db.models as m
@@ -9,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 
 from accounts.models import Account
 from common.models import full_clean_and_save, new_money_quantity_field
-from common.utils import round_decimal
+from common.utils import round_decimal, decimals_equal
 from currencies.models import Currency
 from currencies.money import Money
 
@@ -53,16 +54,6 @@ class Transaction(m.Model):
     some accounts and in other accounts.
     Movements can only be created and manipulated via transactions.
     """
-    ERR_MSGS: Dict[str, str] = {
-        'SINGLE_ACCOUNT': "A Transaction can not have a single Account.",
-        'UNBALANCED_SINGLE_CURRENCY': (
-            "If all movements of a Transaction have a single currency, then"
-            " the transaction must be balanced, having 0 value."
-        ),
-        'TWO_OR_MORE_MOVEMENTS': (
-            "A transactions must have two or more movements."
-        )
-    }
 
     #
     # Fields
@@ -113,34 +104,11 @@ class Transaction(m.Model):
     @atomic
     def set_movements(self, movements_specs: List[MovementSpec]) -> None:
         """ Set's movements, using an iterable of MovementSpec """
+        TransactionMovementSpecListValidator().validate(movements_specs)
         self.movement_set.all().delete()
-        self._validate_movements_specs(movements_specs)
         for mov_spec in movements_specs:
             self._convert_specs(mov_spec)
         full_clean_and_save(self)
-
-    def _validate_movements_specs(
-            self,
-            movements_specs: List[MovementSpec]
-    ) -> None:
-        def fail(msg):
-            raise ValidationError({'movements_specs': msg})
-
-        # At least 2 movements are needed
-        if len(movements_specs) < 2:
-            fail(self.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'])
-
-        # Single account is not allowed
-        if len(set(x.account for x in movements_specs)) <= 1:
-            return fail(self.ERR_MSGS['SINGLE_ACCOUNT'])
-
-        # If movements have a single currency, the value must sum up to 0
-        if len(set(x.money.currency for x in movements_specs)) == 1:
-            value = sum(x.money.quantity for x in movements_specs)
-            if round(value, 3) != 0:
-                fail(self.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY'])
-
-        # !!! TODO -> add validation account can only appear once?
 
     def _convert_specs(self, mov_spec: MovementSpec) -> MovementSpec:
         """ Converts a MovementSpec into a Movement for self. """
@@ -210,3 +178,49 @@ class Movement(m.Model):
 
     def get_money(self) -> Money:
         return Money(self.quantity, self.currency)
+
+
+#
+# Auxiliary classes
+#
+class TransactionMovementSpecListValidator:
+    """ Auxiliar class to validate a list of movement specs for a Transaction """
+
+    ERR_MSGS: Dict[str, str] = {
+        'SINGLE_ACCOUNT': "A Transaction can not have a single Account.",
+        'UNBALANCED_SINGLE_CURRENCY': (
+            "If all movements of a Transaction have a single currency, then"
+            " the transaction must be balanced, having 0 value."
+        ),
+        'TWO_OR_MORE_MOVEMENTS': (
+            "A transactions must have two or more movements."
+        ),
+        'REPEATED_CURRENCY_ACCOUNT_PAIR': (
+            "There can NOT be two movements with the same (account, currency) pair"
+        )
+    }
+
+    def fail(self, key: str) -> NoReturn:
+        raise ValidationError({'movements_specs': self.ERR_MSGS[key]})
+
+    def validate(self, movement_specs: List[MovementSpec]) -> None:
+        currency_set = set(x.money.currency for x in movement_specs)
+        account_set = set(x.account for x in movement_specs)
+        account_currency_pair_set = set(
+            (x.money.currency, x.account) for x in movement_specs
+        )
+
+        if len(movement_specs) < 2:
+            self.fail("TWO_OR_MORE_MOVEMENTS")
+
+        if len(account_set) == 1:
+            self.fail("SINGLE_ACCOUNT")
+
+        if len(currency_set) == 1:
+            value = sum(x.money.quantity for x in movement_specs)
+            if not decimals_equal(value, Decimal(0)):
+                self.fail("UNBALANCED_SINGLE_CURRENCY")
+
+        # Each pair (account, currency) should only appear once
+        if len(account_currency_pair_set) < len(movement_specs):
+            self.fail('REPEATED_CURRENCY_ACCOUNT_PAIR')

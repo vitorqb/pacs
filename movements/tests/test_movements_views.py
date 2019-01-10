@@ -9,7 +9,8 @@ from accounts.tests.factories import AccountTestFactory
 from common.test import PacsTestCase
 from currencies.money import Money
 from currencies.tests.factories import CurrencyTestFactory
-from movements.models import MovementSpec, Transaction
+from movements.models import (MovementSpec, Transaction,
+                              TransactionMovementSpecListValidator)
 from movements.serializers import MovementSpecSerializer, TransactionSerializer
 from movements.views import TransactionViewSet
 
@@ -130,8 +131,10 @@ class TestTransactionView(MovementsViewsTestCase):
         resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json(), resp.json()
-        assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
-            resp.json()['movements_specs']
+        err = TransactionMovementSpecListValidator.ERR_MSGS[
+            'TWO_OR_MORE_MOVEMENTS'
+        ]
+        assert err in resp.json()['movements_specs']
 
     def test_post_transaction_with_one_single_movements_returns_error(self):
         self.post_data['movements_specs'] = [
@@ -140,8 +143,10 @@ class TestTransactionView(MovementsViewsTestCase):
         resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json(), resp.json()
-        assert Transaction.ERR_MSGS['TWO_OR_MORE_MOVEMENTS'] in \
-            resp.json()['movements_specs']
+        err = TransactionMovementSpecListValidator.ERR_MSGS[
+            'TWO_OR_MORE_MOVEMENTS'
+        ]
+        assert err in resp.json()['movements_specs']
 
     def test_post_single_account_raises_err(self):
         acc = AccountTestFactory()
@@ -152,8 +157,8 @@ class TestTransactionView(MovementsViewsTestCase):
         resp = self.client.post('/transactions/', self.post_data)
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json()
-        assert Transaction.ERR_MSGS['SINGLE_ACCOUNT'] in \
-            resp.json()['movements_specs']
+        err = TransactionMovementSpecListValidator.ERR_MSGS["SINGLE_ACCOUNT"]
+        assert err in resp.json()['movements_specs']
 
     def test_patch_transaction_with_single_currency_but_unmatched_values_err(self):
         # Same currency, unmatched values!
@@ -168,8 +173,9 @@ class TestTransactionView(MovementsViewsTestCase):
         )
         assert resp.status_code == 400
         assert 'movements_specs' in resp.json()
-        assert Transaction.ERR_MSGS['UNBALANCED_SINGLE_CURRENCY'] in \
-            resp.json()['movements_specs']
+        err = TransactionMovementSpecListValidator.\
+            ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
+        assert err in resp.json()['movements_specs']
 
     def test_patch_transaction(self):
         accs = AccountTestFactory.create_batch(

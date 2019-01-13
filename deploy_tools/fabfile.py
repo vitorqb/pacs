@@ -20,7 +20,8 @@ def deploy(c):
     7) update the db with migrations and populate commands
     8) setup nginx using the nginx.template.config
     9) setup gunicorn using gunicorn-pacs.template.service
-    10) reboots
+    10) setup db backup with megacmd service
+    11) reboots
     """
     repo_url = os.environ['PACS_REPO_URL']
     commit = os.environ['PACS_COMMIT']
@@ -46,6 +47,7 @@ def deploy(c):
     _update_db(c, venv_folder, source_folder)
     _setup_nginx(c, source_folder)
     _setup_gunicorn(c, source_folder)
+    _setup_db_backup(c, source_folder)
     c.run("reboot")
 
 
@@ -151,3 +153,8 @@ def _setup_gunicorn(c, source_folder):
     with c.prefix(f"export $(grep -v '^#' /home/pacs/.env | xargs -0)"):
         c.run(f" envsubst <{template_file} >{systemd_file}")
     c.run(f"systemctl enable gunicorn-pacs")
+
+
+def _setup_db_backup(c, source_folder):
+    """ Prepares the db backup using megacmd """
+    c.run(f"{source_folder}/deploy_tools/setup-megasync-db-backup.bash")

@@ -58,6 +58,7 @@ class Transaction(m.Model):
     #
     # Fields
     #
+    # !!!! TODO -> Add reference (for example the text that appears in la caixa)
     description = m.TextField()
     date = m.DateField()
 

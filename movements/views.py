@@ -1,9 +1,11 @@
-from rest_framework.viewsets import ModelViewSet
 from django_filters import rest_framework as filters
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.pagination import PageNumberPagination
 
+from common.pagination import OptionalPageNumberPaginator
+from movements.filters import TransactionFilterSet
 from movements.models import Transaction
 from movements.serializers import TransactionSerializer
-from movements.filters import TransactionFilterSet
 
 
 def _get_transaction_qset():
@@ -23,3 +25,10 @@ class TransactionViewSet(ModelViewSet):
     serializer_class = TransactionSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = TransactionFilterSet
+
+    pagination_class = type(
+        '_Paginator',
+        (PageNumberPagination,),
+        {'page_query_param': 'page',
+         'page_size_query_param': 'page_size'}
+    )

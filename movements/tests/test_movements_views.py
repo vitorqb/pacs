@@ -74,6 +74,22 @@ class TestTransactionView(MovementsViewsTestCase):
         with self.assertNumQueries(5):
             self.client.get('/transactions/')
 
+    def test_get_transaction_with_pagination(self):
+        TransactionTestFactory.create_batch(5)
+        resp = self.client.get('/transactions/?page=1&page_size=3')
+
+        assert len(resp.json()['results']) == 3
+        assert resp.json()['previous'] is None
+        assert resp.json()['next'] is not None
+
+        next_link = resp.json()['next']
+        assert next_link[::-1].startswith('/transactions/?page=2&page_size=3'[::-1])
+        resp = self.client.get(next_link)
+
+        assert len(resp.json()['results']) == 2
+        assert resp.json()['previous'] is not None
+        assert resp.json()['next'] is None
+
     def test_get_transaction_returns_in_chronological_order(self):
         transactions = TransactionTestFactory.create_batch(3)
         transactions[0].set_date(date(2000, 1, 3))

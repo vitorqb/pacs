@@ -15,22 +15,11 @@ class AccountViewSet(ModelViewSet):
 
     @action(['get'], True)
     def journal(self, request, pk=None):
-
-        def get_transaction_base_qset():
-            o = Transaction.objects
-            o = o.prefetch_related(
-                "movement_set__currency",
-                "movement_set__account__acc_type"
-            )
-            o = o.order_by('date', 'pk')
-            o = o.distinct()
-            return o
-
         account = self.get_object()
         journal = Journal(
             account,
             Balance([]),
-            get_transaction_base_qset().filter_by_account(account)
+            Transaction.objects.pre_process_for_journal()
         )
         serializer = JournalSerializer(journal)
         data = serializer.data

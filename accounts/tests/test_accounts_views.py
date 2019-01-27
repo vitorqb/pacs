@@ -157,16 +157,10 @@ class TestAccountViewset(AccountViewTestCase):
 
         resp = self.client.get(f"/accounts/{account.pk}/journal/")
 
-        # Prepares the queryset for Transactions that should be used
-        m_qset = Transaction.objects
-        m_qset = m_qset.prefetch_related(
-            "movement_set__currency",
-            "movement_set__account__acc_type"
+        m_Journal.assert_called_with(
+            account,
+            Balance([]),
+            Transaction.objects.pre_process_for_journal()
         )
-        m_qset = m_qset.order_by('date', 'pk')
-        m_qset = m_qset.distinct()
-        m_qset = m_qset.filter_by_account(account)
-
-        m_Journal.assert_called_with(account, Balance([]), m_qset)
         m_JournalSerializer.assert_called_with(m_Journal())
         assert resp.json() == m_JournalSerializer().data

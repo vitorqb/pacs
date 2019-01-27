@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
+import attr
 from rest_framework.exceptions import ValidationError
 
 from accounts.management.commands.populate_accounts import (account_populator,
@@ -14,9 +15,32 @@ from currencies.money import Money
 from currencies.tests.factories import CurrencyTestFactory
 from movements.models import (Movement, MovementSpec, Transaction,
                               TransactionFactory,
-                              TransactionMovementSpecListValidator)
+                              TransactionMovementSpecListValidator,
+                              TransactionQuerySet)
 
 from .factories import TransactionTestFactory
+
+
+@attr.s()
+class MockQset:
+    """ A mock for a queryset that records the arguments its methods were called
+    ald returns itself instead of a copy """
+
+    prefetch_related_args = attr.ib(init=False, default=None)
+    order_by_args = attr.ib(init=False, default=None)
+    distinct_called = attr.ib(init=False, default=False)
+
+    def prefetch_related(self, *args):
+        self.prefetch_related_args = args
+        return self
+
+    def order_by(self, *args):
+        self.order_by_args = args
+        return self
+
+    def distinct(self):
+        self.distinct_called = True
+        return self
 
 
 class MovementsModelsTestCase(PacsTestCase):
@@ -41,6 +65,29 @@ class TestTransactionQueryset_filter_by_account(MovementsModelsTestCase):
         transaction_without = TransactionTestFactory.create()
         assert list(Transaction.objects.filter_by_account(account)) ==\
             [transaction_with]
+
+
+class TestTransactionQueryset_pre_process_for_journal(MovementsModelsTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.mock_qset = MockQset()
+        self.resp = TransactionQuerySet.pre_process_for_journal(self.mock_qset)
+
+    def test_returns_qset(self):
+        assert self.resp is self.mock_qset
+
+    def test_orders_by_date_and_pk(self):
+        assert self.mock_qset.order_by_args == ('date', 'pk')
+
+    def test_prefetches_currency_and_account_type(self):
+        assert set(self.mock_qset.prefetch_related_args) == set([
+            "movement_set__currency",
+            "movement_set__account__acc_type"
+        ])
+
+    def test_distinct_is_called(self):
+        assert self.mock_qset.distinct_called is True
 
 
 class TestTransactionFactory(MovementsModelsTestCase):

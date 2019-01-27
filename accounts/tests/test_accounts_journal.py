@@ -16,15 +16,16 @@ class TestJournal(PacsTestCase):
         transaction.get_moneys_for_account.return_value = money_for_account
         return transaction
 
-    def test_get_balances(self):
+    def test_iter(self):
         currency_one, currency_two = Mock(), Mock()
-        transactions = [
+        m_transactions_qset = Mock()
+        m_transactions_qset.iterator.return_value = [
             self.gen_transaction_mock([Money('10', currency_one)]),
             self.gen_transaction_mock([Money('20', currency_two)])
         ]
         initial_balance = Balance([Money('20', currency_two)])
 
-        journal = Journal(Mock(), initial_balance, transactions)
+        journal = Journal(Mock(), initial_balance, m_transactions_qset)
 
         result = journal.get_balances()
         assert result[0] == initial_balance.add_money(Money('10', currency_one))

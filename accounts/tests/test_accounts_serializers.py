@@ -1,4 +1,4 @@
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, call, patch, MagicMock
 
 from rest_framework.exceptions import ValidationError
 
@@ -131,17 +131,24 @@ class TestJournalSerializer(PacsTestCase):
 
     def test_serializes_account_as_pk(self):
         account = Mock(pk=12)
-        transaction = Mock(pk=1, get_movements_specs=[])
-        transaction.get_moneys_for_account.return_value = []
-        balance = Mock()
-        balance.get_moneys.return_value = []
-        journal = Journal(account, balance, [transaction])
+        transaction = Mock(
+            pk=1,
+            get_movements_specs=[],
+            get_moneys_for_account=Mock(return_value=[])
+        )
+        m_transactions_qset = MagicMock(iterator=Mock(return_value=[transaction]))
+        m_transactions_qset.__iter__.return_value = [transaction]
+        balance = Mock(get_moneys=Mock(return_value=[]))
+        journal = Journal(account, balance, m_transactions_qset)
         assert JournalSerializer(journal).data['account'] == 12
 
     @patch.object(BalanceSerializer, "to_representation")
     def test_serializes_initial_balance(self, m_to_representation):
         initial_balance = Mock()
-        journal = Journal(Mock(), initial_balance, [])
+        m_transactions_qset = MagicMock()
+        m_transactions_qset.iterator.return_value = []
+        m_transactions_qset.__iter__.return_value = []
+        journal = Journal(Mock(), initial_balance, m_transactions_qset)
         assert JournalSerializer(journal).data['initial_balance'] ==\
             m_to_representation.return_value
         assert m_to_representation.call_args == call(initial_balance)
@@ -151,11 +158,14 @@ class TestJournalSerializer(PacsTestCase):
         transactions = [Mock(), Mock()]
         transactions[0].get_moneys_for_account.return_value = []
         transactions[1].get_moneys_for_account.return_value = []
+        m_transactions_qset = MagicMock()
+        m_transactions_qset.iterator.return_value = transactions
+        m_transactions_qset.__iter__.return_value = transactions
 
         balance = Mock()
         balance.get_moneys.return_value = []
 
-        journal = Journal(Mock(), balance, transactions)
+        journal = Journal(Mock(), balance, m_transactions_qset)
         assert JournalSerializer(journal).data['transactions'] ==\
             [m_to_representation(), m_to_representation()]
         assert m_to_representation.call_args_list[0] ==\

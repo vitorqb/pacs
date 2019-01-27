@@ -1,17 +1,19 @@
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.urls.base import resolve
 from rest_framework.test import APIRequestFactory
 
-from accounts.management.commands.populate_accounts import (account_populator,
-                                                            account_type_populator)
 from accounts.models import Account, AccTypeEnum, get_root_acc
 from accounts.serializers import AccountSerializer
 from accounts.tests.factories import AccountTestFactory
 from accounts.views import AccountViewSet
 from common.test import PacsTestCase
+from currencies.serializers import BalanceSerializer
 from currencies.money import Balance
-from movements.models import Transaction
+from currencies.tests.factories import MoneyTestFactory
+from movements.models import MovementSpec, Transaction
+from movements.tests.factories import TransactionTestFactory
 
 
 class AccountViewTestCase(PacsTestCase):
@@ -20,13 +22,26 @@ class AccountViewTestCase(PacsTestCase):
         super().setUp()
         self.req_fact = APIRequestFactory()
 
-    def populate_accounts(self):
-        """ Populates db with Accounts """
-        account_type_populator()
-        account_populator()
-
 
 class TestAccountViewset(AccountViewTestCase):
+
+    def setup_data_for_pagination(self):
+        self.populate_accounts()
+        self.accs = AccountTestFactory.create_batch(2)
+        self.movements_specs = [
+            [
+                MovementSpec(self.accs[0], MoneyTestFactory()),
+                MovementSpec(self.accs[1], MoneyTestFactory())
+            ],
+            [
+                MovementSpec(self.accs[0], MoneyTestFactory()),
+                MovementSpec(self.accs[1], MoneyTestFactory())
+            ]
+        ]
+        self.transactions = [
+            TransactionTestFactory(movements_specs=m) for m in self.movements_specs
+        ]
+        self.transactions.sort(key=lambda x: x.date)
 
     def test_url_resolves_to_view_function(self):
         func = resolve('/accounts/').func
@@ -142,31 +157,98 @@ class TestAccountViewset(AccountViewTestCase):
         assert resp.status_code == 204
         assert not Account.objects.filter(name=acc.get_name()).exists()
 
-    @patch("accounts.views.JournalSerializer")
+    @patch("accounts.views.get_journal_paginator")
     @patch("accounts.views.Journal")
-    @patch.object(Transaction, "objects")
+    @patch("accounts.views._get_all_transactions")
     def test_get_journal(
             self,
-            m_Transaction_objects,
+            m_get_all_transactions,
             m_Journal,
-            m_JournalSerializer
+            m_get_journal_paginator
     ):
+        # To avoid django rest bug
         self.populate_accounts()
         account = AccountTestFactory()
-        m_JournalSerializer.return_value.data = {"some": "unique value"}
+        m_paginator = m_get_journal_paginator.return_value
+        m_paginator.get_data.return_value = {"some": "unique value"}
 
         resp = self.client.get(f"/accounts/{account.pk}/journal/")
 
-        # Prepares the queryset for Transactions that should be used
-        m_qset = Transaction.objects
-        m_qset = m_qset.prefetch_related(
-            "movement_set__currency",
-            "movement_set__account__acc_type"
+        m_Journal.assert_called_with(
+            account,
+            Balance([]),
+            m_get_all_transactions()
         )
-        m_qset = m_qset.order_by('date', 'pk')
-        m_qset = m_qset.distinct()
-        m_qset = m_qset.filter_by_account(account)
 
-        m_Journal.assert_called_with(account, Balance([]), m_qset)
-        m_JournalSerializer.assert_called_with(m_Journal())
-        assert resp.json() == m_JournalSerializer().data
+        # Called m_get_journal_paginator with Journal
+        assert m_get_journal_paginator.call_count == 1
+        assert m_get_journal_paginator.call_args[0][1] == m_Journal()
+
+        # Returned what the paginator returns
+        assert resp.json() == m_paginator.get_data.return_value
+
+    def test_get_journal_paginated_defaults_to_first_page(self):
+        """ Sending `page_size` with no `page` should be the same as
+        sending `page=1` """
+        self.setup_data_for_pagination()
+        page, page_size = 1, 1
+        # With page=1
+        resp_with_page = self.client.get(
+            f"/accounts/{self.accs[0].pk}/journal/?page={page}&page_size={page_size}"
+        )
+        # Without page
+        resp_no_page = self.client.get(
+            f"/accounts/{self.accs[0].pk}/journal/?page_size={page_size}"
+        )
+        assert resp_with_page.json() == resp_no_page.json()
+
+    def test_get_journal_paginated_first_page(self):
+        self.setup_data_for_pagination()
+        page, page_size = 1, 1
+        resp = self.client.get(
+            f"/accounts/{self.accs[0].pk}/journal/?page={page}&page_size={page_size}"
+        )
+        # We are querying the first of two transactions.
+        assert resp.json()['previous'] is None
+        assert resp.json()['count'] == len(self.transactions)
+        assert resp.json()['next'] is not None
+
+        assert resp.json()['journal']['account'] == self.accs[0].pk
+
+        assert len(resp.json()['journal']['transactions']) == 1
+        assert resp.json()['journal']['transactions'][0]['pk'] == \
+            self.transactions[0].pk
+
+        assert len(resp.json()['journal']['balances']) == 1
+        movements_specs = self.transactions[0].get_movements_specs()
+        assert Decimal(resp.json()['journal']['balances'][0][0]['quantity']) == \
+            movements_specs[0].money.quantity
+
+    def test_get_journal_paginated_second_page(self):
+        self.setup_data_for_pagination()
+        page, page_size = 1, 1
+        next_ = self.client.get(
+            f"/accounts/{self.accs[0].pk}/journal/?page={page}&page_size={page_size}"
+        ).json()['next']
+        resp = self.client.get(next_)
+        # We have 2 transactions, and we are getting 1, so this should be the last
+        assert resp.json()['previous'] is not None
+        assert resp.json()['count'] == len(self.transactions)
+        assert resp.json()['next'] is None
+
+        assert resp.json()['journal']['account'] == self.accs[0].pk
+
+        assert len(resp.json()['journal']['transactions']) == 1
+        # We are querying for the second transaction
+        assert resp.json()['journal']['transactions'][0]['pk'] == \
+            self.transactions[1].pk
+
+        assert len(resp.json()['journal']['balances']) == 1
+        # And we should have the final balance (moneys summed)
+        exp_balance = (
+            Balance([]) +
+            self.transactions[0].get_balance_for_account(self.accs[0]) +
+            self.transactions[1].get_balance_for_account(self.accs[0])
+        )
+        assert resp.json()['journal']['balances'][0] == \
+            BalanceSerializer(exp_balance).data

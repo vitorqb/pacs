@@ -205,8 +205,9 @@ class TestAccountViewset(AccountViewTestCase):
             self.transactions[0].pk
 
         assert len(resp.json()['journal']['balances']) == 1
+        movements_specs = self.transactions[0].get_movements_specs()
         assert Decimal(resp.json()['journal']['balances'][0][0]['quantity']) == \
-            self.movements_specs[0][0].money.quantity
+            movements_specs[0].money.quantity
 
     def test_get_journal_paginated_second_page(self):
         self.setup_data_for_pagination()

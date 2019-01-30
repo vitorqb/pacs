@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 from accounts.journal import Journal
 from accounts.tests.factories import AccountTestFactory
@@ -23,8 +23,8 @@ class TestJournal(PacsTestCase):
 
     def test_iter(self):
         currency_one, currency_two = Mock(), Mock()
-        m_transactions_qset = Mock()
-        m_transactions_qset.iterator.return_value = [
+        m_transactions_qset = MagicMock()
+        m_transactions_qset.__iter__.return_value = [
             self.gen_transaction_mock([Money('10', currency_one)]),
             self.gen_transaction_mock([Money('20', currency_two)])
         ]

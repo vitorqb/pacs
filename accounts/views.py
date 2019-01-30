@@ -5,6 +5,7 @@ from rest_framework.viewsets import ModelViewSet
 from accounts.journal import Journal
 from accounts.models import Account
 from accounts.serializers import AccountSerializer, JournalSerializer
+from accounts.paginators import get_journal_paginator
 from currencies.money import Balance
 from movements.models import Transaction
 
@@ -19,8 +20,8 @@ class AccountViewSet(ModelViewSet):
         journal = Journal(
             account,
             Balance([]),
-            Transaction.objects.pre_process_for_journal()
+            Transaction.objects.filter_by_account(account).pre_process_for_journal()
         )
-        serializer = JournalSerializer(journal)
-        data = serializer.data
+        paginator = get_journal_paginator(request, journal)
+        data = paginator.get_data()
         return Response(data)

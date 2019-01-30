@@ -1,8 +1,13 @@
+from datetime import date, timedelta
 from unittest.mock import Mock
 
 from accounts.journal import Journal
+from accounts.tests.factories import AccountTestFactory
+from common.models import list_to_queryset
 from common.test import PacsTestCase
 from currencies.money import Balance, Money
+from currencies.tests.factories import MoneyTestFactory
+from movements.tests.factories import TransactionTestFactory
 
 
 class BalanceTestCase(PacsTestCase):
@@ -30,3 +35,65 @@ class TestJournal(PacsTestCase):
         result = journal.get_balances()
         assert result[0] == initial_balance.add_money(Money('10', currency_one))
         assert result[1] == result[0].add_money(Money('20', currency_two))
+
+    def test_integration_get_balance_before_transaction(self):
+        self.populate_accounts()
+        self.populate_currencies()
+
+        # Set up an account
+        acc = AccountTestFactory()  # <- we want balance for this
+
+        # And some dates
+        target_date = date(2018, 1, 1)
+        date_before = target_date - timedelta(days=1)
+
+        # A transaction before that should count
+        transaction_before = TransactionTestFactory(
+            movements_specs__0__account=acc,
+            date_=date_before
+        )
+
+        # A transaction at the same date that should count (pk lower)
+        transaction_same_date_pk_lower = TransactionTestFactory(
+            movements_specs__0__account=acc,
+            date_=target_date
+        )
+
+        # The targeted transaction
+        transaction_targeted = TransactionTestFactory(
+            movements_specs__0__account=acc,
+            date_=target_date
+        )
+        assert transaction_targeted.pk > transaction_same_date_pk_lower.pk
+
+        # A transaction at the same date that should not count (pk higher)
+        transaction_same_date_pk_higher = TransactionTestFactory(
+            movements_specs__0__account=acc,
+            date_=target_date
+        )
+        assert transaction_targeted.pk < transaction_same_date_pk_higher.pk
+
+        # An initial balance
+        initial_balance = Balance([MoneyTestFactory()])
+
+        # Makes the journal
+        transactions_qset = list_to_queryset([
+            transaction_before,
+            transaction_same_date_pk_lower,
+            transaction_targeted,
+            transaction_same_date_pk_higher
+        ]).order_by('date', 'id')
+        journal = Journal(acc, initial_balance, transactions_qset)
+
+        # Calculates expected result
+        exp_result = initial_balance
+        for transaction in [
+                transaction_before,
+                transaction_same_date_pk_lower,
+        ]:
+            moneys = transaction.get_moneys_for_account(acc)
+            exp_result = exp_result.add_moneys(moneys)
+
+        result = journal.get_balance_before_transaction(transaction_targeted)
+
+        assert result == exp_result

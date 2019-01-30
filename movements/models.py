@@ -54,9 +54,42 @@ class TransactionQuerySet(m.QuerySet):
             "movement_set__currency",
             "movement_set__account__acc_type"
         )
+        # !!!! TODO -> Revert to -date, pk
         x = x.order_by('date', 'pk')
         x = x.distinct()
         return x
+
+    def filter_before_transaction(
+            self,
+            transaction: Transaction
+    ) -> TransactionQuerySet:
+        """ Filters itself to only consider transactions before another transaction,
+        considering an ordering of (date, id) """
+        date_ = transaction.get_date()
+        pk = transaction.pk
+
+        x = self.order_by('date', 'pk')
+        x = x.filter(m.Q(date__lt=date_) | m.Q(date=date_, pk__lt=pk))
+        return x
+
+    def get_moneys_for_account(self, account: Account) -> List[Money]:
+        """ Returns the Moneys for an account considering all transactions,
+        in an efficient way. """
+        movements = self.filter_by_account(account)._get_movements_qset().distinct()
+        data_dct = (
+            movements
+            .values("currency_id")                   # Group by currency
+            .annotate(quantity=m.Sum("quantity"))    # Sum value
+        )
+        return [
+            Money(x['quantity'], Currency.objects.get(id=x['currency_id']))
+            for x in data_dct
+        ]
+
+    def _get_movements_qset(self):
+        """ Returns a queryset of all Movements related to self (distincted) """
+        pks = self.values_list('movement__pk', flat=True)
+        return Movement.objects.filter(pk__in=pks)
 
 
 class Transaction(m.Model):
@@ -101,6 +134,7 @@ class Transaction(m.Model):
         movements = self.movement_set.all()
         return [MovementSpec.from_movement(m) for m in movements]
 
+    # !!!! TODO -> Should return Balance!
     def get_moneys_for_account(self, account: Account) -> List[Money]:
         """ Returns a list of Money object that represents the impact
         of this transaction for an account. """

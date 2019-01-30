@@ -22,5 +22,5 @@ class MoneyTestFactory(f.Factory):
     class Meta:
         model = Money
 
-    quantity = faker.pydecimal()
+    quantity = f.LazyAttribute(lambda *a: faker.pydecimal())
     currency = f.SubFactory(CurrencyTestFactory)

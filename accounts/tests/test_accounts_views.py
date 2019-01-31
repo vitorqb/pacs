@@ -1,5 +1,5 @@
 from decimal import Decimal
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.urls.base import resolve
 from rest_framework.test import APIRequestFactory
@@ -9,10 +9,10 @@ from accounts.serializers import AccountSerializer
 from accounts.tests.factories import AccountTestFactory
 from accounts.views import AccountViewSet
 from common.test import PacsTestCase
+from currencies.serializers import BalanceSerializer
 from currencies.money import Balance
 from currencies.tests.factories import MoneyTestFactory
-from movements.models import MovementSpec, Transaction, TransactionQuerySet
-from movements.serializers import MovementSpecSerializer
+from movements.models import MovementSpec, TransactionQuerySet
 from movements.tests.factories import TransactionTestFactory
 
 
@@ -244,6 +244,10 @@ class TestAccountViewset(AccountViewTestCase):
             self.transactions[1].pk
 
         assert len(resp.json()['journal']['balances']) == 1
-        movement_specs = self.transactions[1].get_movements_specs()
+        # And we should have the final balance (moneys summed)
+        exp_balance = Balance(
+            self.transactions[0].get_moneys_for_account(self.accs[0]) +
+            self.transactions[1].get_moneys_for_account(self.accs[0])
+        )
         assert resp.json()['journal']['balances'][0] == \
-            [MovementSpecSerializer(movement_specs[0]).data['money']]
+            BalanceSerializer(exp_balance).data

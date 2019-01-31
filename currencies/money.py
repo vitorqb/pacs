@@ -61,6 +61,9 @@ class Balance:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Balance):
             return False
+        currencies = self.get_currencies()
+        if currencies != other.get_currencies():
+            return False
         for currency in self.get_currencies():
             if self.get_for_currency(currency) != other.get_for_currency(currency):
                 return False

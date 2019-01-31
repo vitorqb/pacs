@@ -3,7 +3,6 @@ Implements paginators specifically for Journals.
 """
 from __future__ import annotations
 
-import typing
 from typing import List
 
 import attr
@@ -11,7 +10,6 @@ from rest_framework.pagination import PageNumberPagination
 
 from accounts.journal import Journal
 from accounts.serializers import JournalSerializer
-from common.models import list_to_queryset
 from movements.models import Transaction
 
 

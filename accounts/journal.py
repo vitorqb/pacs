@@ -40,8 +40,7 @@ class Journal:
         """ Returns a list with the same length as transactions, showing the
         Balance for the account after the transaction. """
         out = []
-        # !!!! TODO -> Shouldn't this be self.initial_balance ?
-        current_balance = Balance([])
+        current_balance = self.initial_balance
         for transaction in self.transactions:
             moneys = transaction.get_moneys_for_account(self.account)
             current_balance = current_balance.add_moneys(moneys)

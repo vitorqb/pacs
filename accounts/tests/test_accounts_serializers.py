@@ -10,6 +10,7 @@ from accounts.serializers import (AccountSerializer, AccTypeField,
                                   JournalSerializer)
 from common.test import PacsTestCase, MockQset
 from currencies.serializers import BalanceSerializer
+from currencies.money import Balance
 from movements.serializers import TransactionSerializer
 
 from .factories import AccountTestFactory
@@ -161,10 +162,7 @@ class TestJournalSerializer(PacsTestCase):
         m_transactions_qset = MockQset()
         m_transactions_qset.set_iter(transactions)
 
-        balance = Mock()
-        balance.get_moneys.return_value = []
-
-        journal = Journal(Mock(), balance, m_transactions_qset)
+        journal = Journal(Mock(), Balance([]), m_transactions_qset)
         assert JournalSerializer(journal).data['transactions'] ==\
             [m_to_representation(), m_to_representation()]
         assert m_to_representation.call_args_list[0] ==\

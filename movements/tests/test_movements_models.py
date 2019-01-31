@@ -102,21 +102,21 @@ class TestTransactionQueryset_filter_before_transaction(MovementsModelsTestCase)
         assert transaction_same_date in list(res)
 
 
-class TestTransactionQueryset_get_moneys_for_account(MovementsModelsTestCase):
+class TestTransactionQueryset_get_balance_for_account(MovementsModelsTestCase):
 
     def test_empty_qset(self):
         self.populate_accounts()
         acc = AccountTestFactory()
         qset = Transaction.objects.filter(pk=1, id=2)
-        assert qset.get_moneys_for_account(acc) == []
+        assert qset.get_balance_for_account(acc) == Balance([])
 
     def test_one_long(self):
         self.populate_accounts()
         transaction = TransactionTestFactory.create()
         account = transaction.get_movements_specs()[0].account
         qset = Transaction.objects.filter(pk=transaction.pk)
-        assert qset.get_moneys_for_account(account) ==\
-            transaction.get_moneys_for_account(account)
+        assert qset.get_balance_for_account(account) ==\
+            transaction.get_balance_for_account(account)
 
     def test_two_long(self):
         self.populate_accounts()
@@ -127,10 +127,10 @@ class TestTransactionQueryset_get_moneys_for_account(MovementsModelsTestCase):
         )
         qset = list_to_queryset(transactions)
 
-        resp = qset.get_moneys_for_account(account)
-        exp = Balance(
-            [m for t in transactions for m in t.get_moneys_for_account(account)]
-        ).get_moneys()
+        resp = qset.get_balance_for_account(account)
+        exp = Balance([])
+        for t in transactions:
+            exp += t.get_balance_for_account(account)
         assert exp == resp
 
     def test_empty_for_other_account(self):
@@ -142,7 +142,7 @@ class TestTransactionQueryset_get_moneys_for_account(MovementsModelsTestCase):
 
         qset = Transaction.objects.filter(pk=transaction.pk)
 
-        assert qset.get_moneys_for_account(other_account) == []
+        assert qset.get_balance_for_account(other_account) == Balance([])
 
     def test_two_long_for_parent_account(self):
         self.populate_accounts()
@@ -154,8 +154,8 @@ class TestTransactionQueryset_get_moneys_for_account(MovementsModelsTestCase):
         )
         qset = list_to_queryset(transactions)
 
-        assert qset.get_moneys_for_account(child) ==\
-            qset.get_moneys_for_account(parent)
+        assert qset.get_balance_for_account(child) ==\
+            qset.get_balance_for_account(parent)
 
     def test_repeated_currency(self):
         self.populate_accounts()
@@ -167,10 +167,10 @@ class TestTransactionQueryset_get_moneys_for_account(MovementsModelsTestCase):
         )
         qset = list_to_queryset(transactions)
 
-        res = qset.get_moneys_for_account(account)
-        exp = Balance(
-            [m for t in transactions for m in t.get_moneys_for_account(account)]
-        ).get_moneys()
+        res = qset.get_balance_for_account(account)
+        exp = Balance([])
+        for t in transactions:
+            exp += t.get_balance_for_account(account)
         assert exp == res
 
 

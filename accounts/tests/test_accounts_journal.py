@@ -18,7 +18,8 @@ class TestJournal(PacsTestCase):
 
     def gen_transaction_mock(self, money_for_account):
         transaction = Mock()
-        transaction.get_moneys_for_account.return_value = money_for_account
+        transaction.get_balance_for_account.return_value = \
+            Balance(money_for_account)
         return transaction
 
     def test_iter(self):
@@ -107,9 +108,6 @@ class TestJournal(PacsTestCase):
                 transaction_before,
                 transaction_same_date_pk_lower,
         ]:
-            moneys = transaction.get_moneys_for_account(acc)
-            exp_result = exp_result.add_moneys(moneys)
-
+            exp_result += transaction.get_balance_for_account(acc)
         result = journal.get_balance_before_transaction(transaction_targeted)
-
         assert result == exp_result

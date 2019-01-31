@@ -245,9 +245,10 @@ class TestAccountViewset(AccountViewTestCase):
 
         assert len(resp.json()['journal']['balances']) == 1
         # And we should have the final balance (moneys summed)
-        exp_balance = Balance(
-            self.transactions[0].get_moneys_for_account(self.accs[0]) +
-            self.transactions[1].get_moneys_for_account(self.accs[0])
+        exp_balance = (
+            Balance([]) +
+            self.transactions[0].get_balance_for_account(self.accs[0]) +
+            self.transactions[1].get_balance_for_account(self.accs[0])
         )
         assert resp.json()['journal']['balances'][0] == \
             BalanceSerializer(exp_balance).data

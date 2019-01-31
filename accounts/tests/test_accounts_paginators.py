@@ -127,8 +127,7 @@ class TestJournalPagePaginator(PacsTestCase):
         # the two first transactions
         exp_initial_balance = Balance([])
         for transaction in transactions_qset[0:2]:
-            moneys = transaction.get_moneys_for_account(account)
-            exp_initial_balance = exp_initial_balance.add_moneys(moneys)
+            exp_initial_balance += transaction.get_balance_for_account(account)
         assert exp_initial_balance == journal_page.initial_balance
 
         # And should have the 4 middle transactions

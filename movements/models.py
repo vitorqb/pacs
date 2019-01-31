@@ -12,7 +12,7 @@ from accounts.models import Account
 from common.models import full_clean_and_save, new_money_quantity_field
 from common.utils import round_decimal, decimals_equal
 from currencies.models import Currency
-from currencies.money import Money
+from currencies.money import Money, Balance
 
 if TYPE_CHECKING:
     import datetime
@@ -54,7 +54,6 @@ class TransactionQuerySet(m.QuerySet):
             "movement_set__currency",
             "movement_set__account__acc_type"
         )
-        # !!!! TODO -> Revert to -date, pk
         x = x.order_by('date', 'pk')
         x = x.distinct()
         return x
@@ -72,7 +71,7 @@ class TransactionQuerySet(m.QuerySet):
         x = x.filter(m.Q(date__lt=date_) | m.Q(date=date_, pk__lt=pk))
         return x
 
-    def get_moneys_for_account(self, account: Account) -> List[Money]:
+    def get_balance_for_account(self, account: Account) -> Balance:
         """ Returns the Moneys for an account considering all transactions,
         in an efficient way. """
         movements = self.filter_by_account(account)._get_movements_qset().distinct()
@@ -81,10 +80,10 @@ class TransactionQuerySet(m.QuerySet):
             .values("currency_id")                   # Group by currency
             .annotate(quantity=m.Sum("quantity"))    # Sum value
         )
-        return [
+        return Balance([
             Money(x['quantity'], Currency.objects.get(id=x['currency_id']))
             for x in data_dct
-        ]
+        ])
 
     def _get_movements_qset(self):
         """ Returns a queryset of all Movements related to self (distincted) """
@@ -134,18 +133,17 @@ class Transaction(m.Model):
         movements = self.movement_set.all()
         return [MovementSpec.from_movement(m) for m in movements]
 
-    # !!!! TODO -> Should return Balance!
-    def get_moneys_for_account(self, account: Account) -> List[Money]:
+    def get_balance_for_account(self, account: Account) -> Balance:
         """ Returns a list of Money object that represents the impact
         of this transaction for an account. """
         acc_descendants_pks = list(
             account.get_descendants(True).values_list("pk", flat=True)
         )
-        return [
+        return Balance([
             x.money
             for x in self.get_movements_specs()
             if x.account.pk in acc_descendants_pks
-        ]
+        ])
 
     @atomic
     def set_movements(self, movements_specs: List[MovementSpec]) -> None:

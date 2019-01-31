@@ -135,7 +135,7 @@ class TestJournalSerializer(PacsTestCase):
         transaction = Mock(
             pk=1,
             get_movements_specs=[],
-            get_moneys_for_account=Mock(return_value=[])
+            get_balance_for_account=Mock(return_value=Balance([]))
         )
         m_transactions_qset = MagicMock(iterator=Mock(return_value=[transaction]))
         m_transactions_qset.__iter__.return_value = [transaction]
@@ -157,8 +157,8 @@ class TestJournalSerializer(PacsTestCase):
     @patch.object(TransactionSerializer, "to_representation")
     def test_serializes_transactions(self, m_to_representation):
         transactions = [Mock(), Mock()]
-        transactions[0].get_moneys_for_account.return_value = []
-        transactions[1].get_moneys_for_account.return_value = []
+        transactions[0].get_balance_for_account.return_value = Balance([])
+        transactions[1].get_balance_for_account.return_value = Balance([])
         m_transactions_qset = MockQset()
         m_transactions_qset.set_iter(transactions)
 

@@ -42,16 +42,14 @@ class Journal:
         out = []
         current_balance = self.initial_balance
         for transaction in self.transactions:
-            moneys = transaction.get_moneys_for_account(self.account)
-            current_balance = current_balance.add_moneys(moneys)
+            current_balance += transaction.get_balance_for_account(self.account)
             out.append(current_balance)
         return out
 
     def get_balance_before_transaction(self, transaction: Transaction) -> Balance:
         """ Returns the balance exactly before a transaction. """
-        moneys = self.initial_balance.get_moneys()
-        moneys += self\
+        balance = self\
             .transactions\
             .filter_before_transaction(transaction)\
-            .get_moneys_for_account(self.account)
-        return Balance(moneys)
+            .get_balance_for_account(self.account)
+        return self.initial_balance + balance

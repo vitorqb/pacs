@@ -58,6 +58,10 @@ class Balance:
             self.get_for_currency(c) for c in self.get_currencies()
         ]
 
+    def __add__(self, other: object) -> Balance:
+        assert isinstance(other, Balance)
+        return self.add_moneys(other._moneys)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Balance):
             return False

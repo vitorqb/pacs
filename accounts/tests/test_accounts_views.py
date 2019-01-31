@@ -12,7 +12,7 @@ from common.test import PacsTestCase
 from currencies.serializers import BalanceSerializer
 from currencies.money import Balance
 from currencies.tests.factories import MoneyTestFactory
-from movements.models import MovementSpec, TransactionQuerySet
+from movements.models import MovementSpec, Transaction
 from movements.tests.factories import TransactionTestFactory
 
 
@@ -159,10 +159,10 @@ class TestAccountViewset(AccountViewTestCase):
 
     @patch("accounts.views.get_journal_paginator")
     @patch("accounts.views.Journal")
-    @patch.object(TransactionQuerySet, "pre_process_for_journal")
+    @patch("accounts.views._get_all_transactions")
     def test_get_journal(
             self,
-            m_TransactionQuerySet_pre_process_for_journal,
+            m_get_all_transactions,
             m_Journal,
             m_get_journal_paginator
     ):
@@ -177,7 +177,7 @@ class TestAccountViewset(AccountViewTestCase):
         m_Journal.assert_called_with(
             account,
             Balance([]),
-            m_TransactionQuerySet_pre_process_for_journal()
+            m_get_all_transactions()
         )
 
         # Called m_get_journal_paginator with Journal

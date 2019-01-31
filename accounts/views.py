@@ -17,11 +17,12 @@ class AccountViewSet(ModelViewSet):
     @action(['get'], True)
     def journal(self, request, pk=None):
         account = self.get_object()
-        journal = Journal(
-            account,
-            Balance([]),
-            Transaction.objects.filter_by_account(account).pre_process_for_journal()
-        )
+        journal = Journal(account, Balance([]), _get_all_transactions())
         paginator = get_journal_paginator(request, journal)
         data = paginator.get_data()
         return Response(data)
+
+
+def _get_all_transactions():
+    """ Return all transactions. Separated maily to facilitate test mock. """
+    return Transaction.objects.all()

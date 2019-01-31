@@ -56,6 +56,12 @@ class TestBalance(MoneyTestCase):
         two = Balance([Money('7', currency), Money('3', currency)])
         assert one == two
 
+    def test_equal_empty_and_not_empty(self):
+        currency = Mock()
+        one = Balance([])
+        two = Balance([Money('10', currency)])
+        assert one != two
+
     def test_equal_false_diff_currencies(self):
         currencies = [Mock(), Mock()]
         one = Balance([Money('10', currencies[0])])

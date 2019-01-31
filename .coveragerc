@@ -13,3 +13,4 @@ omit =
      tasks.py
      pacs/wsgi.py
      manage.py
+     functional_tests.py

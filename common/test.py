@@ -30,7 +30,11 @@ class MockQset():
     """ A mock for a queryset that records the arguments its methods were called
     ald returns itself instead of a copy """
 
-    _iter_list = attr.ib(default=None)
+    # Used internally for setting an iterator
+    _iter_list = attr.ib(init=False, default=None)
+
+    # Was this queryset called with .none() ?
+    is_none = attr.ib(default=False)
 
     filter_kwargs = attr.ib(init=False, default=None)
     prefetch_related_args = attr.ib(init=False, default=None)
@@ -57,6 +61,10 @@ class MockQset():
     def filter_by_account(self, *args):
         self.filter_by_account_args = args
         return self
+
+    def none(self):
+        """ Returns a new queryset with is_none=True """
+        return MockQset(is_none=True)
 
     def set_iter(self, x):
         """ Sets a list to be used when called as an iterator. """

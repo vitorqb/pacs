@@ -88,7 +88,12 @@ class JournalPagePaginator:
         try:
             first_transaction = transactions_page[0]
         except IndexError:
-            first_transaction = None
+            # No transactions -> Just count initial balance
+            return Journal(
+                journal.account,
+                journal.initial_balance,
+                journal.transactions.none()
+            )
         initial_balance = journal.get_balance_before_transaction(first_transaction)
         # Journal expects a TransactionQuerySet, not a list. So we hack it here
         # a bit. Inneficient but simplifies our life.

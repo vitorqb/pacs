@@ -101,6 +101,15 @@ class TestJournalPagePaginator(PacsTestCase):
         assert m_paginate_journal.call_args == \
             call(self.m_journal, self.m_base_paginator.paginate_queryset())
 
+    def test_paginate_journal_returns_empty_journal_for_empty_page(self):
+        transactions_page = []
+        journal = Mock()
+        journal.transactions = MockQset()
+        resp = JournalPagePaginator.paginate_journal(journal, transactions_page)
+        assert resp.account == journal.account
+        assert resp.initial_balance == journal.initial_balance
+        assert resp.transactions.is_none is True
+
     def test_paginate_journal_integration_base(self):
         # Creates an account and transactions for it
         self.populate_accounts()

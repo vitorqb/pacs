@@ -1,8 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import Mock
 
-import attr
 from rest_framework.exceptions import ValidationError
 
 from accounts.management.commands.populate_accounts import (account_populator,
@@ -10,7 +8,7 @@ from accounts.management.commands.populate_accounts import (account_populator,
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.tests.factories import AccountTestFactory
 from common.models import list_to_queryset
-from common.test import PacsTestCase
+from common.test import PacsTestCase, MockQset
 from currencies.management.commands.populate_currencies import \
     currency_populator
 from currencies.money import Balance, Money
@@ -21,28 +19,6 @@ from movements.models import (Movement, MovementSpec, Transaction,
                               TransactionQuerySet)
 
 from .factories import TransactionTestFactory
-
-
-@attr.s()
-class MockQset:
-    """ A mock for a queryset that records the arguments its methods were called
-    ald returns itself instead of a copy """
-
-    prefetch_related_args = attr.ib(init=False, default=None)
-    order_by_args = attr.ib(init=False, default=None)
-    distinct_called = attr.ib(init=False, default=False)
-
-    def prefetch_related(self, *args):
-        self.prefetch_related_args = args
-        return self
-
-    def order_by(self, *args):
-        self.order_by_args = args
-        return self
-
-    def distinct(self):
-        self.distinct_called = True
-        return self
 
 
 class MovementsModelsTestCase(PacsTestCase):

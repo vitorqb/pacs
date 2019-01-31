@@ -4,7 +4,7 @@ from unittest.mock import Mock, MagicMock
 from accounts.journal import Journal
 from accounts.tests.factories import AccountTestFactory
 from common.models import list_to_queryset
-from common.test import PacsTestCase
+from common.test import PacsTestCase, MockQset
 from currencies.money import Balance, Money
 from currencies.tests.factories import MoneyTestFactory
 from movements.tests.factories import TransactionTestFactory
@@ -23,11 +23,11 @@ class TestJournal(PacsTestCase):
 
     def test_iter(self):
         currency_one, currency_two = Mock(), Mock()
-        m_transactions_qset = MagicMock()
-        m_transactions_qset.__iter__.return_value = [
+        m_transactions_qset = MockQset()
+        m_transactions_qset.set_iter([
             self.gen_transaction_mock([Money('10', currency_one)]),
             self.gen_transaction_mock([Money('20', currency_two)])
-        ]
+        ])
         initial_balance = Balance([Money('20', currency_two)])
 
         journal = Journal(Mock(), initial_balance, m_transactions_qset)
@@ -35,6 +35,22 @@ class TestJournal(PacsTestCase):
         result = journal.get_balances()
         assert result[0] == initial_balance.add_money(Money('10', currency_one))
         assert result[1] == result[0].add_money(Money('20', currency_two))
+
+    def test_process_transactions_on_init(self):
+        m_transactions_qset, m_account = MockQset(), Mock()
+        journal = Journal(m_account, Mock(), transactions=m_transactions_qset)
+        assert m_transactions_qset.filter_by_account_args == (m_account,)
+        assert m_transactions_qset.prefetch_related_args == (
+            "movement_set__currency",
+            "movement_set__account__acc_type"
+        )
+        assert m_transactions_qset.order_by_args == ('date', 'id')
+        assert m_transactions_qset.distinct_called
+        assert journal.transactions == m_transactions_qset\
+            .filter_by_account()\
+            .prefetch_related()\
+            .order_by()\
+            .distinct()
 
     def test_integration_get_balance_before_transaction(self):
         self.populate_accounts()

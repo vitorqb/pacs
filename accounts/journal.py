@@ -13,20 +13,29 @@ if TYPE_CHECKING:
 
 @attr.s(frozen=True)
 class Journal:
-    """ Represents a history of transactions for an account """
+    """ Represents an ordered sequence (history) of balances for an account """
 
     account: Account = attr.ib()
 
     # initial_balance is the balance before the first transaction.
     initial_balance: Balance = attr.ib()
 
-    # An iterable of all Transaction for this journal. Must be transactions
-    # that include account and must be ordered by ('date', 'id').
-    # !!!! TODO -> This should not assume it is sorted, but should sort it instead
-    # !!!!         and should sort by ('-date', 'id')
-    # !!!! TODO -> This should not assume it is filtered by account, but should
-    # !!!!         actually filter it instead!
+    # An iterable of all Transaction for this journal.
     transactions: TransactionQuerySet = attr.ib()
+
+    def __attrs_post_init__(self):
+        # Prepares transactions by filtering/prefetching/ordering
+        # !!!! TODO -> Should sort by -date, id
+        transactions = self\
+            .transactions\
+            .filter_by_account(self.account)\
+            .prefetch_related(
+                "movement_set__currency",
+                "movement_set__account__acc_type"
+            )\
+            .order_by('date', 'id')\
+            .distinct()
+        object.__setattr__(self, 'transactions', transactions)
 
     def get_balances(self) -> List[Balance]:
         """ Returns a list with the same length as transactions, showing the

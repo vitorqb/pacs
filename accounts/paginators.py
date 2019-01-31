@@ -75,12 +75,14 @@ class JournalPagePaginator:
         }
 
     @staticmethod
-    def paginate_journal(journal: Journal, transactions_page: List[Transaction]):
+    def paginate_journal(
+            journal: Journal,
+            transactions_page: List[Transaction],
+    ) -> Journal:
         """ Returns a new Journal for the same account representing
         only the transactions on transactions_page.
         Assumes that:
-          - Both `journal.transactions` and `transactions_page` are ordered by
-            (date, id).
+          - Both `transactions_page` is ordered by (date, id).
           - transactions_page is a continuous slice of
             journal.transactions """
         try:
@@ -90,7 +92,7 @@ class JournalPagePaginator:
         initial_balance = journal.get_balance_before_transaction(first_transaction)
         # Journal expects a TransactionQuerySet, not a list. So we hack it here
         # a bit. Inneficient but simplifies our life.
-        transactions_qset = Transaction.objects.filter(
+        transactions_qset = journal.transactions.filter(
             pk__in=(x.pk for x in transactions_page)
-        ).pre_process_for_journal()
+        )
         return Journal(journal.account, initial_balance, transactions_qset)

@@ -8,7 +8,7 @@ from accounts.management.commands.populate_accounts import (account_populator,
 from accounts.models import Account, AccTypeEnum, get_root_acc
 from accounts.serializers import (AccountSerializer, AccTypeField,
                                   JournalSerializer)
-from common.test import PacsTestCase
+from common.test import PacsTestCase, MockQset
 from currencies.serializers import BalanceSerializer
 from movements.serializers import TransactionSerializer
 
@@ -158,9 +158,8 @@ class TestJournalSerializer(PacsTestCase):
         transactions = [Mock(), Mock()]
         transactions[0].get_moneys_for_account.return_value = []
         transactions[1].get_moneys_for_account.return_value = []
-        m_transactions_qset = MagicMock()
-        m_transactions_qset.iterator.return_value = transactions
-        m_transactions_qset.__iter__.return_value = transactions
+        m_transactions_qset = MockQset()
+        m_transactions_qset.set_iter(transactions)
 
         balance = Mock()
         balance.get_moneys.return_value = []

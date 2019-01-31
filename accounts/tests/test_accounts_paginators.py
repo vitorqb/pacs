@@ -4,7 +4,7 @@ from accounts.journal import Journal
 from accounts.paginators import (JournalAllPaginator, JournalPagePaginator,
                                  get_journal_paginator)
 from accounts.tests.factories import AccountTestFactory
-from common.test import PacsTestCase
+from common.test import PacsTestCase, MockQset
 from common.models import list_to_queryset
 from currencies.money import Balance
 from movements.tests.factories import TransactionTestFactory
@@ -51,7 +51,7 @@ class TestJournalPagePaginator(PacsTestCase):
     def setUp(self):
         """ Prepares a paginator with all arguments mocked """
         self.m_request = Mock()
-        self.m_journal = Mock(transactions=[])
+        self.m_journal = Mock(transactions=MockQset())
         self.m_base_paginator = MagicMock()
         self.paginator = JournalPagePaginator(
             self.m_request,

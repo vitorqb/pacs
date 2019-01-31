@@ -187,6 +187,21 @@ class TestAccountViewset(AccountViewTestCase):
         # Returned what the paginator returns
         assert resp.json() == m_paginator.get_data.return_value
 
+    def test_get_journal_paginated_defaults_to_first_page(self):
+        """ Sending `page_size` with no `page` should be the same as
+        sending `page=1` """
+        self.setup_data_for_pagination()
+        page, page_size = 1, 1
+        # With page=1
+        resp_with_page = self.client.get(
+            f"/accounts/{self.accs[0].pk}/journal/?page={page}&page_size={page_size}"
+        )
+        # Without page
+        resp_no_page = self.client.get(
+            f"/accounts/{self.accs[0].pk}/journal/?page_size={page_size}"
+        )
+        assert resp_with_page.json() == resp_no_page.json()
+
     def test_get_journal_paginated_first_page(self):
         self.setup_data_for_pagination()
         page, page_size = 1, 1

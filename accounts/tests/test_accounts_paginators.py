@@ -21,13 +21,13 @@ class Test_get_journal_paginator(PacsTestCase):
         paginator = get_journal_paginator(request, Mock())
         assert isinstance(paginator, JournalPagePaginator)
 
+    def test_with_page_size_only_returns_JournalPagePaginator(self):
+        request = Mock(query_params={'page_size': 1})
+        paginator = get_journal_paginator(request, Mock())
+        assert isinstance(paginator, JournalPagePaginator)
+
     def test_with_page_only_returns_JournalAllPaginator(self):
         request = Mock(query_params={'page': 1})
-        paginator = get_journal_paginator(request, Mock())
-        assert isinstance(paginator, JournalAllPaginator)
-
-    def test_with_page_size_only_returns_JournalAllPaginator(self):
-        request = Mock(query_params={'page_size': 1})
         paginator = get_journal_paginator(request, Mock())
         assert isinstance(paginator, JournalAllPaginator)
 

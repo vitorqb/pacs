@@ -25,7 +25,6 @@ class Journal:
 
     def __attrs_post_init__(self):
         # Prepares transactions by filtering/prefetching/ordering
-        # !!!! TODO -> Should sort by -date, id
         transactions = self\
             .transactions\
             .filter_by_account(self.account)\

@@ -17,8 +17,10 @@ from movements.models import Transaction
 
 def get_journal_paginator(request, journal):
     """ Factory method that returns a Paginator to use for journal
-    given a request """
-    if all(x in request.query_params for x in ('page', 'page_size')):
+    given a request. """
+    # Returns real paginator if page_size is present, if not returns the dummy
+    # JournalAllPaginator
+    if 'page_size' in request.query_params:
         return JournalPagePaginator(request, journal)
     return JournalAllPaginator(request, journal)
 

@@ -45,29 +45,6 @@ class TestTransactionQueryset_filter_by_account(MovementsModelsTestCase):
             [transaction_with]
 
 
-class TestTransactionQueryset_pre_process_for_journal(MovementsModelsTestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.mock_qset = MockQset()
-        self.resp = TransactionQuerySet.pre_process_for_journal(self.mock_qset)
-
-    def test_returns_qset(self):
-        assert self.resp is self.mock_qset
-
-    def test_orders_by_date_and_pk(self):
-        assert self.mock_qset.order_by_args == ('date', 'pk')
-
-    def test_prefetches_currency_and_account_type(self):
-        assert set(self.mock_qset.prefetch_related_args) == set([
-            "movement_set__currency",
-            "movement_set__account__acc_type"
-        ])
-
-    def test_distinct_is_called(self):
-        assert self.mock_qset.distinct_called is True
-
-
 class TestTransactionQueryset_filter_before_transaction(MovementsModelsTestCase):
 
     def test_none(self):

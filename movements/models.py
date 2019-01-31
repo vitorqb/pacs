@@ -47,17 +47,6 @@ class TransactionQuerySet(m.QuerySet):
         )
         return self.filter(movement__account__id__in=acc_descendants_pks)
 
-    def pre_process_for_journal(self) -> TransactionQuerySet:
-        """ Pre processes the queryset to be used in an Journal, with ordering
-        and optimizations """
-        x = self.prefetch_related(
-            "movement_set__currency",
-            "movement_set__account__acc_type"
-        )
-        x = x.order_by('date', 'pk')
-        x = x.distinct()
-        return x
-
     def filter_before_transaction(
             self,
             transaction: Transaction

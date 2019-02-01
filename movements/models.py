@@ -42,9 +42,7 @@ class TransactionQuerySet(m.QuerySet):
 
     def filter_by_account(self, acc: Account) -> TransactionQuerySet:
         """ Returns only transactions for which a movement uses an account """
-        acc_descendants_pks = list(
-            acc.get_descendants(True).values_list('pk', flat=True)
-        )
+        acc_descendants_pks = acc.get_descendants_ids(True, True)
         return self.filter(movement__account__id__in=acc_descendants_pks)
 
     def filter_before_transaction(
@@ -125,9 +123,7 @@ class Transaction(m.Model):
     def get_balance_for_account(self, account: Account) -> Balance:
         """ Returns a list of Money object that represents the impact
         of this transaction for an account. """
-        acc_descendants_pks = list(
-            account.get_descendants(True).values_list("pk", flat=True)
-        )
+        acc_descendants_pks = account.get_descendants_ids(True, True)
         return Balance([
             x.money
             for x in self.get_movements_specs()

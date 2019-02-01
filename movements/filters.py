@@ -13,7 +13,7 @@ class TransactionFilterSet(f.FilterSet):
         descendants_ids = (
             []
             if acc is None else
-            acc.get_descendants(True).values_list('id', flat=True)
+            acc.get_descendants_ids(True, use_cache=True)
         )
         return queryset\
             .filter(movement__account__id__in=list(descendants_ids))\

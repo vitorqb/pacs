@@ -1,5 +1,6 @@
 import attr
 from django.conf import settings
+from django.core.cache import cache
 from rest_framework.test import APIClient, APITestCase
 
 from accounts.management.commands.populate_accounts import (account_populator,
@@ -23,6 +24,11 @@ class PacsTestCase(APITestCase):
 
     def populate_currencies(self):
         currency_populator()
+
+    def tearDown(self):
+        """ Clear cache between tests """
+        super().tearDown()
+        cache.clear()
 
 
 @attr.s()

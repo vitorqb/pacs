@@ -72,3 +72,34 @@ class TestAccount(AccountsModelTestCase):
             if x.value == acc.acc_type.name
         )
         assert acc.get_acc_type() == exp_acc_type
+
+    def test_get_descendants_ids(self):
+        self.populate_accounts()
+        root = get_root_acc()
+        assert root.get_descendants_ids(True) == [
+            x.id for x in Account.objects.all()
+        ]
+
+    def test_get_descendants_ids_with_cache(self):
+        self.populate_accounts()
+        acc = Account.objects.first()
+
+        acc = Account.objects.filter(pk=acc.pk).first()
+        with self.assertNumQueries(1):
+            acc.get_descendants_ids(True)
+
+        acc = Account.objects.filter(pk=acc.pk).first()
+        with self.assertNumQueries(0):
+            acc.get_descendants_ids(True, use_cache=True)
+
+    def test_get_descendants_ids_force_no_cache(self):
+        self.populate_accounts()
+        acc = Account.objects.first()
+
+        acc = Account.objects.filter(pk=acc.pk).first()
+        with self.assertNumQueries(1):
+            acc.get_descendants_ids(True)
+
+        acc = Account.objects.filter(pk=acc.pk).first()
+        with self.assertNumQueries(1):
+            acc.get_descendants_ids(True, use_cache=False)

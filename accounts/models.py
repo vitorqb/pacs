@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict
+from typing import TYPE_CHECKING, Dict, List
 
 import attr
 import django.db.models as m
+from django.core.cache import cache
 from mptt.models import MPTTModel, TreeForeignKey
 from rest_framework.exceptions import ValidationError
 
@@ -72,6 +73,22 @@ class Account(MPTTModel):
     #
     # Methods
     #
+    def get_descendants_ids(
+            self,
+            include_self: bool,
+            use_cache: bool = False
+    ) -> List[int]:
+        """ Returns the descendants ids, cached to avoid multiple queries """
+        cache_key = (
+            f"account_get_descendants_ids_pk={self.pk}_include_self={include_self}"
+        )
+        if use_cache is False or cache.get(cache_key) is None:
+            qset = self\
+                .get_descendants(include_self)\
+                .values_list('pk', flat=True)
+            cache.set(cache_key, [x for x in qset])
+        return cache.get(cache_key)
+
     def get_name(self) -> str:
         return self.name
 

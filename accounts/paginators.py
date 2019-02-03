@@ -10,6 +10,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from accounts.journal import Journal
 from accounts.serializers import JournalSerializer
+from common.constants import PAGE_QUERY_PARAM, PAGE_SIZE_QUERY_PARAM
 from movements.models import Transaction
 
 
@@ -18,7 +19,7 @@ def get_journal_paginator(request, journal):
     given a request. """
     # Returns real paginator if page_size is present, if not returns the dummy
     # JournalAllPaginator
-    if 'page_size' in request.query_params:
+    if PAGE_SIZE_QUERY_PARAM in request.query_params:
         return JournalPagePaginator(request, journal)
     return JournalAllPaginator(request, journal)
 
@@ -47,8 +48,8 @@ class JournalPagePaginator:
     _BASE_PAGINATOR_DEFAULT_CLASS = type(
         '_Paginator',
         (PageNumberPagination,),
-        {'page_query_param': 'page',
-         'page_size_query_param': 'page_size'}
+        {'page_query_param': PAGE_QUERY_PARAM,
+         'page_size_query_param': PAGE_SIZE_QUERY_PARAM}
     )
 
     request = attr.ib()

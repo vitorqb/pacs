@@ -1,8 +1,8 @@
 from django_filters import rest_framework as filters
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.viewsets import ModelViewSet
 
-from common.pagination import OptionalPageNumberPaginator
+from common.constants import PAGE_QUERY_PARAM, PAGE_SIZE_QUERY_PARAM
 from movements.filters import TransactionFilterSet
 from movements.models import Transaction
 from movements.serializers import TransactionSerializer
@@ -29,6 +29,6 @@ class TransactionViewSet(ModelViewSet):
     pagination_class = type(
         '_Paginator',
         (PageNumberPagination,),
-        {'page_query_param': 'page',
-         'page_size_query_param': 'page_size'}
+        {'page_query_param': PAGE_QUERY_PARAM,
+         'page_size_query_param': PAGE_SIZE_QUERY_PARAM}
     )

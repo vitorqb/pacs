@@ -1,33 +1,34 @@
-from unittest.mock import Mock, call, patch, MagicMock
+from unittest.mock import MagicMock, Mock, call, patch
 
 from accounts.journal import Journal
 from accounts.paginators import (JournalAllPaginator, JournalPagePaginator,
                                  get_journal_paginator)
 from accounts.tests.factories import AccountTestFactory
-from common.test import PacsTestCase, MockQset
+from common.constants import PAGE_QUERY_PARAM, PAGE_SIZE_QUERY_PARAM
 from common.models import list_to_queryset
+from common.test import MockQset, PacsTestCase
 from currencies.money import Balance
-from movements.tests.factories import TransactionTestFactory
 from movements.models import Transaction
+from movements.tests.factories import TransactionTestFactory
 
 
 class Test_get_journal_paginator(PacsTestCase):
 
     def test_with_page_and_page_size_returns_JournalPagePaginator(self):
         request = Mock(query_params={
-            'page': 1,
-            'page_size': 1
+            PAGE_QUERY_PARAM: 1,
+            PAGE_SIZE_QUERY_PARAM: 1
         })
         paginator = get_journal_paginator(request, Mock())
         assert isinstance(paginator, JournalPagePaginator)
 
     def test_with_page_size_only_returns_JournalPagePaginator(self):
-        request = Mock(query_params={'page_size': 1})
+        request = Mock(query_params={PAGE_SIZE_QUERY_PARAM: 1})
         paginator = get_journal_paginator(request, Mock())
         assert isinstance(paginator, JournalPagePaginator)
 
     def test_with_page_only_returns_JournalAllPaginator(self):
-        request = Mock(query_params={'page': 1})
+        request = Mock(query_params={PAGE_QUERY_PARAM: 1})
         paginator = get_journal_paginator(request, Mock())
         assert isinstance(paginator, JournalAllPaginator)
 

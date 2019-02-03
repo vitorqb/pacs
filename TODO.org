@@ -1,0 +1,27 @@
+* Date created (everywhere).
+  All models could have ~date-created~ and ~date-updated~.
+
+* Ability to set nested tags (clojure syntax?) on transactions.
+  Image that we are on ~Money Owed to friends~. We now want to set tags.
+  We would like to set something like this:
+
+  - Date: 2019-01-01
+  - Movements: (...)
+  - Tags: (:owned-to miquel)
+
+  And if we are recording expenses during a trip:
+
+  - Date: ...
+  - Movements: ...
+  - Tags: (:trip-to Brussels)
+
+  Now suppose, on the other hand, that we just want to mark an expense as
+  "to-review", so that it should be reviewed.
+
+  - Date: ...
+  - Movements: ...
+  - Tags: (to-review)
+
+  Everytime we have a keyword (:trip-to Brussels), it means that we
+  have a key-value pair tag. Everytime we have a non-keyword
+  (to-review) it means we have a simple text tag.

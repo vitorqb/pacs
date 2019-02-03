@@ -89,6 +89,7 @@ class Transaction(m.Model):
     # Fields
     #
     # !!!! TODO -> Add reference (for example the text that appears in la caixa)
+    # !!!! TODO -> Add comments field (large texts for detailed comments)
     description = m.TextField()
     date = m.DateField()
 
@@ -130,6 +131,7 @@ class Transaction(m.Model):
             if x.account.pk in acc_descendants_pks
         ])
 
+    # !!!! TODO -> rename to set_movements_specs
     @atomic
     def set_movements(self, movements_specs: List[MovementSpec]) -> None:
         """ Set's movements, using an iterable of MovementSpec """

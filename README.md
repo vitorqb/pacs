@@ -1,6 +1,29 @@
-# Personal Account System (pacc)
+# Personal Account System (pacs)
+
+A small personal project for a system to keep track of my personal finances.
+
+This repo contains the REST API web server (written in python-django).
+
+A web frontend in react is available at https://github.com/vitorqb/pacs-react.
 
 ## Setting up
+
+Make sure you have https://github.com/pyinvoke/invoke installed and
+
+```
+cd <path/to/git/clone>
+cp .env.example .env
+inv prepare-virtualenv ./venv && . venv/bin/activate
+inv migrate runserver
+```
+
+## Running tests
+
+```
+. venv/bin/activate && inv test
+```
+
+### Configuration variables
 
 The system configuration depends on environmental variables. Those can
 be set by the user or in a `.env` file at the project root (here).

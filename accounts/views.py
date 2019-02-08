@@ -4,7 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from accounts.journal import Journal
 from accounts.models import Account
-from accounts.serializers import AccountSerializer, JournalSerializer
+from accounts.serializers import AccountSerializer
 from accounts.paginators import get_journal_paginator
 from currencies.money import Balance
 from movements.models import Transaction
@@ -16,10 +16,12 @@ class AccountViewSet(ModelViewSet):
 
     @action(['get'], True)
     def journal(self, request, pk=None):
+        # If 'reverse' was parsed as a query param, reverse is True
+        reverse = 'reverse' in request.query_params
         account = self.get_object()
         journal = Journal(account, Balance([]), _get_all_transactions())
         paginator = get_journal_paginator(request, journal)
-        data = paginator.get_data()
+        data = paginator.get_data(reverse)
         return Response(data)
 
 

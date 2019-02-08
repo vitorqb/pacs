@@ -22,8 +22,8 @@ class PacsContext:
     def __init__(self, context: Context):
         self._context = context
 
-    def run(self, cmd: str, pty: bool = False) -> Result:
-        return self._context.run(cmd, pty=pty)
+    def run(self, cmd: str, pty: bool = False, warn: bool = False) -> Result:
+        return self._context.run(cmd, pty=pty, warn=warn)
 
     @contextmanager
     def cd(self, dir_: str):
@@ -77,7 +77,7 @@ def _populate_db(c):
 )
 def prepare_virtualenv(c, path, force=False):
     """ Prepares a virtualenv in a path """
-    path_exists = c.run(f'[ -d "{path}" ] || [ -f "{path}" ]').ok
+    path_exists = c.run(f'[ -d "{path}" ] || [ -f "{path}" ]', warn=True).ok
     if path_exists:
         if force is not True:
             raise Exit(f"Path '{path}' exists and force is set to False!")

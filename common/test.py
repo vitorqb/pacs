@@ -17,12 +17,14 @@ class PacsTestCase(APITestCase):
             HTTP_AUTHORIZATION=f"Token {settings.ADMIN_TOKEN}"
         )
 
-    def populate_accounts(self):
+    @staticmethod
+    def populate_accounts():
         """ Populates db with Accounts """
         account_type_populator()
         account_populator()
 
-    def populate_currencies(self):
+    @staticmethod
+    def populate_currencies():
         currency_populator()
 
     def tearDown(self):

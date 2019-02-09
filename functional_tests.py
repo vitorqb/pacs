@@ -1,4 +1,5 @@
 from datetime import date
+from functools import partialmethod
 
 import attr
 import requests
@@ -19,6 +20,12 @@ from movements.serializers import TransactionSerializer
 from movements.tests.factories import TransactionTestFactory
 
 
+class URLS:
+    account = '/accounts/'
+    currency = '/currencies/'
+    transaction = '/transactions/'
+
+
 class FunctionalTests(StaticLiveServerTestCase):
 
     def setUp(self):
@@ -32,6 +39,10 @@ class FunctionalTests(StaticLiveServerTestCase):
             self.live_server_url,
             {'Authorization': f"Token {settings.ADMIN_TOKEN}"}
         )
+
+        # Sets up a root account and the DataMaker
+        self.root_acc = _find_root(self.get_json(URLS.account))
+        self.data_maker = DataMaker(self.root_acc)
 
     def assert_response_status_okay(self, resp):
         """ Asserts that a Response has a 2xx status code """
@@ -52,6 +63,10 @@ class FunctionalTests(StaticLiveServerTestCase):
         resp = self.requests.post(f"{path}", json=json)
         self.assert_response_status_okay(resp)
         return resp.json()
+
+    post_account = partialmethod(post_json, URLS.account)
+    post_transaction = partialmethod(post_json, URLS.transaction)
+    post_currency = partialmethod(post_json, URLS.currency)
 
     def patch_json(self, path, json={}):
         """ Makes a json request, ensures it returns 2**, and parses the json """
@@ -78,25 +93,12 @@ class FunctionalTests(StaticLiveServerTestCase):
             set(x['name'] for x in ACCOUNT_DATA)
 
         # The user decides to add Expenses and Supermarket
-        root_acc = _find_root(resp_accs)
-        expenses_acc = {
-            "name": "Expenses",
-            "acc_type": "Branch",
-            "parent": root_acc['pk']
-        }
-        expenses_json = self.post_json(URLS.account, expenses_acc)
+        expenses = self.post_account(self.data_maker.expenses_acc())
+        supermarket = self.post_account(self.data_maker.supermarket_acc(expenses))
 
-        expenses_pk = expenses_json['pk']
-        supermarket_acc = {
-            "name": "Supermarket",
-            "acc_type": "Leaf",
-            "parent": expenses_pk
-        }
-        resp = self.post_json(URLS.account, supermarket_acc)
-
-        assert resp['parent'] == expenses_pk
-        assert resp['acc_type'] == "Leaf"
-        assert resp['name'] == "Supermarket"
+        assert supermarket['parent'] == expenses['pk']
+        assert supermarket['acc_type'] == "Leaf"
+        assert supermarket['name'] == "Supermarket"
 
         # And he can see them
         accounts = self.get_json(URLS.account)
@@ -105,12 +107,12 @@ class FunctionalTests(StaticLiveServerTestCase):
 
     def test_user_changes_name_of_account(self):
         # The user had previously creates an account
-        orig_name = "Current Account"
-        AccountTestFactory(name=orig_name)
+        assets = self.post_account(self.data_maker.assets_acc())
+        current_acc = self.post_account(self.data_maker.current_acc(assets))
+        orig_name = current_acc['name']
 
         # Which he sees when he opens the app
-        accounts = self.get_json(URLS.account)
-        acc_data = next(x for x in accounts if x['name'] == orig_name)
+        acc_data = _select_by(self.get_json(URLS.account), 'name', orig_name)
 
         # It now decides to change the name
         new_name = "Current Account (La Caixa)"
@@ -124,272 +126,165 @@ class FunctionalTests(StaticLiveServerTestCase):
     def test_user_changes_account_hierarchy(self):
         # The user had previously created an Current Account whose
         # father was Root Account
-        root = get_root_acc()
-        cur_acc = AccountTestFactory(
-            name="Current Account",
-            parent=root,
-            acc_type=AccTypeEnum.LEAF
-        )
+        assets = self.post_account(self.data_maker.assets_acc())
+        cur_acc = self.post_account(self.data_maker.current_acc(assets))
 
         # Now it wants to have Current Accounts as a child of Root, and
         # two specific accounts for two different Current Accounts
         # .
-        # | -- Root Account
+        # | -- Assets
         # |    |-- Current Account
         # |    |   |-- Current Account Itau
         # |    |   `-- Current Account LaCaixa
 
         # It currects the name of the existant account
         self.patch_json(
-            f"{URLS.account}{cur_acc.pk}/",
+            f"{URLS.account}{cur_acc['pk']}/",
             {"name": "Current Account Itau"}
         )
         # And sees that it worked
         accounts = self.get_json(URLS.account)
         _assert_contains(accounts, 'name', 'Current Account Itau')
-        _assert_not_contains(accounts, 'name', "Current Account")
+        _assert_not_contains(accounts, 'name', cur_acc['name'])
 
         # He creates the new father for it
-        new_father_data = {
+        new_father = self.post_account({
             "name": "Current Account",
-            "parent": root.pk,
+            "parent": assets['pk'],
             "acc_type": "Branch"
-        }
-        new_father = self.post_json(URLS.account, new_father_data)
+        })
         # And sees that it worked
         accounts = self.get_json(URLS.account)
-        _assert_contains(accounts, 'name', new_father_data['name'])
+        _assert_contains(accounts, 'name', new_father['name'])
 
         # He sets the old acc to have this father
         resp_data = self.patch_json(
-            f"{URLS.account}{cur_acc.pk}/",
+            f"{URLS.account}{cur_acc['pk']}/",
             json={"parent": new_father['pk']}
         )
         assert resp_data['parent'] == new_father['pk']
 
         # And creates the new account
-        self.post_json(
-            URLS.account,
-            json={
+        self.post_account({
                 "name": "Current Account LaCaixa",
                 "parent": new_father['pk'],
                 "acc_type": "Leaf"
-            }
-        )
-
+        })
         accounts = self.get_json(URLS.account)
         _assert_contains(accounts, 'name', "Current Account LaCaixa")
 
     def test_first_transaction(self):
         # The user creates two accounts
-        accs_raw_data = [
-            {
-                "name": "Salary",
-                "acc_type": "Leaf",
-                "parent": get_root_acc().pk
-            },
-            {
-                "name": "Money",
-                "acc_type": "Leaf",
-                "parent": get_root_acc().pk
-            }
-        ]
-        accs = [
-            self.post_json(URLS.account, raw_data) for raw_data in accs_raw_data
-        ]
+        assets = self.post_account(self.data_maker.assets_acc())
+        salary = self.post_account(self.data_maker.salary_acc(assets))
+        money = self.post_account(self.data_maker.money_acc(assets))
 
         # And the Yen currency
-        euro_raw_data = {"name": "Yen"}
-        euro = self.post_json(URLS.currency, euro_raw_data)
+        euro = self.post_currency({"name": "Yen"})
 
         # And it's first transaction ever!
-        trans_raw_data = {
-            "description": "Earned some money!",
-            "date": "2018-01-01",
-            "movements_specs": [
-                {
-                    "account": accs[0]['pk'],
-                    "money": {
-                        "quantity": -1000,
-                        "currency": euro['pk']
-                    }
-                },
-                {
-                    "account": accs[1]['pk'],
-                    "money": {
-                        "quantity": 1000,
-                        "currency": euro['pk']
-                    }
-                },
-            ]
-        }
-        self.post_json(URLS.transaction, trans_raw_data)
+        trans_raw_data = self.data_maker.earn_money_tra(salary, money, euro)
+        self.post_transaction(trans_raw_data)
 
         # Which now appears when querying for all transactions
-        get_trans_resp = self.get_json(URLS.transaction)
-        assert len(get_trans_resp) == 1
-        assert get_trans_resp[0]['date'] == trans_raw_data['date']
+        transactions = self.get_json(URLS.transaction)
+        assert len(transactions) == 1
+        assert transactions[0]['date'] == trans_raw_data['date']
+        assert transactions[0]['description'] == trans_raw_data['description']
 
     def test_check_balance_and_add_transaction(self):
-        # The user has two accounts he uses, with two transactions between them
-        cur = CurrencyTestFactory()
-        accs = AccountTestFactory.create_batch(2, acc_type=AccTypeEnum.LEAF)
-        transactions = [
-            TransactionTestFactory(
-                date_=date(2018, 1, 2),
-                movements_specs=[
-                    MovementSpec(accs[0], Money(100, cur)),
-                    MovementSpec(accs[1], Money(-100, cur))
-                ]
-            ),
-            TransactionTestFactory(
-                date_=date(2018, 1, 1),
-                movements_specs=[
-                    MovementSpec(accs[0], Money(22, cur)),
-                    MovementSpec(accs[1], Money(-22, cur))
-                ]
-            )
-        ]
-        transactions.sort(key=lambda x: x.get_date(), reverse=True)
-        serialized_transactions = \
-            TransactionSerializer(transactions, many=True).data
+        # The user has two accounts he uses, with two transactions between them,
+        # namely a deposit and a withdrawal
+        cur = self.post_currency({"name": "Yen"})
+        assets = self.post_account(self.data_maker.assets_acc())
+        current_acc = self.post_account(self.data_maker.current_acc(assets))
+        money_acc = self.post_account(self.data_maker.money_acc(assets))
+        deposit = self.post_transaction(
+            self.data_maker.deposit(current_acc, money_acc, cur)
+        )
+        withdrawal = self.post_transaction(
+            self.data_maker.withdrawal(current_acc, money_acc, cur)
+        )
+        transactions = [deposit, withdrawal]
+        transactions.sort(key=lambda x: x['date'], reverse=True)
 
-        # He also has another two accounts with an unrelated transaction
-        other_accs = AccountTestFactory.create_batch(2, acc_type=AccTypeEnum.LEAF)
-        TransactionTestFactory(
-            date_=date(2017, 1, 2),
-            movements_specs=[
-                MovementSpec(other_accs[0], Money(100, cur)),
-                MovementSpec(other_accs[1], Money(-100, cur))
-            ]
+        # He also paid a supermarket with money
+        expenses = self.post_account(self.data_maker.expenses_acc())
+        supermarket = self.post_account(self.data_maker.supermarket_acc(expenses))
+        paid_supermarket = self.post_transaction(
+            self.data_maker.paid_supermarket(money_acc, supermarket, cur)
         )
 
-        # He queries ony for transactions involving acc1, and see the
+        # He queries ony for transactions involving current_acc, and see the
         # same ones listed, in chronological order
-        assert self.get_json(f"{URLS.transaction}?account_id={accs[0].pk}") == \
-            serialized_transactions
-
-        # He adds a new transaction of 10 cur to acc2
-        new_transaction = self.post_json(
-            URLS.transaction,
-            {
-                "description": "New Transaction",
-                "date": "2018-01-03",
-                "movements_specs": [
-                    {
-                        "account": accs[0].pk,
-                        "money": {
-                            "quantity": 10,
-                            "currency": cur.pk
-                        }
-                    },
-                    {
-                        "account": accs[1].pk,
-                        "money": {
-                            "quantity": -10,
-                            "currency": cur.pk
-                        }
-                    }
-                ]
-            }
+        current_acc_transactions = (
+            self.get_json(f"{URLS.transaction}?account_id={current_acc['pk']}")
         )
-        serialized_transactions.insert(0, new_transaction)
+        assert current_acc_transactions == transactions
+
+        # He adds a new withdrawal of 10 cur to money
+        new_withdrawal = self.post_transaction(self.data_maker.withdrawal(
+            current_acc,
+            money_acc,
+            cur,
+            date_='2018-01-03'
+        ))
+        transactions.insert(0, new_withdrawal)
+        transactions.sort(key=lambda x: x['date'], reverse=True)
 
         # He queries again for transactions involving acc1, and see all
         # of them listed
-        assert self.get_json(f"{URLS.transaction}?account_id={accs[0].pk}") == \
-            serialized_transactions
+        current_acc_transactions = (
+            self.get_json(f"{URLS.transaction}?account_id={current_acc['pk']}")
+        )
+        assert current_acc_transactions == transactions
 
     def test_get_account_journal(self):
         # The user creates two accounts
-        root_acc = _find_root(self.get_json(URLS.account))
-        cash_account_data = {
-            "name": "Cash",
-            "acc_type": "Leaf",
-            "parent": root_acc['pk']
-        }
-        cash_account = self.post_json(URLS.account, cash_account_data)
-        bank_account_data = {
-            "name": "Bank",
-            "acc_type": "Leaf",
-            "parent": root_acc['pk']
-        }
-        bank_account = self.post_json(URLS.account, bank_account_data)
+        assets = self.post_account(self.data_maker.assets_acc())
+        cash_account = self.post_account(self.data_maker.money_acc(assets))
+        bank_account = self.post_account(self.data_maker.current_acc(assets))
 
         # And two transactions
         euro = _select_by(self.get_json(URLS.currency), 'name', 'Euro')
-        withdrawal_data = {
-            "description": "withdrawal",
-            "date": "2018-01-01",
-            "movements_specs": [
-                {
-                    "account": bank_account['pk'],
-                    "money": {
-                        "quantity": -100,
-                        "currency": euro['pk']
-                    }
-                },
-                {
-                    "account": cash_account['pk'],
-                    "money": {
-                        "quantity": 100,
-                        "currency": euro['pk']
-                    }
-                }
-            ]
-        }
-        withdrawal = self.post_json(URLS.transaction, withdrawal_data)
-        deposit_data = {
-            "description": "deposit",
-            "date": "2018-01-02",
-            "movements_specs": [
-                {
-                    "account": cash_account['pk'],
-                    "money": {
-                        "quantity": -25,
-                        "currency": euro['pk']
-                    }
-                },
-                {
-                    "account": bank_account['pk'],
-                    "money": {
-                        "quantity": 25,
-                        "currency": euro['pk']
-                    }
-                }
-            ]
-        }
-        deposit = self.post_json(URLS.transaction, deposit_data)
+        withdrawal = self.post_transaction(self.data_maker.withdrawal(
+            bank_account, cash_account, euro, date_='2018-01-03'
+        ))
+        deposit = self.post_transaction(self.data_maker.deposit(
+            bank_account, cash_account, euro, date_='2018-01-02'
+        ))
 
         # It queries for the journal of the bank account
         journal = self.get_json(f'{URLS.account}{bank_account["pk"]}/journal/')
 
-        # It sees the account pk and both transactions there
+        # It sees the account pk
         assert journal['account'] == bank_account['pk']
-        assert len(journal['transactions']) == 2
 
-        # And the balances after each transaction
-        assert journal['balances'][0] == [
-            {"currency": euro['pk'], "quantity": "-100.00000"}
-        ]
-        assert journal['balances'][1] == [
-            {"currency": euro['pk'], "quantity": "-75.00000"}
+        # And the balances after each transaction.
+        assert journal['balances'] == [
+            [{"currency": euro['pk'], "quantity": "1000.00000"}],
+            [{"currency": euro['pk'], "quantity": "880.00000"}]
         ]
 
         # And the transactions
-        assert journal['transactions'][0] == withdrawal
-        assert journal['transactions'][1] == deposit
+        transactions = sorted([withdrawal, deposit], key=lambda x: x['date'])
+        assert journal['transactions'] == transactions
+
+        # He then queries for the journal for Cash, in reverse order (last first)
+        journal = self.get_json(
+            f'{URLS.account}{cash_account["pk"]}/journal/?reverse=1'
+        )
+        assert journal['account'] == cash_account['pk']
+        assert journal['balances'] == [
+            [{"currency": euro['pk'], "quantity": "-880.00000"}],
+            [{"currency": euro['pk'], "quantity": "-1000.00000"}]
+        ]
+        assert journal['transactions'] == transactions[::-1]
 
 
 #
 # Helpers
 #
-class URLS:
-    account = '/accounts/'
-    currency = '/currencies/'
-    transaction = '/transactions/'
-
-
 def _find_root(acc_list):
     """ Returns the root account out of a list of accounts """
     return next(a for a in acc_list if a['acc_type'] == 'Root')
@@ -443,3 +338,141 @@ class _TestRequests():
 
     def delete(self, path):
         return requests.delete(f"{self.url}{path}", headers=self.headers)
+
+
+@attr.s()
+class DataMaker:
+    """ Helper to make json data for the requests """
+
+    # The root account
+    root_acc = attr.ib()
+
+    def expenses_acc(self):
+        return {
+            "name": "Expenses",
+            "acc_type": "Branch",
+            "parent": self.root_acc['pk']
+        }
+
+    def supermarket_acc(self, parent):
+        return {
+            "name": "Supermarket",
+            "acc_type": "Leaf",
+            "parent": parent['pk']
+        }
+
+    def current_acc(self, parent):
+        return {
+            "name": "Current Account",
+            "acc_type": "Leaf",
+            "parent": parent["pk"]
+        }
+
+    def assets_acc(self):
+        return {
+            "name": "Assets",
+            "acc_type": "Branch",
+            "parent": self.root_acc["pk"]
+        }
+
+    def salary_acc(self, parent):
+        return {
+            "name": "Salary",
+            "acc_type": "Leaf",
+            "parent": parent["pk"]
+        }
+
+    def money_acc(self, parent):
+        return {
+            "name": "Money",
+            "acc_type": "Leaf",
+            "parent": parent['pk']
+        }
+
+    def earn_money_tra(self, from_acc, to_acc, curr):
+        return {
+            "description": "Earned some money!",
+            "date": "2018-01-01",
+            "movements_specs": [
+                {
+                    "account": from_acc['pk'],
+                    "money": {
+                        "quantity": -1000,
+                        "currency": curr['pk']
+                    }
+                },
+                {
+                    "account": to_acc['pk'],
+                    "money": {
+                        "quantity": 1000,
+                        "currency": curr['pk']
+                    }
+                },
+            ]
+        }
+
+    def deposit(self, accbank, accmoney, curr, date_=None):
+        return {
+            "description": "Deposit",
+            "date": date_ or "2018-02-11",
+            "movements_specs": [
+                {
+                    "account": accmoney['pk'],
+                    "money": {
+                        "quantity": -1000,
+                        "currency": curr['pk']
+                    }
+                },
+                {
+                    "account": accbank['pk'],
+                    "money": {
+                        "quantity": 1000,
+                        "currency": curr['pk']
+                    }
+                },
+            ]
+        }
+
+    def withdrawal(self, accbank, accmoney, curr, date_=None):
+        return {
+            "description": "Withdrawal",
+            "date": date_ or "2018-03-11",
+            "movements_specs": [
+                {
+                    "account": accbank['pk'],
+                    "money": {
+                        "quantity": "-120",
+                        "currency": curr['pk']
+                    }
+                },
+                {
+                    "account": accmoney['pk'],
+                    "money": {
+                        "quantity": "120",
+                        "currency": curr['pk']
+                    }
+                },
+            ]
+        }
+
+    def paid_supermarket(self, accfrom, accto, curr):
+        return {
+            "description": "Supermarket!",
+            "date": "2017-12-21",
+            "movements_specs": [
+                {
+                    "account": accfrom['pk'],
+                    "money": {
+                        "quantity": "-120",
+                        "currency": curr['pk']
+                    }
+                },
+                {
+                    "account": accto['pk'],
+                    "money": {
+                        "quantity": "120",
+                        "currency": curr['pk']
+                    }
+                },
+            ]
+        }

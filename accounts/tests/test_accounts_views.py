@@ -12,7 +12,7 @@ from common.test import PacsTestCase
 from currencies.serializers import BalanceSerializer
 from currencies.money import Balance
 from currencies.tests.factories import MoneyTestFactory
-from movements.models import MovementSpec, Transaction
+from movements.models import MovementSpec
 from movements.tests.factories import TransactionTestFactory
 
 

@@ -24,6 +24,7 @@ class URLS:
     account = '/accounts/'
     currency = '/currencies/'
     transaction = '/transactions/'
+    reports = '/reports/'
 
 
 class FunctionalTests(StaticLiveServerTestCase):
@@ -57,6 +58,8 @@ class FunctionalTests(StaticLiveServerTestCase):
         resp = self.requests.get(f"{path}")
         self.assert_response_status_okay(resp)
         return resp.json()
+
+    get_currencies = partialmethod(get_json, URLS.currency)
 
     def post_json(self, path, json={}):
         """ Makes a json request, ensures it returns 2**, and parses the json """
@@ -281,6 +284,82 @@ class FunctionalTests(StaticLiveServerTestCase):
         ]
         assert journal['transactions'] == transactions[::-1]
 
+    def test_get_accounts_evolution_report(self):
+        euro = _select_by(self.get_currencies(), 'name', 'Euro')
+
+        # The user has three (leaf) accounts: bank, cash, supermarket
+        assets = self.post_account(self.data_maker.assets_acc())
+        expenses = self.post_account(self.data_maker.expenses_acc())
+        bank = self.post_account(self.data_maker.current_acc(assets))
+        cash = self.post_account(self.data_maker.money_acc(assets))
+        supermarket = self.post_account(self.data_maker.supermarket_acc(expenses))
+
+        # And some transactions
+        self.post_transaction(
+            self.data_maker.deposit(bank, cash, euro, "2016-01-01")
+        )
+        self.post_transaction(
+            self.data_maker.paid_supermarket(bank, supermarket, euro, "2017-02-28")
+        )
+        self.post_transaction(
+            self.data_maker.withdrawal(bank, cash, euro, "2017-02-28")
+        )
+
+        # It queries for the balance evolution report
+        balance_evol_report_req = {
+            "periods": [
+                ["2016-12-01", "2016-12-31"],
+                ["2017-01-01", "2017-01-31"],
+                ["2017-02-01", "2017-02-28"]
+            ],
+            "accounts": [bank['pk'], cash['pk'], supermarket['pk']]
+        }
+        balance_evol_report = self.post_json(
+            f"{URLS.reports}balance-evolution/",
+            balance_evol_report_req
+        )
+
+        # The returned data contains the same periods
+        assert balance_evol_report['periods'] == balance_evol_report_req['periods']
+
+        # And the three accounts
+        accounts_in_report = [
+            x['account'] for x in balance_evol_report['data']
+        ]
+        assert accounts_in_report == balance_evol_report_req['accounts']
+
+        # The initial balance for the supermarket should be 0
+        supermarket_report_data = _select_by(
+            balance_evol_report['data'], 'account', supermarket['pk']
+        )
+        assert supermarket_report_data['initial_balance'] == []
+
+        # And for the others should be the balance from the deposit
+        bank_report_data = _select_by(
+            balance_evol_report['data'], 'account', bank['pk']
+        )
+        assert bank_report_data['initial_balance'] == [
+            {"currency": euro['pk'], "quantity": "1000.00000"}
+        ]
+        cash_report_data = _select_by(
+            balance_evol_report['data'], 'account', cash['pk']
+        )
+        assert cash_report_data['initial_balance'] == [
+            {"currency": euro['pk'], "quantity": "-1000.00000"}
+        ]
+
+        # Now focusing on bank, we expect three balance evolutions, one for each
+        # period
+        assert len(bank_report_data['balance_evolution']) == 3
+
+        # The first two should be zero (no transactions in this period)
+        assert bank_report_data['balance_evolution'][0:2] == [[], []]
+
+        # And the thrid should have both withdrawal and paid_supermarket
+        assert bank_report_data['balance_evolution'][2] == [
+            {"currency": euro['pk'], "quantity": '-240.00000'}
+        ]
+
 
 #
 # Helpers
@@ -455,10 +534,10 @@ class DataMaker:
             ]
         }
 
-    def paid_supermarket(self, accfrom, accto, curr):
+    def paid_supermarket(self, accfrom, accto, curr, date_=None):
         return {
             "description": "Supermarket!",
-            "date": "2017-12-21",
+            "date": date_ or "2017-12-21",
             "movements_specs": [
                 {
                     "account": accfrom['pk'],

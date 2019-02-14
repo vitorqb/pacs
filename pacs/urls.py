@@ -22,18 +22,23 @@ from rest_framework.routers import DefaultRouter
 from accounts.views import AccountViewSet
 from currencies.views import CurrencyViewSet
 from movements.views import TransactionViewSet
+from reports.views import balance_evolution_view
 
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+]
 
 router = DefaultRouter()
 router.register(r'accounts', AccountViewSet, 'accounts')
 router.register(r'currencies', CurrencyViewSet, 'currencies')
 router.register(r'transactions', TransactionViewSet, 'transactions')
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
-]
-
 urlpatterns += router.urls
+
+urlpatterns += [
+    path(r'reports/balance-evolution/', balance_evolution_view)
+]
 
 if settings.DEBUG:
     import debug_toolbar

@@ -11,7 +11,7 @@ SYSTEMD_SERVICE_NAME="pacs-megasync-db-backup"
 
 
 function create-base-folder() {
-    mkdir -p "BASE_FOLDER"
+    mkdir -p "$BASE_FOLDER"
 }
 
 function maybe-install-megacmd() {

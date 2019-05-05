@@ -26,7 +26,7 @@ class TransactionSerializer(ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ['pk', 'description', 'date', 'movements_specs']
+        fields = ['pk', 'description', 'reference', 'date', 'movements_specs']
         read_only_fields = ['pk']
 
     def create(self, validated_data):
@@ -50,4 +50,6 @@ class TransactionSerializer(ModelSerializer):
             instance.set_movements(movements)
         if 'description' in validated_data:
             instance.set_description(validated_data['description'])
+        if 'reference' in validated_data:
+            instance.set_reference(validated_data['reference'])
         return instance

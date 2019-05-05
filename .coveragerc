@@ -5,6 +5,7 @@ omit =
      tasks.py
      pacs/wsgi.py
      manage.py
+     */venv/*
 
 [report]
 omit =
@@ -14,3 +15,4 @@ omit =
      pacs/wsgi.py
      manage.py
      functional_tests.py
+     */venv/*

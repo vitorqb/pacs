@@ -21,7 +21,7 @@ def _get_transaction_qset():
 
 
 class TransactionViewSet(ModelViewSet):
-    queryset =_get_transaction_qset()
+    queryset = _get_transaction_qset()
     serializer_class = TransactionSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = TransactionFilterSet

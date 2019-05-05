@@ -27,12 +27,13 @@ class TransactionFactory():
             self,
             description: str,
             date_: datetime.date,
-            movements_specs: List[MovementSpec]
+            movements_specs: List[MovementSpec],
+            reference: str = None,
     ) -> Transaction:
         """ Creates a new Transaction. `movements_specs` should be a list
         of MovementSpec describing the movements for this transaction. """
         trans = full_clean_and_save(
-            Transaction(description=description, date=date_)
+            Transaction(description=description, date=date_, reference=reference)
         )
         trans.set_movements(movements_specs)
         return trans
@@ -88,9 +89,9 @@ class Transaction(m.Model):
     #
     # Fields
     #
-    # !!!! TODO -> Add reference (for example the text that appears in la caixa)
     # !!!! TODO -> Add comments field (large texts for detailed comments)
     description = m.TextField()
+    reference = m.CharField(max_length=120, blank=True, null=True)
     date = m.DateField()
 
     #
@@ -104,8 +105,15 @@ class Transaction(m.Model):
     def get_description(self) -> str:
         return self.description
 
+    def get_reference(self) -> str:
+        return self.reference
+
     def set_description(self, x: str) -> None:
         self.description = x
+        full_clean_and_save(self)
+
+    def set_reference(self, x: str) -> None:
+        self.reference = x
         full_clean_and_save(self)
 
     def get_date(self) -> datetime.date:

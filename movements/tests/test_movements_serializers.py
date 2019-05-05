@@ -1,5 +1,8 @@
 from datetime import date
 from decimal import Decimal
+from copy import copy
+
+from rest_framework.serializers import DateField
 
 from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
@@ -9,8 +12,9 @@ from common.test import PacsTestCase
 from currencies.money import Money
 from currencies.serializers import MoneySerializer
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
-from movements.models import MovementSpec
+from movements.models import MovementSpec, TransactionFactory
 from movements.serializers import MovementSpecSerializer, TransactionSerializer
+from movements.tests.factories import TransactionTestFactory
 
 
 class MovementsSerializersTestCase(PacsTestCase):
@@ -79,6 +83,19 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
         ser.is_valid(True)
         return ser.save()
 
+    def test_serialize_base(self):
+        trans = TransactionTestFactory(reference="foo")
+        ser = TransactionSerializer(trans)
+        assert ser.data == {
+            'pk': trans.pk,
+            'description': trans.get_description(),
+            'date': DateField().to_representation(trans.get_date()),
+            'reference': trans.get_reference(),
+            'movements_specs': [
+                MovementSpecSerializer(m).data for m in trans.get_movements_specs()
+            ]
+        }
+
     def test_from_data_base(self):
         trans = self.create()
         assert trans.get_description() == self.data['description']
@@ -89,6 +106,13 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
             MovementSpec(self.accs[1], Money(-8, self.curs[1])),
         ]
 
+    def test_create_with_reference(self):
+        self.data['reference'] = 'FOO'
+        trans = self.create()
+        assert trans.get_description() == self.data['description']
+        assert trans.get_date() == self.data['date']
+        assert trans.get_reference() == self.data['reference']
+
     def test_update_description(self):
         obj = self.create()
 
@@ -97,6 +121,23 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
 
         assert new_obj.pk == obj.pk
         assert new_obj.get_description() == self.data['description']
+
+    def test_update_reference(self):
+        self.data['reference'] = 'FOO'
+        trans = self.create()
+        self.data['reference'] = 'BAR'
+
+        new_trans = self.update(trans)
+
+        assert new_trans.pk == trans.pk
+        assert new_trans.get_reference() == 'BAR'
+
+    def test_update_reference_null(self):
+        self.data['reference'] = 'FOO'
+        trans = self.create()
+        self.data['reference'] = None
+        new_trans = self.update(trans)
+        assert new_trans.get_reference() == None
 
     def test_update_movements_specs(self):
         obj = self.create()

@@ -135,3 +135,9 @@ def runserver(c):
 def migrate(c):
     """ Runs migrations """
     c.run_manage("migrate", pty=True)
+
+
+@pacstask()
+def makemigrations(c):
+    """ Runs makemigrations """
+    c.run_manage("makemigrations", pty=True)

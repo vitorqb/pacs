@@ -1,4 +1,3 @@
-from datetime import date
 from functools import partialmethod
 
 import attr
@@ -9,15 +8,8 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from accounts.management.commands.populate_accounts import (ACCOUNT_DATA,
                                                             account_populator,
                                                             account_type_populator)
-from accounts.models import AccTypeEnum, get_root_acc
-from accounts.tests.factories import AccountTestFactory
 from currencies.management.commands.populate_currencies import \
     currency_populator
-from currencies.money import Money
-from currencies.tests.factories import CurrencyTestFactory
-from movements.models import MovementSpec
-from movements.serializers import TransactionSerializer
-from movements.tests.factories import TransactionTestFactory
 
 
 class URLS:
@@ -60,6 +52,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         return resp.json()
 
     get_currencies = partialmethod(get_json, URLS.currency)
+    get_transactions = partialmethod(get_json, URLS.transaction)
 
     def post_json(self, path, json={}):
         """ Makes a json request, ensures it returns 2**, and parses the json """
@@ -190,10 +183,36 @@ class FunctionalTests(StaticLiveServerTestCase):
         self.post_transaction(trans_raw_data)
 
         # Which now appears when querying for all transactions
-        transactions = self.get_json(URLS.transaction)
+        transactions = self.get_transactions()
         assert len(transactions) == 1
         assert transactions[0]['date'] == trans_raw_data['date']
         assert transactions[0]['description'] == trans_raw_data['description']
+        # Reference is empty since we did not provide it.
+        assert transactions[0]['reference'] is None
+
+        # It adds a second one, with a reference
+        expenses = self.post_account(self.data_maker.expenses_acc())
+        supermarket = self.post_account(self.data_maker.supermarket_acc(expenses))
+        reference = "MERCADONA-1212"
+        supermarket_tra_data = self.data_maker.paid_supermarket(
+            money,
+            supermarket,
+            euro,
+            reference=reference
+        )
+        supermarket_tra = self.post_transaction(supermarket_tra_data)
+
+        # Which also appears when querying for all
+        transactions = self.get_transactions()
+        assert len(transactions) == 2
+        assert transactions[1]['pk'] == supermarket_tra['pk']
+        assert transactions[1]['reference'] == reference
+
+        # Changes it's reference and sees that it works.
+        url = f"{URLS.transaction}{supermarket_tra['pk']}/"
+        self.patch_json(url, json={"reference": None})
+        patched_trans = self.get_json(url)
+        assert patched_trans['reference'] is None
 
     def test_check_balance_and_add_transaction(self):
         # The user has two accounts he uses, with two transactions between them,
@@ -534,8 +553,8 @@ class DataMaker:
             ]
         }
 
-    def paid_supermarket(self, accfrom, accto, curr, date_=None):
-        return {
+    def paid_supermarket(self, accfrom, accto, curr, date_=None, reference=None):
+        out = {
             "description": "Supermarket!",
             "date": date_ or "2017-12-21",
             "movements_specs": [
@@ -555,3 +574,6 @@ class DataMaker:
                 },
             ]
         }
+        if reference:
+            out['reference'] = reference
+        return out

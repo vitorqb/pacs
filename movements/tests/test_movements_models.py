@@ -168,6 +168,7 @@ class TestTransactionFactory(MovementsModelsTestCase):
         ]
         self.data = {
             "description": "Hola",
+            "reference": "Bye",
             "date_": self.date_,
             "movements_specs": [
                 MovementSpec(a, m) for a, m in zip(self.accs, self.moneys)
@@ -185,6 +186,12 @@ class TestTransactionFactory(MovementsModelsTestCase):
         assert trans.get_date() == self.data['date_']
         assert trans.get_description() == self.data['description']
         assert trans.get_movements_specs() == self.data['movements_specs']
+        assert trans.get_reference() == self.data['reference']
+
+    def test_no_reference(self):
+        del self.data['reference']
+        trans = self.call()
+        assert trans.get_reference() == None
 
     def test_fails_if_movements_have_a_single_acc(self):
         self.data_update(movements_specs=[

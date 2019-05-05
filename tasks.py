@@ -66,6 +66,13 @@ def _populate_db(c):
         c.run_manage(x)
 
 
+def _new_venv(c, path):
+    c.run(f'python -m venv "{path}"')
+    with c.prefix(f'source "{path}/bin/activate"'):
+        c.run(f'pip install --upgrade pip')
+        c.run(f'pip install -r requirements/development.txt')
+
+
 #
 # Tasks
 #
@@ -83,10 +90,14 @@ def prepare_virtualenv(c, path, force=False):
             raise Exit(f"Path '{path}' exists and force is set to False!")
         else:
             c.run(f'rm -rf "{path}"')
-    c.run(f'python -m venv "{path}"')
-    with c.prefix(f'source "{path}/bin/activate"'):
-        c.run(f'pip install --upgrade pip')
-        c.run(f'pip install -r requirements/development.txt')
+    _new_venv(c, path)
+
+
+@pacstask()
+def venv(c):
+    """ Prepares virtualenv in "./venv" """
+    c.run("rm -rf ./venv")
+    _new_venv(c, "./venv")
 
 
 @pacstask()

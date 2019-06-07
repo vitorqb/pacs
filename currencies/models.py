@@ -1,22 +1,53 @@
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 import attr
 import django.db.models as m
+from rest_framework import serializers as s
+from rest_framework.exceptions import APIException
 
 from common.models import NameField, full_clean_and_save
 
 
 # ------------------------------------------------------------------------------
+# Exceptions
+class CurrencyCodeValidationError(s.ValidationError):
+    status_code = 400
+    default_detail = 'Invalid value for currency code (must have 3 uppercase chars)'
+    default_code = 'invalid'
+
+
+class MissingCodeForCurrency(APIException):
+    status_code = 500
+    default_code = 'missing_currency_code'
+    default_detail = (
+        'Some of the currencies on the server db does not'
+        ' yet have the "code" value set. Please fill them'
+    )
+
+
+# ------------------------------------------------------------------------------
 # Models
+def new_currency_code_field():
+    regex = re.compile(r'[A-Z]{3}')
+
+    def validate(x):
+        regex_matches = regex.search(str(x))
+        if not regex_matches:
+            raise CurrencyCodeValidationError()
+
+    return m.CharField(blank=False, null=True, max_length=3, validators=[validate])
+
+
 @attr.s()
 class CurrencyFactory():
     """ Encapsulates creation of currencies """
 
-    def __call__(self, name: str) -> Currency:
+    def __call__(self, name: str, code: str) -> Currency:
         """ Creates a currency using name """
-        return full_clean_and_save(Currency(name=name))
+        return full_clean_and_save(Currency(name=name, code=code))
 
 
 class Currency(m.Model):
@@ -29,6 +60,7 @@ class Currency(m.Model):
     # Fields
     #
     name = NameField()
+    code = new_currency_code_field()
     imutable = m.BooleanField(default=False)
 
     #
@@ -36,6 +68,11 @@ class Currency(m.Model):
     #
     def get_name(self) -> str:
         return self.name
+
+    def get_code(self) -> str:
+        if not self.code:
+            raise MissingCodeForCurrency()
+        return self.code
 
 
 # ------------------------------------------------------------------------------

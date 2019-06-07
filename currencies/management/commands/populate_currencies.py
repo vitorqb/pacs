@@ -5,9 +5,9 @@ from common.models import full_clean_and_save
 from currencies.models import Currency
 
 CURRENCIES_DATA = [
-    dict(name="Dollar", imutable=True),
-    dict(name="Euro"),
-    dict(name="Real")
+    dict(name="Dollar", code='USD', imutable=True),
+    dict(name="Euro", code='EUR'),
+    dict(name="Real", code='BRL'),
 ]
 
 

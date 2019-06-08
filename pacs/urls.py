@@ -13,17 +13,15 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
-
+from django.contrib import admin
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from accounts.views import AccountViewSet
 from currencies.views import CurrencyViewSet
 from movements.views import TransactionViewSet
-from reports.views import balance_evolution_view
-
+from reports.views import balance_evolution_view, flow_evolution_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -37,7 +35,8 @@ router.register(r'transactions', TransactionViewSet, 'transactions')
 urlpatterns += router.urls
 
 urlpatterns += [
-    path(r'reports/balance-evolution/', balance_evolution_view)
+    path(r'reports/balance-evolution/', balance_evolution_view),
+    path(r'reports/flow-evolution/', flow_evolution_view),
 ]
 
 if settings.DEBUG:

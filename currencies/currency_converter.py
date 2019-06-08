@@ -1,18 +1,33 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, List, Set
 
 import attr
+from rest_framework.exceptions import APIException
 
 from currencies.money import Money
 
 if TYPE_CHECKING:
     from currencies.models import Currency
+    from datetime import date as Date
 
 
 class UnkownCurrencyForConversion(Exception):
     pass
+
+
+class UnkownDateForCurrencyConversion(APIException):
+    status_code = 400
+    default_code = 'unkown_date_for_currency_conversion'
+    default_detail = (
+        'An attempt was made to convert money between currencies for'
+        ' a date where there was not enough information on the currency'
+        ' prices to perform the conversion. This probably means you did'
+        ' not sent enough currency information for the operation you attempted.'
+        ' Please review the data sent and try again with complete data.'
+    )
 
 
 @attr.s()
@@ -46,3 +61,46 @@ class CurrencyConverter:
     def _assert_known_currency(self, currency: Currency) -> None:
         if currency.get_code() not in self._currency_code_to_value_dct.keys():
             raise UnkownCurrencyForConversion()
+
+
+@attr.s(frozen=True)
+class DateAndPrice:
+    date: Date = attr.ib()
+    price: Decimal = attr.ib()
+
+
+@attr.s(frozen=True)
+class CurrencyPricePortifolio:
+    currency: Currency = attr.ib()
+    prices: List[DateAndPrice] = attr.ib()
+
+    def get_dates(self) -> Set[Date]:
+        return set(x.date for x in self.prices)
+
+
+class CurrencyPricePortifolioConverter:
+    """
+    A converted based on a currency price portifolio, which is a mapping of
+    (currency, date) -> currency_price (in dollars).
+    """
+    _date_to_currency_prices: Dict[Date, Dict[str, Decimal]]
+    _dates: Set[Date]
+
+    def __init__(self, price_portifolio_list: List[CurrencyPricePortifolio]):
+        self._dates = set()
+        self._date_to_currency_prices = defaultdict(lambda: {})
+        for price_portifolio in price_portifolio_list:
+            currency = price_portifolio.currency
+            for date_and_price in price_portifolio.prices:
+                date = date_and_price.date
+                price = date_and_price.price
+                self._dates.add(date)
+                self._date_to_currency_prices[date][currency.get_code()] = price
+
+    def convert(self, money: Money, currency: Currency, date: Date) -> Money:
+        if money.currency == currency:
+            return money
+        if date not in self._dates:
+            raise UnkownDateForCurrencyConversion()
+        currency_code_to_value = self._date_to_currency_prices[date]
+        return CurrencyConverter(currency_code_to_value).convert(money, currency)

@@ -7,7 +7,7 @@ from .models import Currency
 class CurrencySerializer(s.ModelSerializer):
     class Meta:
         model = Currency
-        fields = ['pk', 'name', 'imutable']
+        fields = ['pk', 'name', 'code', 'imutable']
         read_only_fields = ['pk', 'imutable']
 
 

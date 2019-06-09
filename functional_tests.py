@@ -16,7 +16,11 @@ class URLS:
     account = '/accounts/'
     currency = '/currencies/'
     transaction = '/transactions/'
-    reports = '/reports/'
+
+    class reports:
+        _base = '/reports/'
+        flow_evolution = _base + 'flow-evolution/'
+        balance_evolution = _base + 'balance-evolution/'
 
 
 class FunctionalTests(StaticLiveServerTestCase):
@@ -63,6 +67,10 @@ class FunctionalTests(StaticLiveServerTestCase):
     post_account = partialmethod(post_json, URLS.account)
     post_transaction = partialmethod(post_json, URLS.transaction)
     post_currency = partialmethod(post_json, URLS.currency)
+    post_flow_evolution_report = partialmethod(
+        post_json,
+        URLS.reports.flow_evolution
+    )
 
     def patch_json(self, path, json={}):
         """ Makes a json request, ensures it returns 2**, and parses the json """
@@ -334,8 +342,8 @@ class FunctionalTests(StaticLiveServerTestCase):
             "accounts": [bank['pk'], cash['pk'], supermarket['pk']]
         }
         balance_evol_report = self.post_json(
-            f"{URLS.reports}balance-evolution/",
-            balance_evol_report_req
+            URLS.reports.balance_evolution,
+            balance_evol_report_req,
         )
 
         # The returned data contains the same periods
@@ -377,6 +385,212 @@ class FunctionalTests(StaticLiveServerTestCase):
         # And the thrid should have both withdrawal and paid_supermarket
         assert bank_report_data['balance_evolution'][2] == [
             {"currency": euro['pk'], "quantity": '-240.00000'}
+        ]
+
+    def test_get_flow_report(self):
+        # First select two currencies
+        all_currencies = self.get_currencies()
+        euro = _select_by(all_currencies, 'name', 'Euro')
+        real = _select_by(all_currencies, 'name', 'Real')
+
+        # Create accounts for salary, current acc, and supermarket
+        revenue_acc_data = self.data_maker.revenues_acc()
+        revenue_acc = self.post_account(revenue_acc_data)
+
+        assets_acc_data = self.data_maker.assets_acc()
+        assets_acc = self.post_account(assets_acc_data)
+
+        bank_acc_data = self.data_maker.current_acc(assets_acc)
+        bank_acc = self.post_account(bank_acc_data)
+
+        expenses_acc_data = self.data_maker.expenses_acc()
+        expenses_acc = self.post_account(expenses_acc_data)
+
+        salary_acc_data = self.data_maker.salary_acc(revenue_acc)
+        salary_acc = self.post_account(salary_acc_data)
+
+        supermarket_acc_data = self.data_maker.supermarket_acc(expenses_acc)
+        supermarket_acc = self.post_account(supermarket_acc_data)
+
+        # Receives three salaries, two in euro and one in real
+        euro_salary_data = self.data_maker.salary_tra(
+            date='2019-06-15',
+            from_acc=salary_acc,
+            to_acc=bank_acc,
+            quantity=50,
+            curr=euro,
+        )
+        euro_salary_one = self.post_transaction(euro_salary_data)
+        euro_salary_two = self.post_transaction(euro_salary_data)
+
+        real_salary_data = self.data_maker.salary_tra(
+            date='2019-06-15',
+            from_acc=salary_acc,
+            to_acc=bank_acc,
+            quantity=450,
+            curr=real,
+        )
+        real_salary = self.post_transaction(real_salary_data)
+
+        # Two days later, goes to the supermarket
+        supermarket_june_data = self.data_maker.paid_supermarket(
+            accfrom=bank_acc,
+            accto=supermarket_acc,
+            curr=euro,
+            date_='2019-06-17',
+        )
+        supermarket_june = self.post_transaction(supermarket_june_data)
+
+        # And then again in the following month
+        supermarket_july_data = self.data_maker.paid_supermarket(
+            accfrom=bank_acc,
+            accto=supermarket_acc,
+            curr=euro,
+            date_='2019-07-01',
+        )
+        supermarket_july = self.post_transaction(supermarket_july_data)
+
+        # Asks for the report for june, july
+        flow_report_opts = {
+            'periods': [
+                ['2019-06-01', '2019-06-30'],
+                ['2019-07-01', '2019-07-31'],
+            ],
+            'accounts': [revenue_acc['pk'], expenses_acc['pk']]
+        }
+        flow_report_data = self.post_flow_evolution_report(flow_report_opts)
+
+        # And for revenue we have the wages won and 0
+        revenues_data = _select_by(
+            flow_report_data['data'],
+            'account',
+            revenue_acc['pk'],
+        )
+        assert revenues_data['flows'] == [
+            {
+                'period': flow_report_opts['periods'][0],
+                'moneys': [
+                    {
+                        'currency': euro['pk'],
+                        'quantity': '-100.00000',
+                    },
+                    {
+                        'currency': real['pk'],
+                        'quantity': '-450.00000',
+                    }
+                ],
+            },
+            {
+                'period': flow_report_opts['periods'][1],
+                'moneys': []
+            },
+        ]
+
+        # And for expenses...
+        expenses_data = _select_by(
+            flow_report_data['data'],
+            'account',
+            expenses_acc['pk'],
+        )
+        assert expenses_data['flows'] == [
+            {
+                'period': flow_report_opts['periods'][0],
+                'moneys': [
+                    {
+                        'currency': euro['pk'],
+                        'quantity': '120.00000',
+                    }
+                ]
+            },
+            {
+                'period': flow_report_opts['periods'][1],
+                'moneys': [
+                    {
+                        'currency': euro['pk'],
+                        'quantity': '120.00000',
+                    }
+                ]
+            }
+        ]
+
+        # Now we define a currency prices portifolio and run again
+        currency_price_portifolio = [
+            {
+                'currency': euro['code'],
+                'prices': [
+                    {'date': '2019-06-15', 'price': 2},
+                    {'date': '2019-06-17', 'price': 2},
+                    {'date': '2019-07-01', 'price': 3},
+                ]
+            },
+            {
+                'currency': real['code'],
+                'prices': [
+                    {'date': '2019-06-15', 'price': 0.5},
+                    {'date': '2019-06-17', 'price': 0.5},
+                    {'date': '2019-07-01', 'price': 0.75},
+                ]
+            }
+        ]
+        flow_report_opts = {
+            **flow_report_opts,
+            'currency_opts': {
+                'price_portifolio': currency_price_portifolio,
+                'convert_to': real['code'],
+            }
+        }
+        flow_report_data = self.post_flow_evolution_report(flow_report_opts)
+
+        # And revenues are ok
+        revenues_data = _select_by(
+            flow_report_data['data'],
+            'account',
+            revenue_acc['pk'],
+        )
+        assert revenues_data['flows'] == [
+            {
+                'period': flow_report_opts['periods'][0],
+                'moneys': [
+                    {
+                        'currency': real['pk'],
+                        # (-100 * 2 / 0.5) + (-450) = -850
+                        'quantity': '-850.00000',
+                    },
+                ],
+            },
+            {
+                'period': flow_report_opts['periods'][1],
+                'moneys': []
+            },
+        ]
+
+        # And so is expenses
+        expenses_data = _select_by(
+            flow_report_data['data'],
+            'account',
+            expenses_acc['pk'],
+        )
+        assert expenses_data['flows'] == [
+            {
+                'period': flow_report_opts['periods'][0],
+                'moneys': [
+                    {
+                        'currency': real['pk'],
+                        # 120 * 2 / 0.5 = 480
+                        'quantity': '480.00000',
+                    },
+                ],
+            },
+            {
+                'period': flow_report_opts['periods'][1],
+                'moneys': [
+                    {
+                        'currency': real['pk'],
+                        # 120 * 3 / 0.75 = 480
+                        'quantity': '480.00000',
+                    },
+                ],
+            },
         ]
 
 
@@ -452,6 +666,13 @@ class DataMaker:
             "parent": self.root_acc['pk']
         }
 
+    def revenues_acc(self):
+        return {
+            'name': 'Revenue',
+            'acc_type': 'Branch',
+            'parent': self.root_acc['pk'],
+        }
+
     def supermarket_acc(self, parent):
         return {
             "name": "Supermarket",
@@ -485,6 +706,28 @@ class DataMaker:
             "name": "Money",
             "acc_type": "Leaf",
             "parent": parent['pk']
+        }
+
+    def salary_tra(self, date, from_acc, to_acc, quantity, curr):
+        return {
+            "description": "Salary",
+            "date": date,
+            "movements_specs": [
+                {
+                    "account": from_acc['pk'],
+                    "money": {
+                        "quantity": -quantity,
+                        "currency": curr['pk'],
+                    },
+                },
+                {
+                    "account": to_acc['pk'],
+                    "money": {
+                        "quantity": quantity,
+                        "currency": curr['pk'],
+                    },
+                },
+            ]
         }
 
     def earn_money_tra(self, from_acc, to_acc, curr):

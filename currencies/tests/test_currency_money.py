@@ -2,11 +2,71 @@ from decimal import Decimal
 from unittest.mock import Mock
 
 from common.test import PacsTestCase
-from currencies.money import Balance, Money
+from currencies.money import Balance, Money, MoneyAggregator
+
+from .factories import MoneyTestFactory
 
 
 class MoneyTestCase(PacsTestCase):
     pass
+
+
+class TestMoney(MoneyTestCase):
+
+    def test_base(self):
+        currency = Mock()
+        money = Money('10.24', currency)
+        assert money.quantity == Decimal('10.24')
+        assert money.currency == currency
+
+    def test_sum(self):
+        currency = Mock()
+        money_one = MoneyTestFactory(quantity=1, currency=currency)
+        money_two = MoneyTestFactory(quantity=2, currency=currency)
+        assert money_one + money_two == Money(quantity=3, currency=currency)
+
+    def test_different_currencies_raises_error(self):
+        currencies = [Mock(), Mock()]
+        moneys = [MoneyTestFactory(currency=c) for c in currencies]
+        with self.assertRaises(ValueError):
+            moneys[0] + moneys[1]
+
+
+class TestMoneyAggregator:
+
+    def test_empty(self):
+        money_aggregator = MoneyAggregator()
+        assert money_aggregator.get_moneys() == []
+
+    def test_one_long(self):
+        currency = Mock()
+        money = MoneyTestFactory(currency=currency)
+        money_aggregator = MoneyAggregator()
+        money_aggregator.append_money(money)
+        assert money_aggregator.get_moneys() == [money]
+
+    def test_two_different_currencies(self):
+        currencies = [Mock(), Mock()]
+        moneys = [MoneyTestFactory(currency=c) for c in currencies]
+        money_aggregator = MoneyAggregator()
+        for money in moneys:
+            money_aggregator.append_money(money)
+        assert money_aggregator.get_moneys() == moneys
+
+    def test_aggregates_if_same_currency(self):
+        currencies = [Mock(), Mock()]
+        same_currency_moneys = MoneyTestFactory.create_batch(
+            2,
+            currency=currencies[0]
+        )
+        other_currency_money = MoneyTestFactory(currency=currencies[1])
+        money_aggregator = MoneyAggregator()
+        for money in [*same_currency_moneys, other_currency_money]:
+            money_aggregator.append_money(money)
+        assert money_aggregator.get_moneys() == [
+            same_currency_moneys[0] + same_currency_moneys[1],
+            other_currency_money,
+        ]
 
 
 class TestBalance(MoneyTestCase):
@@ -73,12 +133,3 @@ class TestBalance(MoneyTestCase):
         one = Balance([Money('10', currency)])
         two = Balance([Money('9', currency)])
         assert one != two
-
-
-class TestMoney(MoneyTestCase):
-
-    def test_base(self):
-        currency = Mock()
-        money = Money('10.24', currency)
-        assert money.quantity == Decimal('10.24')
-        assert money.currency == currency

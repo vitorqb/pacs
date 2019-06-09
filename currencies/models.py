@@ -38,7 +38,14 @@ def new_currency_code_field():
         if not regex_matches:
             raise CurrencyCodeValidationError()
 
-    return m.CharField(blank=False, null=True, max_length=3, validators=[validate])
+    return m.CharField(
+        blank=False,
+        null=True,
+        unique=True,
+        db_index=True,
+        max_length=3,
+        validators=[validate]
+    )
 
 
 @attr.s()

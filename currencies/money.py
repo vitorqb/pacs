@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 from decimal import Decimal
 from typing import TYPE_CHECKING, List, Set
 
@@ -24,6 +25,44 @@ class Money():
             self.currency == other.currency and
             decimals_equal(self.quantity, other.quantity)
         )
+
+    def __add__(self, other):
+        if not isinstance(other, Money):
+            raise TypeError('Can only sum Money')
+        if not self.currency == other.currency:
+            raise ValueError('Can not sum Moneys from different currencies.')
+        return attr.evolve(self, quantity=self.quantity + other.quantity)
+
+
+@attr.s()
+class MoneyAggregator:
+    """
+    Used to aggregate moneys. Maintains a list of moneys with at max one money
+    per currency. When appending a new money, if there is already a money in
+    the list for that currency, sum then instead of appending.
+    """
+    _moneys: List[Money] = attr.ib(factory=list, init=False)
+    _currencies_set: Set[Currency] = attr.ib(factory=set, init=False)
+
+    def append_money(self, money: Money) -> None:
+        """
+        Appends money to the internal list.
+        If there is already a money for this currency, sum them.
+        If not, just append money.
+        """
+        currency = money.currency
+        if currency not in self._currencies_set:
+            self._moneys.append(money)
+            self._currencies_set.add(currency)
+            return
+        for i, _ in enumerate(self._moneys):
+            if self._moneys[i].currency == currency:
+                self._moneys[i] += money
+                return
+        raise RuntimeError("Something went really wrong.")
+
+    def get_moneys(self) -> Money:
+        return copy(self._moneys)
 
 
 @attr.s(frozen=True, cmp=False)

@@ -30,21 +30,21 @@ class MissingCodeForCurrency(APIException):
 
 # ------------------------------------------------------------------------------
 # Models
-def new_currency_code_field():
+def validate_currency_code(x):
     regex = re.compile(r'[A-Z]{3}')
+    regex_matches = regex.search(str(x))
+    if not regex_matches:
+        raise CurrencyCodeValidationError()
 
-    def validate(x):
-        regex_matches = regex.search(str(x))
-        if not regex_matches:
-            raise CurrencyCodeValidationError()
 
+def new_currency_code_field():
     return m.CharField(
         blank=False,
         null=True,
         unique=True,
         db_index=True,
         max_length=3,
-        validators=[validate]
+        validators=[validate_currency_code]
     )
 
 

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 @attr.s(frozen=True)
 class CurrencyOpts:
-    price_portifolio: CurrencyPricePortifolio = attr.ib()
+    price_portifolio: List[CurrencyPricePortifolio] = attr.ib()
     convert_to: Currency = attr.ib()
 
 

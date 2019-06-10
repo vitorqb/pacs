@@ -14,8 +14,9 @@ if TYPE_CHECKING:
     from datetime import date as Date
 
 
-class UnkownCurrencyForConversion(Exception):
-    pass
+class UnkownCurrencyForConversion(APIException):
+    status_code = 400
+    default_code = 'unkown_currency_for_conversion'
 
 
 class UnkownDateForCurrencyConversion(APIException):
@@ -48,8 +49,7 @@ class CurrencyConverter:
         # Skip if same currency
         if money.currency == currency:
             return money
-        self._assert_known_currency(currency)
-        self._assert_known_currency(money.currency)
+        self._assert_known_currencies(money.currency, currency)
         dest_currency_code = currency.get_code()
         dest_currency_value = self._currency_code_to_value_dct[dest_currency_code]
         orig_currency_code = money.currency.get_code()
@@ -58,9 +58,19 @@ class CurrencyConverter:
         quantity_in_dest_currency = quantity_in_dollars / dest_currency_value
         return Money(currency=currency, quantity=quantity_in_dest_currency)
 
+    def _assert_known_currencies(self, *currencies):
+        for c in currencies:
+            self._assert_known_currency(c)
+
     def _assert_known_currency(self, currency: Currency) -> None:
         if currency.get_code() not in self._currency_code_to_value_dct.keys():
-            raise UnkownCurrencyForConversion()
+            msg = (
+                f'Missing data for currency with code {currency.get_code()}.'
+                f' This usually means that you tried to call an operation passing'
+                f' currency conversion options that were insufficient for the'
+                f' operation requested. Please review it and try again.'
+            )
+            raise UnkownCurrencyForConversion(msg)
 
 
 @attr.s(frozen=True)

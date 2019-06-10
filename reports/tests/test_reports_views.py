@@ -3,8 +3,12 @@ from unittest.mock import Mock, call, patch, sentinel
 from django.urls.base import resolve
 
 from common.test import PacsTestCase
+from currencies.currency_converter import (UnkownCurrencyForConversion,
+                                           UnkownDateForCurrencyConversion)
 from reports.views import (FlowEvolutionViewSpec, _balance_evolution_view,
                            balance_evolution_view)
+
+UnkownDateForCurrencyConversion
 
 
 class TestBalanceEvolutionReportView(PacsTestCase):
@@ -201,3 +205,28 @@ class TestFlowEvolutionSerializeReport:
         serializer = Serializer.return_value
         assert Serializer.call_args_list == [call(report)]
         assert result == serializer.data
+
+
+class TestFlowEvolutionView(PacsTestCase):
+
+    endpoint = '/reports/flow-evolution/'
+
+    def test_returns_400_if_unkown_currency(self):
+        msg = 'Foo Bar'
+        with patch(
+                'reports.views.FlowEvolutionViewSpec._serialize_inputs',
+                side_effect=UnkownCurrencyForConversion(msg),
+        ):
+            resp = self.client.post(self.endpoint, {})
+        assert resp.status_code == UnkownCurrencyForConversion.status_code
+        assert resp.json() == {'detail': msg}
+
+    def test_return_400_if_unkown_date(self):
+        msg = 'Foo Bar Baz'
+        with patch(
+                'reports.views.FlowEvolutionViewSpec._serialize_inputs',
+                side_effect=UnkownDateForCurrencyConversion(msg)
+        ):
+            resp = self.client.post(self.endpoint, {})
+        assert resp.status_code == UnkownDateForCurrencyConversion.status_code
+        assert resp.json() == {'detail': msg}

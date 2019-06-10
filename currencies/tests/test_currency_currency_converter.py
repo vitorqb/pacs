@@ -76,10 +76,11 @@ class TestCurrencyConverter(CurrencyConverterTestCase):
     def test_unkown_currency(self):
         currency_value_dct = self.get_currency_value_dct()
         converter = CurrencyConverter(currency_value_dct)
-        unkown_currency = Mock(code='UNK')
+        unkown_currency = Mock(get_code=lambda: 'UNK')
         money_with_unkown_currency = Money(currency=unkown_currency, quantity=1)
-        with self.assertRaises(UnkownCurrencyForConversion):
+        with self.assertRaises(UnkownCurrencyForConversion) as e:
             converter.convert(money_with_unkown_currency, Mock())
+        assert 'Missing data for currency with code UNK' in str(e.exception)
 
 
 class TestCurrencyPricePortifolio:

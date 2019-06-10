@@ -61,7 +61,7 @@ class MoneyAggregator:
                 return
         raise RuntimeError("Something went really wrong.")
 
-    def get_moneys(self) -> Money:
+    def get_moneys(self) -> List[Money]:
         return copy(self._moneys)
 
 

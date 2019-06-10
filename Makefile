@@ -2,7 +2,7 @@
 
 
 requirements:
-	pip install -r requirements/base.txt
+	pip install -r requirements/base_frozen.txt
 
 requirements/dev: requirements
 	pip install -r requirements/development.txt

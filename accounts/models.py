@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, NoReturn
 
 import attr
 import django.db.models as m
@@ -47,6 +47,36 @@ class AccountFactory():
             raise ValidationError(m.format(acc_type_obj.name))
 
 
+@attr.s()
+class AccountDestroyer():
+    """ Encapsulates the destruction of an Account """
+
+    ERR_MSGS: Dict[str, str] = {
+        'ACCOUNT_HAS_CHILD': "Can not delete an account that has children.",
+        'ACCOUNT_HAS_MOVEMENTS': "Can not delete an account that has movements.",
+    }
+
+    @classmethod
+    def fail(cls, err_code: str) -> NoReturn:
+        err_msg = cls.ERR_MSGS[err_code]
+        raise ValidationError(err_msg, err_code)
+
+    @classmethod
+    def validate_no_child(cls, account: Account):
+        if account.count_children() != 0:
+            cls.fail('ACCOUNT_HAS_CHILD')
+
+    @classmethod
+    def validate_no_movements(cls, account: Account):
+        if account.count_movements() != 0:
+            cls.fail('ACCOUNT_HAS_MOVEMENTS')
+
+    def __call__(self, account: Account):
+        self.validate_no_child(account)
+        self.validate_no_movements(account)
+        account.delete()
+
+
 class Account(MPTTModel):
     """ An Account, a tree structure to host movements. """
     #
@@ -56,7 +86,7 @@ class Account(MPTTModel):
     acc_type = m.ForeignKey('AccountType', on_delete=m.CASCADE)
     parent = TreeForeignKey(
         'self',
-        on_delete=m.CASCADE,
+        on_delete=m.PROTECT,
         null=True,
         blank=True,
         related_name="children"
@@ -121,9 +151,17 @@ class Account(MPTTModel):
         else False"""
         return self.acc_type.children_allowed
 
+    def count_children(self) -> int:
+        """ Returns the number of children for this account """
+        return self.get_descendant_count()
+
     def allows_movements(self) -> bool:
         """ Returns True if this account can have movements, else False """
         return self.acc_type.movements_allowed
+
+    def count_movements(self) -> bool:
+        """ Returns the number of movements for this account. """
+        return self.movement_set.count()
 
 
 class AccTypeEnum(Enum):

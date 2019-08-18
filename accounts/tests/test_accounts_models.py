@@ -1,12 +1,16 @@
+import pytest
+from django.db.models import ProtectedError
+
 from rest_framework.exceptions import ValidationError
 
 from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
 from accounts.models import (Account, AccountFactory, AccountType, AccTypeEnum,
-                             get_root_acc)
+                             get_root_acc, AccountDestroyer)
 from common.test import PacsTestCase
 
 from .factories import AccountTestFactory
+from movements.tests.factories import MovementTestFactory
 
 
 class AccountsModelTestCase(PacsTestCase):
@@ -62,6 +66,29 @@ class TestAccountFactory(AccountsModelTestCase):
             self.call()
 
 
+class TestAccountDestroyer(AccountsModelTestCase):
+
+    def test_base(self):
+        acc = AccountTestFactory()
+        acc_pk = acc.pk
+        AccountDestroyer()(acc)
+        assert acc_pk not in Account.objects.values_list("pk", flat=True)
+
+    def test_validation_error_if_child(self):
+        parent = AccountTestFactory(acc_type=AccTypeEnum.BRANCH)
+        child = AccountTestFactory(parent=parent)
+        with pytest.raises(ValidationError) as e:
+            AccountDestroyer()(parent)
+        assert e.value.get_codes() == ["ACCOUNT_HAS_CHILD"]
+
+    def test_validation_error_if_movements(self):
+        account = AccountTestFactory()
+        movement = MovementTestFactory(account=account)
+        with pytest.raises(ValidationError) as e:
+            AccountDestroyer()(account)
+        assert e.value.get_codes() == ["ACCOUNT_HAS_MOVEMENTS"]
+
+
 class TestAccount(AccountsModelTestCase):
 
     def test_get_acc_type(self):
@@ -103,3 +130,21 @@ class TestAccount(AccountsModelTestCase):
         acc = Account.objects.filter(pk=acc.pk).first()
         with self.assertNumQueries(1):
             acc.get_descendants_ids(True, use_cache=False)
+
+    def test_cant_delete_if_has_movement(self):
+        mov = MovementTestFactory()
+        acc = mov.account
+        with pytest.raises(ProtectedError):
+            acc.delete()
+
+    def test_cant_delete_if_has_children(self):
+        parent = AccountTestFactory(acc_type=AccTypeEnum.BRANCH)
+        child = AccountTestFactory(parent=parent)
+        with pytest.raises(ProtectedError):
+            parent.delete()
+
+    def test_can_delete_if_no_movement(self):
+        acc = AccountTestFactory()
+        acc_pk = acc.pk
+        acc.delete()
+        assert acc_pk not in Account.objects.values_list('pk', flat=True)

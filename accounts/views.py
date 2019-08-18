@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.journal import Journal
-from accounts.models import Account
+from accounts.models import Account, AccountDestroyer
 from accounts.serializers import AccountSerializer
 from accounts.paginators import get_journal_paginator
 from currencies.money import Balance
@@ -23,6 +23,10 @@ class AccountViewSet(ModelViewSet):
         paginator = get_journal_paginator(request, journal)
         data = paginator.get_data(reverse)
         return Response(data)
+
+    # Overrides parent to validate before destruction
+    def perform_destroy(self, instance):
+        AccountDestroyer()(instance)
 
 
 def _get_all_transactions():

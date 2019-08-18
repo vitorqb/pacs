@@ -192,7 +192,7 @@ class Movement(m.Model):
     #
     # Fields
     #
-    account = m.ForeignKey(Account, on_delete=m.CASCADE)
+    account = m.ForeignKey(Account, on_delete=m.PROTECT)
     transaction = m.ForeignKey(Transaction, on_delete=m.CASCADE)
     # currency + quantity forms Money
     currency = m.ForeignKey(Currency, on_delete=m.CASCADE)

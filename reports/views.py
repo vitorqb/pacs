@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Callable, Optional
+import attr
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from currencies.currency_converter import CurrencyPricePortifolioConverter
 
-from .reports import BalanceEvolutionQuery, FlowEvolutionQuery
-from .serializers import (BalanceEvolutionInputSerializer,
-                          BalanceEvolutionOutputSerializer,
-                          FlowEvolutionInputSerializer,
-                          FlowEvolutionOutputSerializer)
-from .view_models import FlowEvolutionInput, CurrencyOpts
+from .reports import FlowEvolutionQuery, BalanceEvolutionReport, BalanceEvolutionQuery
+from .serializers import (FlowEvolutionInputSerializer, FlowEvolutionOutputSerializer, BalanceEvolutionInputSerializer, BalanceEvolutionOutputSerializer)
+from .view_models import FlowEvolutionInput, CurrencyOpts, BalanceEvolutionInput
 
 if TYPE_CHECKING:
     from reports.reports import AccountFlows
@@ -21,14 +19,27 @@ if TYPE_CHECKING:
 
 
 # Balance evolution
-def _balance_evolution_view(request):
-    input_data = BalanceEvolutionInputSerializer(data=request.data).get_data()
-    report = BalanceEvolutionQuery(**input_data).run()
-    serialized_report = BalanceEvolutionOutputSerializer(report).data
-    return Response(serialized_report)
+class BalanceEvolutionViewSpec:
+
+    @staticmethod
+    def _serialize_inputs(request) -> BalanceEvolutionInput:
+        serializer = BalanceEvolutionInputSerializer(data=request.data)
+        serializer.is_valid(True)
+        return serializer.save()
+
+    @classmethod
+    def _gen_report(cls, inputs: BalanceEvolutionInput) -> BalanceEvolutionReport:
+        return BalanceEvolutionQuery(**attr.asdict(inputs)).run()
+
+    @classmethod
+    def post(cls, request):
+        inputs = cls._serialize_inputs(request)
+        report = cls._gen_report(inputs)
+        data = BalanceEvolutionOutputSerializer(report).data
+        return Response(data)
 
 
-balance_evolution_view = api_view(['POST'])(_balance_evolution_view)
+balance_evolution_view = api_view(['POST'])(BalanceEvolutionViewSpec.post)
 
 
 # Flow evolution

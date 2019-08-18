@@ -5,88 +5,86 @@ from django.urls.base import resolve
 from common.test import PacsTestCase
 from currencies.currency_converter import (UnkownCurrencyForConversion,
                                            UnkownDateForCurrencyConversion)
-from reports.views import (FlowEvolutionViewSpec, _balance_evolution_view,
-                           balance_evolution_view)
+from movements.tests.factories import TransactionTestFactory
+from reports.views import FlowEvolutionViewSpec, balance_evolution_view, BalanceEvolutionViewSpec
+from reports.view_models import BalanceEvolutionInput
+from reports.reports import BalanceEvolutionReport, BalanceEvolutionReportData
+from reports.serializers import BalanceEvolutionOutputSerializer
+from accounts.tests.factories import AccountTestFactory
+from datetime import date
+import common.utils as utils
 
-UnkownDateForCurrencyConversion
+
+class TestBalanceEvolutionViewUrl:
+
+    def test_url_resolves(self):
+        func = resolve('/reports/balance-evolution/').func
+        assert func == balance_evolution_view
 
 
-class TestBalanceEvolutionReportView(PacsTestCase):
+class TestBalanceEvolutionViewSpecSerializeInputs(PacsTestCase):
 
     def setUp(self):
         super().setUp()
+        self.populate_accounts()
 
-        # Patch for BalanceEvolutionInputSerializer
-        self.patcher_BalanceEvolutionInputSerializer = patch(
-            'reports.views.BalanceEvolutionInputSerializer'
+    def test_base(self):
+        accounts = AccountTestFactory.create_batch(2)
+        dates = [date(2019, 1, 1), date(2019, 2, 1)]
+        raw = {
+            "accounts": [x.pk for x in accounts],
+            "dates": [utils.date_to_str(d) for d in dates],
+        }
+        request = Mock(data=raw)
+        deserialized = BalanceEvolutionViewSpec._serialize_inputs(request)
+        assert deserialized == BalanceEvolutionInput(accounts, dates)
+
+
+class TestBalanceEvolutionViewSpecPost(PacsTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.populate_accounts()
+        self.populate_currencies()
+
+    def test_base(self):
+        # Creates and returns a dummy BalanceEvolutionReport
+        dates = [date(2019, 1, 1), date(2020, 1, 1)]
+        account = AccountTestFactory()
+        transaction1 = TransactionTestFactory(
+            movements_specs__0__account=account,
+            date_=dates[0],
         )
-        self.m_BalanceEvolutionInputSerializer = (
-            self.patcher_BalanceEvolutionInputSerializer.start()
+        balance1 = transaction1.get_balance_for_account(account)
+        transaction2 = TransactionTestFactory(
+            movements_specs__0__account=account,
+            date_=dates[1],
         )
-        self.addCleanup(self.patcher_BalanceEvolutionInputSerializer.stop)
+        balance2 = balance1 + transaction2.get_balance_for_account(account)
+        data = {
+            "dates": [utils.date_to_str(d) for d in dates],
+            "accounts": [account.pk],
+        }
+        request = Mock(data=data)
 
-        # Patch for BalanceEvolutionOutputSerializer
-        self.patcher_BalanceEvolutionOutputSerializer = patch(
-            'reports.views.BalanceEvolutionOutputSerializer'
-        )
-        self.m_BalanceEvolutionOutputSerializer = (
-            self.patcher_BalanceEvolutionOutputSerializer.start()
-        )
-        self.addCleanup(self.patcher_BalanceEvolutionOutputSerializer.stop)
-
-        # Path for BalanceEvolutionQuery
-        self.patcher_BalanceEvolutionQuery = patch(
-            'reports.views.BalanceEvolutionQuery'
-        )
-        self.m_BalanceEvolutionQuery = (
-            self.patcher_BalanceEvolutionQuery.start()
-        )
-        self.addCleanup(self.patcher_BalanceEvolutionQuery.stop)
-
-        # Patch for Response
-        self.patcher_Response = patch('reports.views.Response')
-        self.m_Response = self.patcher_Response.start()
-        self.addCleanup(self.patcher_Response.stop)
-
-    def test_balance_evolution_url_resolves_to_function(self):
-        assert resolve('/reports/balance-evolution/').func == balance_evolution_view
-
-    def test_uses_BalanceEvolutionInputSerializer(self):
-        # Some fake input data
-        input_data = {"periods": object()}
-        self.m_BalanceEvolutionInputSerializer.return_value.get_data\
-            .return_value = input_data
-
-        request = Mock()
-        _balance_evolution_view(request)
-
-        # Used the serializer
-        assert self.m_BalanceEvolutionInputSerializer.call_args_list == [
-            call(data=request.data)
+        exp_report_data = [
+            BalanceEvolutionReportData(
+                date=dates[0],
+                account=account,
+                balance=balance1,
+            ),
+            BalanceEvolutionReportData(
+                date=dates[1],
+                account=account,
+                balance=balance2,
+            )
         ]
-
-        # Called the get_data from the serializer and passed to Query
-        assert self.m_BalanceEvolutionQuery.call_args_list == [
-            call(**input_data)
-        ]
-
-    def test_uses_BalanceEvolutionOutputSerializer(self):
-        request = Mock()
-        response = _balance_evolution_view(request)
-
-        # Called BalanceEvolutionOutputSerializer with Query.run
-        assert self.m_BalanceEvolutionOutputSerializer.call_args_list == [
-            call(self.m_BalanceEvolutionQuery().run())
-        ]
-
-        # Called Response with BalanceEvolutionOutputSerializer.data
-        assert self.m_Response.call_count == 1
-        assert self.m_Response.call_args == call(
-            self.m_BalanceEvolutionOutputSerializer().data
-        )
-
-        # Returned the response
-        assert response == self.m_Response.return_value
+        exp_report = BalanceEvolutionReport(exp_report_data)
+        serialized_exp_report = BalanceEvolutionOutputSerializer(exp_report).data
+        with patch('reports.views.Response') as Response:
+            result = BalanceEvolutionViewSpec.post(request)
+        assert Response.call_args_list == [call(serialized_exp_report)]
+        assert result == Response()
 
 
 class TestFlowEvolutionViewSpecPost:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import TYPE_CHECKING, List
 
 import attr
@@ -22,3 +23,9 @@ class FlowEvolutionInput:
     periods: List[Period] = attr.ib()
     accounts: List[Account] = attr.ib()
     currency_opts: CurrencyOpts = attr.ib()
+
+
+@attr.s(frozen=True)
+class BalanceEvolutionInput:
+    accounts: List[Account] = attr.ib()
+    dates: List[date] = attr.ib()

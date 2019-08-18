@@ -13,7 +13,7 @@ class AccountTestFactory(f.DjangoModelFactory):
     class Meta:
         model = Account
 
-    name = f.Sequence(lambda *a: faker.name())
+    name = f.Sequence(lambda i: f"Account {i}")
     acc_type = f.LazyAttribute(lambda *a: AccTypeEnum.LEAF)
     parent = f.LazyAttribute(lambda *a: get_root_acc())
 

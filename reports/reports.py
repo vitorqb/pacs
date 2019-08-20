@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, Set, Callable
 
@@ -18,89 +18,45 @@ if TYPE_CHECKING:
     from accounts.models import Account
 
 
-@attr.s()
-class BalanceEvolution:
-    """ The BalanceEvolution report. It reports the evolution of the
-    balances of a set of accounts over some periods. """
-    periods: List[Period] = attr.ib()
-    data: List[BalanceEvolutionData] = attr.ib()
-
-
-@attr.s()
-class BalanceEvolutionData:
-    """ Represents the balance evolution data for a single account """
-    account: Account = attr.ib()
-    initial_balance: Balance = attr.ib()
-    balance_evolution: List[Balance] = attr.ib()
+A_DAY = timedelta(days=1)
 
 
 @attr.s()
 class BalanceEvolutionQuery:
-    """ Represents a query that returns the BalanceEvolution for a
-    list of accounts over some periods """
-    accounts: List[Account] = attr.ib()
-    periods: List[Period] = attr.ib()
+    """ A query that returns a BalanceEvolutionReport """
+    _accounts: List[Account] = attr.ib()
+    _dates: List[date] = attr.ib()
+    _currency_dct: Dict[int, Currency] = attr.ib(init=False)
 
-    @periods.validator
-    def period_validator(self, attribute, periods):
-        if len(periods) == 0:
-            raise ValueError("At least one period is needed")
+    def __attrs_post_init__(self):
+        self._currency_dct = _get_currencies_in_dct()
+        self._dates = sorted(self._dates)
 
-    def run(self) -> BalanceEvolution:
-        """ Runs the query and returns a BalanceEvolution """
-        data = self._get_evolution_data()
-        return BalanceEvolution(periods=self.periods, data=data)
-
-    def _get_evolution_data(self) -> List[BalanceEvolutionData]:
-        # Caches currencies for efficiency
-        currencies = dict((c.pk, c) for c in Currency.objects.all())
-        # Number of results = initial_period + periods
-        result_len = 1 + len(self.periods)
-
-        with connection.cursor() as cursor:
-            out: List[BalanceEvolutionData] = []
-            for acc in self.accounts:
-                balances_dct: Dict[int, Balance] = defaultdict(lambda: Balance([]))
-                for (cur_id, quantity, date_group) in self._run_query(acc, cursor):
-                    current_balance = balances_dct[date_group]
-                    money_to_add = Money(quantity, currencies[cur_id])
-                    balances_dct[date_group] = (
-                        current_balance.add_money(money_to_add)
-                    )
-
-                # Transforms the dict for balances into a list (date_group is the
-                # index)
-                balances_lst = [balances_dct[i] for i in range(result_len)]
-                balance_evol_data = BalanceEvolutionData(
-                    account=acc,
-                    initial_balance=balances_lst[0],
-                    balance_evolution=balances_lst[1:]
-                )
-                out.append(balance_evol_data)
-
-        return out
-
-    def _run_query(
-            self,
-            acc: Account,
-            cursor
-    ) -> Iterable[Tuple[int, Decimal, int]]:
+    def _run_query(self, acc: Account) -> Iterable[Tuple[int, Decimal, int]]:
+        """ Given an account, returns a tuple of
+        (currency_id, quantity__sum, date_group)
+        for each date group in self._dates """
         # Usefull constants
         meta, engine = SqlAlchemyLoader.get_meta_and_engine()
         t_mov, t_tra, t_acc = SqlAlchemyLoader.get_tables(meta)
-        initial_date = min(p.start for p in self.periods)
+        initial_date = min(self._dates)
 
         # The sql statement
-        date_group = case(
-            [
-                (t_tra.c.date < initial_date, 0),  # For the initial balance
-                *[
-                    (between(t_tra.c.date, p.start, p.end), i)
-                    for i, p in enumerate(self.periods, 1)
-                ]
-            ],
-            else_=None
-        ).label('date_group')
+        date_ranges = [
+            (t_tra.c.date <= initial_date, 0),  # For the initial balance
+            *[
+                (
+                    between(
+                        t_tra.c.date,
+                        self._dates[i - 1] + A_DAY,
+                        self._dates[i]
+                    ),
+                    i
+                )
+                for i in range(1, len(self._dates))
+            ]
+        ]
+        date_group = case(date_ranges, else_=None).label('date_group')
         x = select([t_mov.c.currency_id, func.sum(t_mov.c.quantity), date_group])
         x = x.select_from(t_mov.join(t_tra).join(t_acc))
         x = x.where(and_(
@@ -111,7 +67,48 @@ class BalanceEvolutionQuery:
         x = x.group_by(t_mov.c.currency_id, literal_column('date_group'))
         x = x.order_by('date_group')
         x = str(x.compile(engine, compile_kwargs={"literal_binds": True}))
-        return cursor.execute(x)
+        return _execute_query(x)
+
+    def run(self) -> BalanceEvolutionReport:
+        balances: Dict[Account, Balance] = defaultdict(lambda: Balance([]))
+        currencies: Set[Currency] = set()
+        out: List[BalanceEvolutionReportData] = []
+
+        # Prepares a dict with Quantity for each account, currency and date
+        data: Dict[Tuple[date, Account, Currency], Decimal] = {}
+        for account in self._accounts:
+            for cur_id, quantity, date_i in self._run_query(account):
+                currency = self._currency_dct[cur_id]
+                dt = self._dates[date_i]
+                currencies.add(currency)
+                data[(dt, account, currency)] = quantity
+
+        # Sums the quantity for each account, date and currency
+        for account in self._accounts:
+            for dt in self._dates:
+                for currency in currencies:
+                    q: Optional[Decimal] = data.get((dt, account, currency), None)
+                    if q is not None:
+                        money = Money(q, currency)
+                        balances[account] = balances[account].add_money(money)
+                out.append(BalanceEvolutionReportData(dt, account, balances[account]))
+
+        return BalanceEvolutionReport(out)
+
+
+@attr.s()
+class BalanceEvolutionReport:
+    """ A report representing the balance for a set of accounts at some
+    specific dates """
+    data: List[BalanceEvolutionReportData] = attr.ib()
+
+
+@attr.s(frozen=True)
+class BalanceEvolutionReportData:
+    """ A piece of data for the Balance Evolution report. """
+    date: date = attr.ib()
+    account: Account = attr.ib()
+    balance: Balance = attr.ib()
 
 
 @attr.s(frozen=True)

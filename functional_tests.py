@@ -334,57 +334,77 @@ class FunctionalTests(StaticLiveServerTestCase):
 
         # It queries for the balance evolution report
         balance_evol_report_req = {
-            "periods": [
-                ["2016-12-01", "2016-12-31"],
-                ["2017-01-01", "2017-01-31"],
-                ["2017-02-01", "2017-02-28"]
-            ],
+            "dates": ["2016-12-31", "2017-01-31", "2017-02-28"],
             "accounts": [bank['pk'], cash['pk'], supermarket['pk']]
         }
         balance_evol_report = self.post_json(
             URLS.reports.balance_evolution,
             balance_evol_report_req,
+        )['data']
+
+        # Three balances are returned
+        assert len(balance_evol_report) == 9
+
+        # The returned data contains the same dates
+        dates_in_report = set(x['date'] for x in balance_evol_report)
+        assert dates_in_report == set(balance_evol_report_req['dates'])
+
+        # And the same accounts
+        accounts_in_report = set(x['account'] for x in balance_evol_report)
+        assert accounts_in_report == set(balance_evol_report_req['accounts'])
+
+        # On the first and second dates, supermarket has no balance
+        supermarket_0 = next(
+            x for x in balance_evol_report
+            if x['date'] == balance_evol_report_req['dates'][0]
+            and x['account'] == supermarket['pk']
         )
+        supermarket_1 = next(
+            x for x in balance_evol_report
+            if x['date'] == balance_evol_report_req['dates'][1]
+            and x['account'] == supermarket['pk']
+        )
+        assert supermarket_0['balance'] == []
+        assert supermarket_1['balance'] == []
 
-        # The returned data contains the same periods
-        assert balance_evol_report['periods'] == balance_evol_report_req['periods']
-
-        # And the three accounts
-        accounts_in_report = [
-            x['account'] for x in balance_evol_report['data']
+        # Then we have the supermarket on the third one
+        supermarket_2 = next(
+            x for x in balance_evol_report
+            if x['date'] == balance_evol_report_req['dates'][2]
+            and x['account'] == supermarket['pk']
+        )
+        assert supermarket_2['balance'] == [
+            {"currency": euro['pk'], "quantity": "120.00000"}
         ]
-        assert accounts_in_report == balance_evol_report_req['accounts']
 
-        # The initial balance for the supermarket should be 0
-        supermarket_report_data = _select_by(
-            balance_evol_report['data'], 'account', supermarket['pk']
+        # And for bank we start with a deposit of 1000
+        bank_0 = next(
+            x for x in balance_evol_report
+            if x['date'] == balance_evol_report_req['dates'][0]
+            and x['account'] == bank['pk']
         )
-        assert supermarket_report_data['initial_balance'] == []
-
-        # And for the others should be the balance from the deposit
-        bank_report_data = _select_by(
-            balance_evol_report['data'], 'account', bank['pk']
-        )
-        assert bank_report_data['initial_balance'] == [
+        assert bank_0['balance'] == [
             {"currency": euro['pk'], "quantity": "1000.00000"}
         ]
-        cash_report_data = _select_by(
-            balance_evol_report['data'], 'account', cash['pk']
+
+        # Same here, since no new transaction
+        bank_1 = next(
+            x for x in balance_evol_report
+            if x['date'] == balance_evol_report_req['dates'][1]
+            and x['account'] == bank['pk']
         )
-        assert cash_report_data['initial_balance'] == [
-            {"currency": euro['pk'], "quantity": "-1000.00000"}
+        assert bank_1['balance'] == [
+            {"currency": euro['pk'], "quantity": "1000.00000"}
         ]
 
-        # Now focusing on bank, we expect three balance evolutions, one for each
-        # period
-        assert len(bank_report_data['balance_evolution']) == 3
-
-        # The first two should be zero (no transactions in this period)
-        assert bank_report_data['balance_evolution'][0:2] == [[], []]
-
-        # And the thrid should have both withdrawal and paid_supermarket
-        assert bank_report_data['balance_evolution'][2] == [
-            {"currency": euro['pk'], "quantity": '-240.00000'}
+        # Finally here a withdrawal and paid supermarket
+        bank_2 = next(
+            x for x in balance_evol_report
+            if x['date'] == balance_evol_report_req['dates'][2]
+            and x['account'] == bank['pk']
+        )
+        assert bank_2['balance'] == [
+            {"currency": euro['pk'], "quantity": "760.00000"}
         ]
 
     def test_get_flow_report(self):

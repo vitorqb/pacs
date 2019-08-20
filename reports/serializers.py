@@ -9,7 +9,7 @@ from currencies.models import Currency
 from currencies.serializers import MoneySerializer
 from reports.reports import Period
 
-from .view_models import FlowEvolutionInput, CurrencyOpts
+from .view_models import FlowEvolutionInput, BalanceEvolutionInput, CurrencyOpts
 
 
 def _new_account_field():
@@ -54,26 +54,6 @@ class PeriodField(serializers.Field):
             serializers.DateField().to_representation(period.start),
             serializers.DateField().to_representation(period.end)
         ]
-
-
-class BalanceEvolutionInputSerializer(serializers.Serializer):
-    accounts = _new_account_list_serializer()
-    periods = serializers.ListSerializer(child=PeriodField())
-
-    def get_data(self):
-        self.is_valid(True)
-        return self.validated_data
-
-
-class BalanceEvolutionDataSerializer(serializers.Serializer):
-    account = _new_account_field()
-    initial_balance = BalanceSerializer()
-    balance_evolution = BalanceSerializer(many=True)
-
-
-class BalanceEvolutionOutputSerializer(serializers.Serializer):
-    periods = _new_periods_serializer()
-    data = serializers.ListSerializer(child=BalanceEvolutionDataSerializer())
 
 
 class DateAndPriceSerialzier(serializers.Serializer):
@@ -152,3 +132,23 @@ class FlowEvolutionOutputSerializer(serializers.Serializer):
         child=FlowEvolutionDataSerializer(),
         source='*'
     )
+
+
+class BalanceEvolutionReportDataSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    account = _new_account_field()
+    balance = BalanceSerializer()
+
+
+class BalanceEvolutionOutputSerializer(serializers.Serializer):
+    data = serializers.ListSerializer(
+        child=BalanceEvolutionReportDataSerializer()
+    )
+
+
+class BalanceEvolutionInputSerializer(serializers.Serializer):
+    accounts = _new_account_list_serializer()
+    dates = serializers.ListSerializer(child=serializers.DateField())
+
+    def create(self, data):
+        return BalanceEvolutionInput(accounts=data['accounts'], dates=data['dates'])

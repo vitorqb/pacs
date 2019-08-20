@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List, NoReturn
 
@@ -178,6 +179,15 @@ class MovementSpec():
     def from_movement(cls, mov: Movement) -> MovementSpec:
         """ Creates a MovementSpec from a Movement """
         return MovementSpec(mov.get_account(), mov.get_money())
+
+    @classmethod
+    def from_data(
+            cls,
+            account: Account,
+            quantity: Decimal,
+            currency: Currency
+    ) -> MovementSpec:
+        return cls(account=account, money=Money(quantity=quantity, currency=currency))
 
 
 class MovementQueryset(m.QuerySet):

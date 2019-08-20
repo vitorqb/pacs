@@ -6,6 +6,10 @@ from pytz import utc
 from .models import N_DECIMAL_COMPARISON, N_DECIMAL_PLACES
 
 
+def date_to_str(d):
+    return d.strftime("%Y-%m-%d")
+
+
 def utcdatetime(*args, **kwargs) -> datetime:
     return datetime(*args, **kwargs, tzinfo=utc)
 

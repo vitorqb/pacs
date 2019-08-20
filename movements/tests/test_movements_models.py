@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -18,7 +20,7 @@ from movements.models import (Movement, MovementSpec, Transaction,
                               TransactionMovementSpecListValidator,
                               TransactionQuerySet)
 
-from .factories import TransactionTestFactory
+from .factories import TransactionTestFactory, MovementTestFactory
 
 
 class MovementsModelsTestCase(PacsTestCase):

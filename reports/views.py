@@ -29,7 +29,7 @@ class BalanceEvolutionViewSpec:
 
     @classmethod
     def _gen_report(cls, inputs: BalanceEvolutionInput) -> BalanceEvolutionReport:
-        return BalanceEvolutionQuery(**attr.asdict(inputs)).run()
+        return BalanceEvolutionQuery(**inputs.as_dict()).run()
 
     @classmethod
     def post(cls, request):

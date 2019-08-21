@@ -2,6 +2,8 @@ from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import Mock, call, patch, sentinel
 
+import attr
+
 from django.conf import settings
 
 from accounts.models import AccTypeEnum
@@ -152,6 +154,44 @@ class TestIntegrationBalanceEvolutionQuery(PacsTestCase):
                 ))
         ])
         assert exp == report
+
+    def test_integration_with_currency_conversion(self):
+
+        # A currency and account for testing
+        currency = CurrencyTestFactory.create()
+        account = AccountTestFactory.create()
+
+        # A test conversion fn that sets moneys to 999 currency
+        def currency_conversion_fn(money, date):
+            return Money(currency=currency, quantity=Decimal(999))
+
+        # Two transactions
+        dates = [date(2019, 1, 1), date(2020, 1, 1)]
+        transactions = [
+            TransactionTestFactory.create(
+                movements_specs__0__account=account,
+                date_=dates[0],
+            ),
+            TransactionTestFactory.create(
+                movements_specs__0__account=account,
+                date_=dates[1],
+            ),
+        ]
+
+        result = BalanceEvolutionQuery([account], dates, currency_conversion_fn).run()
+        exp = BalanceEvolutionReport(data=[
+            BalanceEvolutionReportData(
+                dates[0],
+                account,
+                balance=Balance([Money(999, currency)]),
+            ),
+            BalanceEvolutionReportData(
+                dates[1],
+                account,
+                balance=Balance([Money(999 * 2, currency)]),
+            )
+        ])
+        assert exp == result
 
 
 class TestIntegrationFlowEvolutionQuery(PacsTestCase):

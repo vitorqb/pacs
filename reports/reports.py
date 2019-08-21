@@ -27,6 +27,8 @@ class BalanceEvolutionQuery:
     _accounts: List[Account] = attr.ib()
     _dates: List[date] = attr.ib()
     _currency_dct: Dict[int, Currency] = attr.ib(init=False)
+    _currency_conversion_fn: Callable[[Money, date], Money]
+    _currency_conversion_fn = attr.ib(default=lambda x, _: x)
 
     def __attrs_post_init__(self):
         self._currency_dct = _get_currencies_in_dct()
@@ -69,12 +71,13 @@ class BalanceEvolutionQuery:
         x = str(x.compile(engine, compile_kwargs={"literal_binds": True}))
         return _execute_query(x)
 
-    def run(self) -> BalanceEvolutionReport:
-        balances: Dict[Account, Balance] = defaultdict(lambda: Balance([]))
+    def _get_quantity_per_group_and_currencies(
+            self
+    ) -> Tuple[Dict[Tuple[date, Account, Currency], Decimal], Set[Currency]]:
+        """ Runs the query for each account, and aggregates all results into
+        a dictionary with the Quantity groupped by date, Account and Currency.
+        Also returns a set of all used currencies. """
         currencies: Set[Currency] = set()
-        out: List[BalanceEvolutionReportData] = []
-
-        # Prepares a dict with Quantity for each account, currency and date
         data: Dict[Tuple[date, Account, Currency], Decimal] = {}
         for account in self._accounts:
             for cur_id, quantity, date_i in self._run_query(account):
@@ -82,16 +85,42 @@ class BalanceEvolutionQuery:
                 dt = self._dates[date_i]
                 currencies.add(currency)
                 data[(dt, account, currency)] = quantity
+        return data, currencies
 
-        # Sums the quantity for each account, date and currency
+    def _aggregate_by_account_and_data(
+            self,
+            currencies: Iterable[Currency],
+            data: Dict[Tuple[date, Account, Currency], Decimal],
+    ) -> List[BalanceEvolutionReportData]:
+        """ Given the data quantity groupped by date, account and currency,
+        and a set of all currencies, construct a list of all balance evolution
+        report data.
+        ASSUMES THAT data IS ORDERED BY DATE """
+        money_agg: Dict[Account, MoneyAggregator]
+        money_agg = defaultdict(lambda: MoneyAggregator())
+
+        out: List[BalanceEvolutionReportData] = []
         for account in self._accounts:
             for dt in self._dates:
                 for currency in currencies:
                     q: Optional[Decimal] = data.get((dt, account, currency), None)
                     if q is not None:
                         money = Money(q, currency)
-                        balances[account] = balances[account].add_money(money)
-                out.append(BalanceEvolutionReportData(dt, account, balances[account]))
+                        converted_money = self._currency_conversion_fn(money, dt)
+                        money_agg[account].append_money(converted_money)
+                balance: Balance = money_agg[account].as_balance()
+                out.append(BalanceEvolutionReportData(dt, account, balance))
+        return out
+
+    def run(self) -> BalanceEvolutionReport:
+        # Prepares a dict with Quantity for each account, currency and date
+        data: Dict[Tuple[date, Account, Currency], Decimal]
+        currencies: Set[Currency]
+        (data, currencies) = self._get_quantity_per_group_and_currencies()
+
+        # Sums the quantity for each account, date and currency
+        out: List[BalanceEvolutionReportData]
+        out = self._aggregate_by_account_and_data(currencies, data)
 
         return BalanceEvolutionReport(out)
 

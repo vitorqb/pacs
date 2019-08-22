@@ -1,18 +1,23 @@
+from datetime import date
+from decimal import Decimal
 from unittest.mock import Mock, call, patch, sentinel
 
 from django.urls.base import resolve
 
+import common.utils as utils
+from accounts.tests.factories import AccountTestFactory
 from common.test import PacsTestCase
 from currencies.currency_converter import (UnkownCurrencyForConversion,
                                            UnkownDateForCurrencyConversion)
+from currencies.models import Currency
+from currencies.money import Balance, Money
+from currencies.tests.factories import CurrencyTestFactory
 from movements.tests.factories import TransactionTestFactory
-from reports.views import FlowEvolutionViewSpec, balance_evolution_view, BalanceEvolutionViewSpec
-from reports.view_models import BalanceEvolutionInput
 from reports.reports import BalanceEvolutionReport, BalanceEvolutionReportData
 from reports.serializers import BalanceEvolutionOutputSerializer
-from accounts.tests.factories import AccountTestFactory
-from datetime import date
-import common.utils as utils
+from reports.view_models import BalanceEvolutionInput
+from reports.views import (BalanceEvolutionViewSpec, FlowEvolutionViewSpec,
+                           balance_evolution_view)
 
 
 class TestBalanceEvolutionViewUrl:
@@ -84,6 +89,50 @@ class TestBalanceEvolutionViewSpecPost(PacsTestCase):
         with patch('reports.views.Response') as Response:
             result = BalanceEvolutionViewSpec.post(request)
         assert Response.call_args_list == [call(serialized_exp_report)]
+        assert result == Response()
+
+    def test_with_currency_opts(self):
+        currency_from = Currency.objects.get(code='EUR')
+        currency_to = Currency.objects.get(code="BRL")
+
+        date_ = date(2018, 1, 1)
+        account = AccountTestFactory()
+        money = Money(Decimal('2'), currency_from)
+        transaction = TransactionTestFactory(
+            movements_specs__0__money=money,
+            movements_specs__0__account=account,
+            date_=date_,
+        )
+
+        data = {
+            "dates": [utils.date_to_str(date_)],
+            "accounts": [account.pk],
+            "currency_opts": {
+                "price_portifolio": [
+                    {
+                        "currency": currency_from.get_code(),
+                        "prices": [{"date": utils.date_to_str(date_), "price": 1}]
+                    },
+                    {
+                        "currency": currency_to.get_code(),
+                        "prices": [{"date": utils.date_to_str(date_), "price": 1/5}]
+                    }
+                ],
+                "convert_to": currency_to.get_code(),
+            }
+        }
+        request = Mock(data=data)
+
+        exp_balance_report_data = [BalanceEvolutionReportData(
+            date=date_,
+            account=account,
+            balance=Balance([Money(Decimal('10'), currency_to)]),
+        )]
+        exp_report = BalanceEvolutionReport(exp_balance_report_data)
+        exp_serialized = BalanceEvolutionOutputSerializer(exp_report).data
+        with patch('reports.views.Response') as Response:
+            result = BalanceEvolutionViewSpec.post(request)
+        assert Response.call_args_list == [call(exp_serialized)]
         assert result == Response()
 
 

@@ -149,6 +149,13 @@ class BalanceEvolutionOutputSerializer(serializers.Serializer):
 class BalanceEvolutionInputSerializer(serializers.Serializer):
     accounts = _new_account_list_serializer()
     dates = serializers.ListSerializer(child=serializers.DateField())
+    currency_opts = CurrencyOptsSerializer(default=None)
 
     def create(self, data):
-        return BalanceEvolutionInput(accounts=data['accounts'], dates=data['dates'])
+        created_data = {'accounts': data['accounts'], 'dates': data['dates']}
+        if data['currency_opts'] is not None:
+            created_data['currency_opts'] = self._create_currency_opts(data)
+        return BalanceEvolutionInput(**created_data)
+
+    def _create_currency_opts(self, data):
+        return self.fields['currency_opts'].create(data['currency_opts'])

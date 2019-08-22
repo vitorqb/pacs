@@ -64,6 +64,9 @@ class MoneyAggregator:
     def get_moneys(self) -> List[Money]:
         return copy(self._moneys)
 
+    def as_balance(self) -> Balance:
+        return Balance(self.get_moneys())
+
 
 @attr.s(frozen=True, cmp=False)
 class Balance:

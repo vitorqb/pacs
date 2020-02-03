@@ -30,8 +30,7 @@ be set by the user or in a `.env` file at the project root (here).
 
 Those variables are:
 ```bash
-PACS_DEBUG=1  # Can be set to anything, enters in debug mode. If not set
-              # goes into production mode.
+PACS_DEBUG=1  # If set to 1, enters in debug mode. Any other values leads to production mode
 PACS_SECRET_KEY=... # SECRET_KEY in django settings
 PACS_ALLOWED_HOSTS=... # comma separated ALLOWED_HOSTS for django settings
                        # e.g. 128.6.2.1,www.google.com

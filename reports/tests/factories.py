@@ -9,7 +9,7 @@ from reports.reports import Period
 
 # Custom faker w/ controlable seed
 faker = Faker()
-faker.seed(2013921)
+Faker.seed(2013921)
 
 
 class PeriodTestFactory(f.Factory):

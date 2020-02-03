@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Loads a .env file, if any
 load_dotenv(os.path.join(BASE_DIR, '.env'), verbose=True)
 
-DEBUG = os.environ.get('PACS_DEBUG', None) is not None
+DEBUG = os.environ.get('PACS_DEBUG', '0') == '1'
 SECRET_KEY = os.environ['PACS_SECRET_KEY']
 ALLOWED_HOSTS = os.environ['PACS_ALLOWED_HOSTS'].split(',')
 STATIC_ROOT = os.environ['PACS_STATIC_ROOT']

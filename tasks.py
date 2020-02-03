@@ -93,6 +93,19 @@ def prepare_virtualenv(c, path, force=False):
     _new_venv(c, path)
 
 
+@pacstask(help={"dev": "Install dev requirements", "deploy": "Install deploy requirements"})
+def requirements(c, dev=False, deploy=False):
+    """ Installs requirements for pacs """
+    cmd = "pip install -r requirements/base_frozen.txt"
+
+    if dev:
+        cmd += " -r requirements/development.txt"
+
+    if deploy:
+        cmd += " -r requirements/deploy.txt"
+
+    c.run(cmd, pty=True)
+
 @pacstask()
 def venv(c):
     """ Prepares virtualenv in "./venv" """
@@ -128,16 +141,24 @@ def populate_db(c):
 def runserver(c):
     """ Runs the development server """
     _populate_db(c)
-    c.run_manage("runserver_plus --print-sql", pty=True)
+    c.run_manage("runserver_plus --print-sql 0.0.0.0:8000", pty=True)
 
 
 @pacstask()
-def migrate(c):
+def migrate(c, no_input=False):
     """ Runs migrations """
-    c.run_manage("migrate", pty=True)
+    cmd = "migrate" + (" --no-input" if no_input else "")
+    c.run_manage(cmd, pty=True)
 
 
 @pacstask()
-def makemigrations(c):
+def makemigrations(c, no_input=False):
     """ Runs makemigrations """
-    c.run_manage("makemigrations", pty=True)
+    cmd = "makemigrations" + (" --no-input" if no_input else "")
+    c.run_manage(cmd, pty=True)
+
+@pacstask()
+def collectstatic(c, no_input=False):
+    """ Runs collectstatic """
+    cmd = "collectstatic" + (" --no-input" if no_input else "")
+    c.run_manage(cmd, pty=True)

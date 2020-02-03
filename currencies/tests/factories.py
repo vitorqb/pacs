@@ -7,7 +7,7 @@ from currencies.money import Money
 
 # Custom faker w/ controlable seed
 faker = Faker()
-faker.seed(20139210)
+Faker.seed(20139210)
 
 
 class CurrencyTestFactory(f.DjangoModelFactory):

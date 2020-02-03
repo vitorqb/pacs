@@ -6,7 +6,7 @@ from accounts.models import Account, AccountFactory, AccTypeEnum, get_root_acc
 
 # Custom faker w/ controlable seed
 faker = Faker()
-faker.seed(2013921)
+Faker.seed(2013921)
 
 
 class AccountTestFactory(f.DjangoModelFactory):

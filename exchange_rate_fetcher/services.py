@@ -1,6 +1,7 @@
 import attr
 import requests
 from datetime import datetime, timedelta
+from django.conf import settings
 
 
 @attr.s()
@@ -8,26 +9,21 @@ class ExchangeRateFetcher:
     """ Service to fetch exchange rates. """
 
     _DATE_FORMAT = "%Y-%m-%d"
-    _THIRD_PARTY_SERVICE_URL = 'https://api.exchangeratesapi.io/history'
 
     def fetch(self, start_at, end_at, symbols, base, max_date=None):
         translator = ExchangeRateDataTranslator()
+        third_party_fetcher = _get_third_party_fetcher()
         start_at = self._date_to_str(start_at, self._DATE_FORMAT)
         end_at = self._date_to_str(end_at, self._DATE_FORMAT)
+        max_date = self._date_to_str(max_date, self._DATE_FORMAT, True)
         symbols = self._list_to_comma_separated_string(symbols)
         params = {"start_at": start_at,
                   "end_at": end_at,
                   "symbols": symbols,
                   "base": base}
-        raw_data = self._do_fetch_data(self._THIRD_PARTY_SERVICE_URL, params)
+        raw_data = third_party_fetcher.run(params)
         return translator.translate_raw_data(raw_data, self._DATE_FORMAT,
                                              max_date)
-
-    @staticmethod
-    def _do_fetch_data(url, params):
-        out = requests.get(url, params=params)
-        out.raise_for_status()
-        return out.json()
 
     @staticmethod
     def _list_to_comma_separated_string(lst):
@@ -41,12 +37,55 @@ class ExchangeRateFetcher:
         return x.strftime(fmt)
 
 
-@attr.s()
+# Third Party Fetchers
+def _get_third_party_fetcher():
+    """ Initializes the implementation for the third party fetcher """
+    if settings.TEST is True:
+        return MockedThirdPartyFetcher()
+    return ThirdPartyFetcher()
+
+
+class ThirdPartyFetcher:
+    """
+    Real implementation to fetch data from the third party exchange
+    rate service
+    """
+
+    _URL = 'https://api.exchangeratesapi.io/history'
+    _requests = requests
+
+    @classmethod
+    def run(cls, params):
+        out = cls._requests.get(cls._URL, params=params)
+        out.raise_for_status()
+        return out.json()
+
+
+class MockedThirdPartyFetcher:
+    """
+    Mocked implementation for testing
+    """
+
+    def run(self, params):
+        return {
+            "rates": {
+                "2020-01-02": {"EUR": 1, "BRL": 4},
+                "2020-01-03": {"EUR": 1, "BRL": 4},
+                "2020-01-06": {"EUR": 1, "BRL": 5}
+            }
+        }
+
+
+# Translators
 class ExchangeRateDataTranslator:
 
     def translate_raw_data(self, raw_data, date_format, max_date=None):
         """ Algorithim to perform the translation between the third party service
-        and the pacs expected format. """
+        and the pacs expected format.
+        - raw_data: The fetched data.
+        - date_format: The format in which the dates are.
+        - max_date: The maximum (last) date. All dates with missing values up
+            to this date will be filled with the price of the closest date."""
         rates = raw_data['rates']
         currencies = list(rates.values())[0].keys()
 

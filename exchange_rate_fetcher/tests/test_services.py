@@ -22,34 +22,19 @@ class ExchangeRateFetcherTest(TestCase):
         params = {"start_at": start_at,
                   "end_at": end_at,
                   "symbols": sut.ExchangeRateFetcher
-                  ._list_to_comma_separated_string(symbols),
+                                ._list_to_comma_separated_string(symbols),
                   "base": base}
         date_fmt = sut.ExchangeRateFetcher._DATE_FORMAT
-        service_url = sut.ExchangeRateFetcher._THIRD_PARTY_SERVICE_URL
 
-        with patch.object(sut.ExchangeRateFetcher, '_do_fetch_data')\
-                as m_do_fetch_data:
-            m_do_fetch_data.return_value = raw_data
+        with patch.object(sut.MockedThirdPartyFetcher, 'run') as m_run:
+            m_run.return_value = raw_data
             result = sut.ExchangeRateFetcher().fetch(start_at, end_at, symbols,
                                                      base)
 
-        assert m_do_fetch_data.call_count == 1
-        assert m_do_fetch_data.call_args == call(service_url, params)
+        assert m_run.call_count == 1
+        assert m_run.call_args == call(params)
         assert result == sut.ExchangeRateDataTranslator()\
                             .translate_raw_data(raw_data, date_fmt)
-
-    def test__do_fetch_data__calls_requests_get(self):
-        url = "http://foo.com"
-        params = {"bar": 1}
-        with patch("exchange_rate_fetcher.services.requests") as m_requests:
-            sut.ExchangeRateFetcher._do_fetch_data(url, params)
-        assert m_requests.get.call_count == 1
-        assert m_requests.get.call_args == call(url, params=params)
-
-    def test__do_fetch_data__calls_raise_for_status(self):
-        with patch("exchange_rate_fetcher.services.requests") as m_requests:
-            sut.ExchangeRateFetcher._do_fetch_data("", {})
-        assert m_requests.get().raise_for_status.call_count == 1
 
     def test__list_to_comma_separated_string(self):
         lst = ["A", "B"]
@@ -72,6 +57,22 @@ class ExchangeRateFetcherTest(TestCase):
     def test__date_to_str__datetime(self):
         date_ = date(2019, 1, 1)
         assert sut.ExchangeRateFetcher._date_to_str(date_, "%Y") == "2019"
+
+
+class ThirdPartyFetcherTest(TestCase):
+
+    def test__run__calls_requests_get(self):
+        params = {"bar": 1}
+        url = sut.ThirdPartyFetcher._URL
+        with patch.object(sut.ThirdPartyFetcher, '_requests') as m_requests:
+            sut.ThirdPartyFetcher.run(params)
+        assert m_requests.get.call_count == 1
+        assert m_requests.get.call_args == call(url, params=params)
+
+    def test__run__calls_raise_for_status(self):
+        with patch.object(sut.ThirdPartyFetcher, '_requests') as m_requests:
+            sut.ThirdPartyFetcher.run({})
+        assert m_requests.get().raise_for_status.call_count == 1
 
 
 class ExchangeRateDataTranslatorTest(TestCase):

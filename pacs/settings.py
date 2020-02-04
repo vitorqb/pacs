@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'accounts',
     'movements',
     'pacs_auth',
+    'exchange_rate_fetcher',
 ]
 
 if DEBUG:

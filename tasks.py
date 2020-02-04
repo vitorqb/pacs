@@ -58,7 +58,8 @@ pacstask = partial(task, klass=PacsTask)
 # Reusable tasks
 #
 def _run_pytest(c, opts):
-    c.run(f"pytest {opts} --cov=.", pty=True)
+    with c.prefix("export $(grep -v '^#' .env.test | xargs)"):
+        c.run(f"pytest {opts} --cov=.", pty=True)
 
 
 def _populate_db(c):
@@ -144,7 +145,7 @@ def func_test(c, opts=""):
 @pacstask()
 def test(c, opts=""):
     """ Runs functional and unit tests """
-    _run_pytest(c, f". {opts}")
+    _run_pytest(c, f"{opts}")
 
 
 @pacstask()

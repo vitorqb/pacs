@@ -1,7 +1,7 @@
 # Contains the result of `pip freeze` after installing the packages at `base.txt`
 # This file should be updated regularly to keep all dependencies up to date.
 attrs==19.1.0
-Django==2.2.2
+Django==2.2.9
 django-cors-headers==3.0.2
 django-filter==2.1.0
 django-js-asset==1.2.2

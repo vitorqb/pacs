@@ -1,7 +1,6 @@
 # Packages for development. We like to keep them version free.
 -r base_frozen.txt
 pytest
-requests
 factory_boy
 pytest-django
 pytest-cov

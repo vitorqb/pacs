@@ -22,6 +22,10 @@ class URLS:
         flow_evolution = _base + 'flow-evolution/'
         balance_evolution = _base + 'balance-evolution/'
 
+    class exchange_rates:
+        _base = '/exchange_rates/'
+        data = _base + 'data'
+
 
 class FunctionalTests(StaticLiveServerTestCase):
 
@@ -47,16 +51,17 @@ class FunctionalTests(StaticLiveServerTestCase):
             f"Response for {resp.url} had status code " +\
             f"{resp.status_code} and not 2xx. \nContent: {resp.content}"
 
-    def get_json(self, path):
+    def get_json(self, path, params=None):
         """
         Makes a get request, ensures that it returns 2**, and parses the json
         """
-        resp = self.requests.get(f"{path}")
+        resp = self.requests.get(f"{path}", params=params)
         self.assert_response_status_okay(resp)
         return resp.json()
 
     get_currencies = partialmethod(get_json, URLS.currency)
     get_transactions = partialmethod(get_json, URLS.transaction)
+    get_exchange_rates_data = partialmethod(get_json, URLS.exchange_rates.data)
 
     def post_json(self, path, json={}):
         """ Makes a json request, ensures it returns 2**, and parses the json """
@@ -613,6 +618,46 @@ class FunctionalTests(StaticLiveServerTestCase):
             },
         ]
 
+    def test_get_exchange_rates(self):
+        start_at = "2020-01-01"
+        end_at = "2020-01-06"
+        currency_codes = "BRL,EUR"
+        params = {"start_at": start_at,
+                  "end_at": end_at,
+                  "currency_codes": currency_codes}
+        res = self.get_exchange_rates_data(params)
+        # THE RESULT IS MOCKED!
+        exp = [
+            {"currency": "EUR",
+             "prices": [
+                 {"date": "2020-01-06", "price": 1.0},
+                 {"date": "2020-01-03", "price": 1.0},
+                 {"date": "2020-01-02", "price": 1.0},
+                 {"date": "2020-01-05", "price": 1.0},
+                 {"date": "2020-01-04", "price": 1.0},
+             ]},
+            {"currency": "BRL",
+             "prices": [
+                 {"date": "2020-01-06", "price": 1/5},
+                 {"date": "2020-01-03", "price": 1/4},
+                 {"date": "2020-01-02", "price": 1/4},
+                 {"date": "2020-01-05", "price": 1/4},
+                 {"date": "2020-01-04", "price": 1/4},
+             ]}
+        ]
+
+        exp_currencies = set(x['currency'] for x in exp)
+        res_currencies = set(x['currency'] for x in res)
+        assert exp_currencies == res_currencies
+
+        for currency in exp_currencies:
+            exp_prices = next(x['prices'] for x in exp if x['currency'] == currency)
+            res_prices = next(x['prices'] for x in res if x['currency'] == currency)
+
+            sorted_exp_prices = sorted(exp_prices, key=(lambda x: x['date']))
+            sorted_res_prices = sorted(res_prices, key=(lambda x: x['date']))
+
+            assert sorted_exp_prices == sorted_res_prices
 
 #
 # Helpers
@@ -651,8 +696,10 @@ class _TestRequests():
     # Default headers sent in every request
     headers = attr.ib()
 
-    def get(self, path):
-        return requests.get(f"{self.url}{path}", headers=self.headers)
+    def get(self, path, params=None):
+        params = params or {}
+        return requests.get(f"{self.url}{path}", params=params,
+                            headers=self.headers)
 
     def post(self, path, json={}):
         return requests.post(

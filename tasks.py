@@ -58,7 +58,8 @@ pacstask = partial(task, klass=PacsTask)
 # Reusable tasks
 #
 def _run_pytest(c, opts):
-    c.run(f"pytest {opts} --cov=.", pty=True)
+    with c.prefix("export $(grep -v '^#' .env.test | xargs)"):
+        c.run(f"pytest {opts} --cov=.", pty=True)
 
 
 def _populate_db(c):
@@ -106,6 +107,22 @@ def requirements(c, dev=False, deploy=False):
 
     c.run(cmd, pty=True)
 
+
+@pacstask(help={"dep_name": "Name of the dependency"})
+def add_base_requirement(c, dep_name):
+    """ Adds a base requirement for pacs by installing the most recent
+    dependency version compatible and adding it to
+    `base_frozen.txt`"""
+    tmp_file_name = tempfile.NamedTemporaryFile(suffix=".txt").name
+    c.run(f"rm -rf {tmp_file_name}")
+    c.run(f"cp requirements/base_frozen.txt {tmp_file_name}")
+    c.run(f"echo '{dep_name}' >> '{tmp_file_name}'")
+    c.run(f"pip install -r {tmp_file_name}")
+    c.run(f"pip freeze | grep -P '^{dep_name}==' | tee --append requirements/base_frozen.txt")
+    c.run(f"echo '{dep_name}' | tee --append requirements/base.txt")
+    c.run(f"rm -rf {tmp_file_name}")
+
+
 @pacstask()
 def venv(c):
     """ Prepares virtualenv in "./venv" """
@@ -128,7 +145,7 @@ def func_test(c, opts=""):
 @pacstask()
 def test(c, opts=""):
     """ Runs functional and unit tests """
-    _run_pytest(c, f". {opts}")
+    _run_pytest(c, f"{opts}")
 
 
 @pacstask()

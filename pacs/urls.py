@@ -22,6 +22,7 @@ from accounts.views import AccountViewSet
 from currencies.views import CurrencyViewSet
 from movements.views import TransactionViewSet
 from reports.views import flow_evolution_view, balance_evolution_view
+import exchange_rate_fetcher.views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -37,6 +38,7 @@ urlpatterns += router.urls
 urlpatterns += [
     path(r'reports/flow-evolution/', flow_evolution_view),
     path(f'reports/balance-evolution/', balance_evolution_view),
+    path(f'exchange_rates/data/', exchange_rate_fetcher.views.data_view)
 ]
 
 if settings.DEBUG:

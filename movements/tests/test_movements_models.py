@@ -3,6 +3,8 @@ from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 
+import attr
+
 from rest_framework.exceptions import ValidationError
 
 from accounts.management.commands.populate_accounts import (account_populator,
@@ -232,16 +234,29 @@ class TestTransactionFactory(MovementsModelsTestCase):
 
 class TestTransactionModel(MovementsModelsTestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.currency = CurrencyTestFactory()
+        self.values = ((Decimal(1) / Decimal(3)),
+                       (Decimal(2) / Decimal(3)),
+                       Decimal(-1))
+        self.moneys = [Money(val, self.currency) for val in self.values]
+        self.accs = AccountTestFactory.create_batch(3)
+        self.mov_specs = [MovementSpec(acc, money)
+                          for acc, money
+                          in zip(self.accs, self.moneys)]
+        self.trans = TransactionTestFactory()
+        assert self.trans.get_movements_specs() != self.mov_specs
+
     def test_set_movements_base(self):
-        cur = CurrencyTestFactory()
-        values = ((Decimal(1) / Decimal(3)), (Decimal(2) / Decimal(3)), Decimal(-1))
-        moneys = [Money(val, cur) for val in values]
-        accs = AccountTestFactory.create_batch(3)
-        mov_specs = [MovementSpec(acc, money) for acc, money in zip(accs, moneys)]
-        trans = TransactionTestFactory()
-        assert trans.get_movements_specs() != mov_specs
-        trans.set_movements(mov_specs)
-        assert trans.get_movements_specs() == mov_specs
+        self.trans.set_movements(self.mov_specs)
+        assert self.trans.get_movements_specs() == self.mov_specs
+
+    def test_test_movements_with_comments(self):
+        self.mov_specs[0] = attr.evolve(self.mov_specs[0], comment="FOO")
+        self.mov_specs[1] = attr.evolve(self.mov_specs[1], comment="FOO")
+        self.trans.set_movements(self.mov_specs)
+        assert self.trans.get_movements_specs() == self.mov_specs
 
 
 class TestMovementSpec(MovementsModelsTestCase):

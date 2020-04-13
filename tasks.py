@@ -6,6 +6,7 @@ from invoke.runners import Result
 from invoke.exceptions import Exit
 from contextlib import contextmanager
 
+import tempfile
 
 FUNCTIONAL_TESTS_PATH = "functional_tests.py"
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -67,11 +68,11 @@ def _populate_db(c):
         c.run_manage(x)
 
 
-def _new_venv(c, path):
+def _new_venv(c, path, requirements_file="requirements/development.txt"):
     c.run(f'python -m venv "{path}"')
     with c.prefix(f'source "{path}/bin/activate"'):
         c.run(f'pip install --upgrade pip')
-        c.run(f'pip install -r requirements/development.txt')
+        c.run(f'pip install -r {requirements_file}')
 
 
 #
@@ -121,6 +122,14 @@ def add_base_requirement(c, dep_name):
     c.run(f"pip freeze | grep -P '^{dep_name}==' | tee --append requirements/base_frozen.txt")
     c.run(f"echo '{dep_name}' | tee --append requirements/base.txt")
     c.run(f"rm -rf {tmp_file_name}")
+
+@pacstask()
+def update_frozen_requirements(c):
+    """ Updates the `base_frozen` file with the most up-to-date requirements"""
+    venv_dir = tempfile.mkdtemp()
+    _new_venv(c, venv_dir, "requirements/base.txt")
+    with c.prefix(f'source "{venv_dir}/bin/activate"'):
+        c.run(f"pip freeze | tee ./requirements/base_frozen.txt")
 
 
 @pacstask()

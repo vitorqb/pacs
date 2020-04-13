@@ -44,6 +44,11 @@ class TestMovementSpecSerializer(MovementsSerializersTestCase):
     def test_create_base(self):
         assert self.create() == MovementSpec(self.acc, self.money)
 
+    def test_create_with_comment(self):
+        comment = "FOO"
+        self.data['comment'] = comment
+        assert self.create() == MovementSpec(self.acc, self.money, comment)
+
 
 class TransactionSerializerTest(MovementsSerializersTestCase):
 

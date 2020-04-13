@@ -1,5 +1,6 @@
 from rest_framework.serializers import (ListSerializer, ModelSerializer,
                                         PrimaryKeyRelatedField, Serializer)
+import rest_framework.serializers as serializers
 
 from accounts.models import Account
 from currencies.money import Money
@@ -11,6 +12,7 @@ from .models import MovementSpec, Transaction, TransactionFactory
 class MovementSpecSerializer(Serializer):
     account = PrimaryKeyRelatedField(queryset=Account.objects.all())
     money = MoneySerializer()
+    comment = serializers.CharField(allow_blank=True, default='')
 
     def create(self, validated_data):
         money_data = validated_data.pop('money')

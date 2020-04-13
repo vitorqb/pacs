@@ -19,6 +19,11 @@ if TYPE_CHECKING:
     import datetime
 
 
+def _char_field(max_length=120):
+    """Returns a standardized char field."""
+    return m.CharField(max_length=max_length, blank=True, null=True)
+
+
 @attr.s()
 class TransactionFactory():
     """ Encapsulates the creation of Transactions (with Movements) """
@@ -92,7 +97,7 @@ class Transaction(m.Model):
     #
     # !!!! TODO -> Add comments field (large texts for detailed comments)
     description = m.TextField()
-    reference = m.CharField(max_length=120, blank=True, null=True)
+    reference = _char_field()
     date = m.DateField()
 
     #
@@ -156,7 +161,8 @@ class Transaction(m.Model):
             account=mov_spec.account,
             transaction=self,
             currency=mov_spec.money.currency,
-            quantity=round_decimal(mov_spec.money.quantity)
+            quantity=round_decimal(mov_spec.money.quantity),
+            comment=mov_spec.comment
         ))
 
 
@@ -168,6 +174,7 @@ class MovementSpec():
     """
     account: Account = attr.ib()
     money: Money = attr.ib()
+    comment: str = attr.ib(default="")
 
     @account.validator
     def _account_validator(self, attribute, account):
@@ -178,16 +185,7 @@ class MovementSpec():
     @classmethod
     def from_movement(cls, mov: Movement) -> MovementSpec:
         """ Creates a MovementSpec from a Movement """
-        return MovementSpec(mov.get_account(), mov.get_money())
-
-    @classmethod
-    def from_data(
-            cls,
-            account: Account,
-            quantity: Decimal,
-            currency: Currency
-    ) -> MovementSpec:
-        return cls(account=account, money=Money(quantity=quantity, currency=currency))
+        return MovementSpec(mov.get_account(), mov.get_money(), mov.get_comment())
 
 
 class MovementQueryset(m.QuerySet):
@@ -204,6 +202,8 @@ class Movement(m.Model):
     #
     account = m.ForeignKey(Account, on_delete=m.PROTECT)
     transaction = m.ForeignKey(Transaction, on_delete=m.CASCADE)
+    comment = _char_field(max_length=500)
+
     # currency + quantity forms Money
     currency = m.ForeignKey(Currency, on_delete=m.CASCADE)
     quantity = new_money_quantity_field()
@@ -218,6 +218,9 @@ class Movement(m.Model):
     #
     def get_date(self) -> datetime.date:
         return self.transaction.get_date()
+
+    def get_comment(self) -> str:
+        return self.comment or ""
 
     def get_account(self) -> Account:
         return self.account

@@ -659,6 +659,31 @@ class FunctionalTests(StaticLiveServerTestCase):
 
             assert sorted_exp_prices == sorted_res_prices
 
+    def test_create_movement_with_comment(self):
+        # Currencies setup
+        euro = _select_by(self.get_currencies(), 'name', 'Euro')
+
+        # Accounts setup
+        current_acc = self.post_account(
+            self.data_maker.current_acc(self.root_acc)
+        )
+        supermarket = self.post_account(
+            self.data_maker.supermarket_acc(self.root_acc)
+        )
+
+        # A transaction with a comment in a movement
+        transaction_data = self.data_maker.paid_supermarket(
+            current_acc,
+            supermarket,
+            euro
+        )
+        comment = "Was expensive because of olive oil!"
+        transaction_data["movements_specs"][0]["comment"] = comment
+
+        result = self.post_transaction(transaction_data)
+        assert result["movements_specs"][0]["comment"] == comment
+
+
 #
 # Helpers
 #

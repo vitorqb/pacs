@@ -5,6 +5,8 @@ from accounts.models import Account
 
 class TransactionFilterSet(f.FilterSet):
     account_id = f.NumberFilter(method='filter_account')
+    reference = f.CharFilter(lookup_expr='icontains')
+    description = f.CharFilter(lookup_expr='icontains')
 
     def filter_account(self, queryset, name, account_id):
         """ Filters a Transaction Queryset by account_id, but

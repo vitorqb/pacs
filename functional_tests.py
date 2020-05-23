@@ -683,6 +683,45 @@ class FunctionalTests(StaticLiveServerTestCase):
         result = self.post_transaction(transaction_data)
         assert result["movements_specs"][0]["comment"] == comment
 
+    def test_query_for_transaction_based_on_description(self):
+        # Get Currency
+        euro = _select_by(self.get_currencies(), 'name', 'Euro')
+
+        # Accounts setup
+        assets = self.post_account(self.data_maker.assets_acc())
+        bank = self.post_account(self.data_maker.current_acc(assets))
+        cash = self.post_account(self.data_maker.money_acc(assets))
+
+        # Creates two transactions
+        deposit_1_data = self.data_maker.deposit(bank, cash, euro, "2020-01-01")
+        deposit_1_data["reference"] = "The first deposit!"
+        deposit_1 = self.post_transaction(deposit_1_data)
+
+        deposit_2_data = self.data_maker.deposit(bank, cash, euro, "2020-01-02")
+        deposit_2_data["reference"] = "The second deposit!"
+        deposit_2 = self.post_transaction(deposit_2_data)
+
+        unrelated_data = self.data_maker.deposit(bank, cash, euro, "2020-01-02")
+        unrelated_data["reference"] = "FOO"
+        unrelated_data["description"] = "FOO"
+        unrelated = self.post_transaction(unrelated_data)
+
+        # Query for the first one only
+        result_1 = self.get_transactions({"reference": "first", "description": "deposit"})
+        assert len(result_1) == 1
+        assert result_1[0] == deposit_1
+
+        # Query for the second one only
+        result_2 = self.get_transactions({"reference": "second", "description": "deposit"})
+        assert len(result_2) == 1
+        assert result_2[0] == deposit_2
+
+        # Query for both
+        result_3 = self.get_transactions({"description": "deposit"})
+        assert len(result_3) == 2
+        assert result_3[0] == deposit_2  # Most recent
+        assert result_3[1] == deposit_1  # Most recent
+
 
 #
 # Helpers

@@ -1,4 +1,5 @@
 import os
+import sys
 from functools import partial
 from invoke import task
 from invoke.tasks import Context, Task
@@ -11,6 +12,21 @@ import tempfile
 FUNCTIONAL_TESTS_PATH = "functional_tests.py"
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 MANAGE_PATH = os.path.join(ROOT_DIR, "manage.py")
+BUILD_SOURCES = [
+    "accounts",
+    "common",
+    "currencies",
+    "exchange_rate_fetcher",
+    "invoke.yaml",
+    "manage.py",
+    "movements",
+    "pacs",
+    "pacs_auth",
+    "reports",
+    "requirements",
+    "tasks.py"
+]
+DOCKER_CMD = os.environ.get("PACS_DOCKER_CMD", "docker")
 
 
 #
@@ -188,3 +204,18 @@ def collectstatic(c, no_input=False):
     """ Runs collectstatic """
     cmd = "collectstatic" + (" --no-input" if no_input else "")
     c.run_manage(cmd, pty=True)
+
+@pacstask()
+def build(c, build_dir="./build", dist_dir="./dist"):
+    version = c.run("git describe --tags").stdout.strip()
+    c.run(f"rm -rf {build_dir}")
+    c.run(f"mkdir -p {build_dir}")
+    c.run(f"mkdir -p {dist_dir}")
+    for x in BUILD_SOURCES:
+        c.run(f"cp -r {x} {build_dir}/{x}")
+    for x in ["__pycache__", ".mypy_cache", "tests"]:
+        c.run(f'find build -depth -type d -name "{x}" -exec rm -rf '+'"{}" \;')
+    with c.cd(build_dir):
+        c.run(f"tar -vzcf pacs-{version}.tar.gz **")
+    c.run(f"mv {build_dir}/pacs-{version}.tar.gz {dist_dir}/pacs-{version}.tar.gz")
+    c.run(f"{DOCKER_CMD} build -t 'pacs:{version}' --build-arg 'VERSION={version}' -f docker/Dockerfile .")

@@ -28,6 +28,9 @@ class TokenFactory():
         return full_clean_and_save(token)
 
 
+token_factory = TokenFactory()
+
+
 class TokenQuerySet(m.QuerySet):
 
     def is_valid_token_value(self, token_value):

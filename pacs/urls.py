@@ -40,7 +40,7 @@ urlpatterns += [
     path(r'reports/flow-evolution/', flow_evolution_view),
     path(f'reports/balance-evolution/', balance_evolution_view),
     path(f'exchange_rates/data/', exchange_rate_fetcher.views.data_view),
-    path(f'auth/token', pacs_auth.views.get_token),
+    path(f'auth/token', pacs_auth.views.token_view),
 ]
 
 if settings.DEBUG:

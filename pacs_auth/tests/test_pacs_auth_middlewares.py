@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from unittest.mock import Mock
 
 from common.test import PacsTestCase
-from .middleware import PacsAuthMiddleware
+from pacs_auth.middleware import PacsAuthMiddleware
 
 
 class TestPacsAuthMiddleware(PacsTestCase):

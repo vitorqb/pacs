@@ -1,0 +1,42 @@
+#!/bin/bash
+USAGE="$0"'
+Entrypoint for pacs docker image.'
+
+# getopt
+SHORT='h'
+LONG='help'
+OPTS="$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")"
+! [ "$?" = 0 ] && echo "$USAGE" 1>&2 && exit 1
+eval set -- "$OPTS"
+
+while [[ "$#" -gt 0 ]]
+do
+    case "$1" in
+        -h|--help)
+            echo "$USAGE"
+            exit 0
+            ;;
+        --)
+            shift
+            ;;
+        *)
+            { echo "ERROR: Unknown parameter" ; echo "$USAGE" ; } 1>&2
+            exit 1
+            ;;
+    esac
+done
+
+# Script
+set -e
+
+# Welcome
+echo '------------------------------------------------------------'
+echo '---------------  PACS (prod) ENTRYPOINT  -------------------'
+echo '------------------------------------------------------------'
+
+
+# Manage thingies
+inv collectstatic --no-input migrate --no-input populate-db 
+
+# Gunicorn
+/usr/local/bin/gunicorn --access-logfile='-' --bind=0.0.0.0:8000 'pacs.wsgi:application'

@@ -1,7 +1,7 @@
 # Packages for development. We like to keep them version free.
 -r base_frozen.txt
 pytest
-factory_boy
+factory_boy==2.12.0
 pytest-django
 pytest-cov
 invoke

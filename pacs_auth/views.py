@@ -23,7 +23,10 @@ def get_token(request):
 
 
 def post_token(request):
-    if not request.META.get('HTTP_AUTHORIZATION') == f"Token {settings.ADMIN_TOKEN}":
+    print('HERE')
+    print(request.data.get('admin_token'))
+    print(settings.ADMIN_TOKEN)
+    if not request.data.get('admin_token') == settings.ADMIN_TOKEN:
         raise PermissionDenied()
     token = token_factory()
     request.session["token_value"] = token.value

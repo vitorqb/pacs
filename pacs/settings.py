@@ -57,6 +57,9 @@ INSTALLED_APPS = [
 if DEBUG:
     INSTALLED_APPS += ['django_extensions', 'debug_toolbar']
 
+AUTH_MIDDLEWARE_NAME = 'PacsDummyAuthMiddleware' if TEST else 'PacsAuthMiddleware'
+PACS_AUTH_ALLOWED_URLS = ['/auth/token']
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -69,7 +72,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Mine
-    'pacs_auth.middleware.PacsAuthMiddleware'
+    f'pacs_auth.middleware.{AUTH_MIDDLEWARE_NAME}'
 ]
 
 ROOT_URLCONF = 'pacs.urls'

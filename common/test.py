@@ -13,9 +13,7 @@ class PacsTestCase(APITestCase):
 
     def setUp(self):
         super().setUp()
-        self.client = APIClient(
-            HTTP_AUTHORIZATION=f"Token {settings.ADMIN_TOKEN}"
-        )
+        self.client = APIClient(HTTP_PACS_TEST_AUTH="1")
 
     @staticmethod
     def populate_accounts():

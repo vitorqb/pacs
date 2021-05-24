@@ -36,10 +36,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         currency_populator()
 
         # Sets up a request session with authorization header
-        self.requests = _TestRequests(
-            self.live_server_url,
-            {'Authorization': f"Token {settings.ADMIN_TOKEN}"}
-        )
+        self.requests = _TestRequests(self.live_server_url, {'pacs-test-auth': "1"})
 
         # Sets up a root account and the DataMaker
         self.root_acc = _find_root(self.get_json(URLS.account))
@@ -90,7 +87,7 @@ class FunctionalTests(StaticLiveServerTestCase):
             "User should have been unauthorized because of no header!"
 
         # Then he puts the correct token and it works!
-        self.requests.headers = {'Authorization': f'Token {settings.ADMIN_TOKEN}'}
+        self.requests.headers = {'pacs-test-auth': "1"}
         assert self.requests.get(URLS.account).status_code == 200, \
             "User should have been successfull becase he has the header"
 

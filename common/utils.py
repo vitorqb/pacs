@@ -14,6 +14,10 @@ def utcdatetime(*args, **kwargs) -> datetime:
     return datetime(*args, **kwargs, tzinfo=utc)
 
 
+def utcnow() -> datetime:
+    return datetime.now(tz=utc)
+
+
 def decimals_equal(one: Decimal, two: Decimal) -> bool:
     return round(one, N_DECIMAL_COMPARISON) == round(two, N_DECIMAL_COMPARISON)
 

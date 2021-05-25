@@ -23,11 +23,8 @@ def get_token(request):
 
 
 def post_token(request):
-    print('HERE')
-    print(request.data.get('admin_token'))
-    print(settings.ADMIN_TOKEN)
     if not request.data.get('admin_token') == settings.ADMIN_TOKEN:
-        raise PermissionDenied()
+        return Response(status=400)
     token = token_factory()
     request.session["token_value"] = token.value
     return Response(data={"token_value": token.value})

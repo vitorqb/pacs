@@ -73,10 +73,10 @@ class TestCreateToken(PacsTestCase):
         self.assertEqual(Token.objects.all().count(), 0)
         response = self.get_client().post("/auth/token")
         self.assertEqual(Token.objects.all().count(), 0)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 400)
 
     def test_fails_for_wrong_admin_token(self):
         self.assertEqual(Token.objects.all().count(), 0)
         response = self.get_client().post("/auth/token", {"admin_token": "123"})
         self.assertEqual(Token.objects.all().count(), 0)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 400)

@@ -8,7 +8,7 @@ db.sqlite3
 venv
 /build
 /dist
-/.env.prod
 /.blackbox/pubring.gpg~
 /.blackbox/pubring.kbx~
 /.blackbox/secring.gpg
+/.env.prod

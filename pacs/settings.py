@@ -29,9 +29,6 @@ STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
 # The Token that allows admin to log in
 ADMIN_TOKEN = os.environ['PACS_ADMIN_TOKEN']
 
-# We allow all since we use a security token anyway
-CORS_ORIGIN_ALLOW_ALL = True
-
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -43,7 +40,6 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'django_filters',
-    'corsheaders',
 
     'mptt',
 
@@ -62,7 +58,6 @@ PACS_AUTH_ALLOWED_URLS = ['/auth/token']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

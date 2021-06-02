@@ -5,6 +5,5 @@ django-mptt
 django-filter
 python-dotenv
 gunicorn
-django-cors-headers
 sqlalchemy
 requests

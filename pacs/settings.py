@@ -29,6 +29,10 @@ STATIC_ROOT = os.environ['PACS_STATIC_ROOT']
 # The Token that allows admin to log in
 ADMIN_TOKEN = os.environ['PACS_ADMIN_TOKEN']
 
+# Feature toggles on by default
+FEATURE_TOGGLES = os.environ.get('PACS_FEATURE_TOGGLES', '')
+FEATURE_TOGGLE_REQUEST_HEADER = 'HTTP_PACS_FEATURE_TOGGLES'
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -48,6 +52,7 @@ INSTALLED_APPS = [
     'movements',
     'pacs_auth',
     'exchange_rate_fetcher',
+    'featuretoggles',
 ]
 
 if DEBUG:
@@ -67,7 +72,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Mine
-    f'pacs_auth.middleware.{AUTH_MIDDLEWARE_NAME}'
+    f'pacs_auth.middleware.{AUTH_MIDDLEWARE_NAME}',
+    'featuretoggles.middlewares.FeatureToggleMiddleware'
 ]
 
 ROOT_URLCONF = 'pacs.urls'

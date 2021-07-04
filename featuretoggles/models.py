@@ -14,7 +14,7 @@ class FeatureToggleQuerySet(models.QuerySet):
         if from_cache:
             return featuretoggles.utils.parse_toggles(from_cache)
         from_db = {x.name: x.is_active for x in self.all()}
-        cache.set(CACHE_KEY, featuretoggles.utils.serialize_toggles(from_db))
+        cache.set(CACHE_KEY, featuretoggles.utils.serialize_toggles(from_db), CACHE_TIMEOUT)
         return from_db
 
 

@@ -1,4 +1,5 @@
 import featuretoggles.services as services
+import featuretoggles.models as models
 
 
 class FeatureToggleMiddleware():
@@ -7,6 +8,7 @@ class FeatureToggleMiddleware():
         self.get_response = get_response
 
     def __call__(self, request):
-        featureToggleService = services.FeatureToggleService(request)
+        default_toggles = models.FeatureToggle.objects.read_feature_toggles()
+        featureToggleService = services.FeatureToggleService(default_toggles, request)
         services.set_instance(featureToggleService)
         return self.get_response(request)

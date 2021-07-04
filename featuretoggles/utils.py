@@ -18,3 +18,16 @@ def serialize_toggles(dct):
         else:
             elements.append(f"!{k}")
     return ",".join(elements)
+
+
+# Fake implementation of django cache's interface used for test
+class FakeCache:
+
+    def __init__(self, _, __):
+        self.calls = []
+
+    def get(self, k):
+        return "foo,!bar"
+
+    def set(self, k, v, t):
+        self.calls.append([k, v, t])

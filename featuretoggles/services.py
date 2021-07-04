@@ -1,14 +1,16 @@
 import copy
 from django.conf import settings
 import featuretoggles.utils
+import featuretoggles.models
 
 
 class FeatureToggleService():
 
-    def __init__(self, request):
+    def __init__(self, default_toggles, request):
         request_toggles_str = request.META.get(settings.FEATURE_TOGGLE_REQUEST_HEADER, '')
         settings_toggles_str = settings.FEATURE_TOGGLES
         self._features = {
+            **default_toggles,
             **featuretoggles.utils.parse_toggles(settings_toggles_str),
             **featuretoggles.utils.parse_toggles(request_toggles_str),
         }

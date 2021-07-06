@@ -5,9 +5,8 @@ jobs:
       - image: circleci/python:3.6.4
     steps:
       - checkout
-      - run:
-          command: pip install invoke
-      - run:
-          command: cp .env.example .env && inv test
-      - run:
-          command: inv build
+      - run: sudo chown -R circleci:circleci /usr/local/bin
+      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
+      - run: pip install invoke
+      - run: cp .env.example .env && inv test
+      - run: inv build

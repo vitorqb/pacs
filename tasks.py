@@ -158,13 +158,15 @@ def venv(c):
 @pacstask()
 def unit_test(c, opts=""):
     """ Calls pytest for all unit tests. """
-    _run_pytest(c, f"--ignore={FUNCTIONAL_TESTS_PATH} {opts}")
+    opts += '-m "not functional"'
+    _run_pytest(c, opts)
 
 
 @pacstask()
 def func_test(c, opts=""):
     """ Calls functional tests for python """
-    _run_pytest(c, f"{FUNCTIONAL_TESTS_PATH} {opts}")
+    opts += '-m "functional"'
+    _run_pytest(c, opts)
 
 
 @pacstask()

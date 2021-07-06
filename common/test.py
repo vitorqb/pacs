@@ -1,5 +1,5 @@
 import attr
-from django.conf import settings
+import requests
 from django.core.cache import cache
 from rest_framework.test import APIClient, APITestCase
 
@@ -81,3 +81,37 @@ class MockQset():
         self.set_iter before. """
         assert self._iter_list is not None
         return iter(self._iter_list)
+
+
+@attr.s()
+class TestRequests():
+    """ A wrapper around `requests` to make requests for the
+    testing server """
+
+    # The base url
+    url = attr.ib()
+
+    # Default headers sent in every request
+    headers = attr.ib(default={'pacs-test-auth': "1"})
+
+    def get(self, path, params=None):
+        params = params or {}
+        return requests.get(f"{self.url}{path}", params=params,
+                            headers=self.headers)
+
+    def post(self, path, json={}):
+        return requests.post(
+            f"{self.url}{path}",
+            json=json,
+            headers=self.headers
+        )
+
+    def patch(self, path, json={}):
+        return requests.patch(
+            f"{self.url}{path}",
+            json=json,
+            headers=self.headers
+        )
+
+    def delete(self, path):
+        return requests.delete(f"{self.url}{path}", headers=self.headers)

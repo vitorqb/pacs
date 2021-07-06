@@ -79,7 +79,7 @@ class TestAccountViewset(AccountViewTestCase):
                 acc_type=AccTypeEnum.LEAF
             ),
         ]
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             self.client.get('/accounts/')
 
     def test_get_for_list_of_accounts(self):

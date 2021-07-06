@@ -71,7 +71,7 @@ class TestTransactionView(MovementsViewsTestCase):
 
     def test_get_transactions_count_queries(self):
         TransactionTestFactory.create_batch(5)
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             self.client.get('/transactions/')
 
     def test_get_transaction_with_pagination(self):

@@ -5,6 +5,7 @@ jobs:
       - image: cimg/python:3.9.6
     steps:
       - checkout
+      - setup_remote_docker
       - run: pip install -r requirements/development.txt
       - run: cp .env.example .env && inv test
       - run: inv build

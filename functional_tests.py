@@ -10,6 +10,7 @@ from accounts.management.commands.populate_accounts import (ACCOUNT_DATA,
                                                             account_type_populator)
 from currencies.management.commands.populate_currencies import \
     currency_populator
+import pytest
 
 
 class URLS:
@@ -27,6 +28,7 @@ class URLS:
         data = _base + 'data'
 
 
+@pytest.mark.functional
 class FunctionalTests(StaticLiveServerTestCase):
 
     def setUp(self):

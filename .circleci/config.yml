@@ -7,6 +7,6 @@ jobs:
       - checkout
       - run: sudo chown -R circleci:circleci /usr/local/bin
       - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
-      - run: pip install invoke
+      - run: pip install -r requirements/development.txt
       - run: cp .env.example .env && inv test
       - run: inv build

@@ -59,7 +59,7 @@ if DEBUG:
     INSTALLED_APPS += ['django_extensions', 'debug_toolbar']
 
 AUTH_MIDDLEWARE_NAME = 'PacsDummyAuthMiddleware' if TEST else 'PacsAuthMiddleware'
-PACS_AUTH_ALLOWED_URLS = ['/auth/token']
+PACS_AUTH_ALLOWED_URLS = ['/auth/token', '/featuretoggles']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

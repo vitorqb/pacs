@@ -1,8 +1,7 @@
 from functools import partialmethod
-
+from common.test import TestRequests
+import pytest
 import attr
-import requests
-from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 from accounts.management.commands.populate_accounts import (ACCOUNT_DATA,
@@ -10,7 +9,6 @@ from accounts.management.commands.populate_accounts import (ACCOUNT_DATA,
                                                             account_type_populator)
 from currencies.management.commands.populate_currencies import \
     currency_populator
-import pytest
 
 
 class URLS:
@@ -38,7 +36,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         currency_populator()
 
         # Sets up a request session with authorization header
-        self.requests = _TestRequests(self.live_server_url, {'pacs-test-auth': "1"})
+        self.requests = TestRequests(self.live_server_url)
 
         # Sets up a root account and the DataMaker
         self.root_acc = _find_root(self.get_json(URLS.account))
@@ -746,41 +744,6 @@ def _assert_not_contains(list_, key, value):
 def _select_by(list_, key, value):
     """ Selects the (first) dict from list_ that has value in it's key """
     return next(x for x in list_ if x[key] == value)
-
-
-@attr.s()
-class _TestRequests():
-    """ A wrapper around `requests` to make requests for the
-    testing server """
-
-    # The base url
-    url = attr.ib()
-
-    # Default headers sent in every request
-    headers = attr.ib()
-
-    def get(self, path, params=None):
-        params = params or {}
-        return requests.get(f"{self.url}{path}", params=params,
-                            headers=self.headers)
-
-    def post(self, path, json={}):
-        return requests.post(
-            f"{self.url}{path}",
-            json=json,
-            headers=self.headers
-        )
-
-    def patch(self, path, json={}):
-        return requests.patch(
-            f"{self.url}{path}",
-            json=json,
-            headers=self.headers
-        )
-
-    def delete(self, path):
-        return requests.delete(f"{self.url}{path}", headers=self.headers)
-
 
 @attr.s()
 class DataMaker:

@@ -1,5 +1,3 @@
-from unittest import TestCase
-from unittest.mock import Mock
 import featuretoggles.models as sut
 from django.test import override_settings
 from common.test import PacsTestCase

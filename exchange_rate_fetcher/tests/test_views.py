@@ -7,14 +7,22 @@ from exchange_rate_fetcher.view_models import ExchangeRateDataInputs
 
 class ExchangeRateDataViewSpecTest(TestCase):
 
+    start_at = "2020-02-04"
+    end_at = "2020-02-05"
+    currency_codes = "EUR,BRL"
+    query_params = {"start_at": start_at,
+                    "end_at": end_at,
+                    "currency_codes": currency_codes}
+
     def test_serialize_inputs(self):
-        start_at = "2020-02-04"
-        end_at = "2020-02-05"
-        currency_codes = "EUR,BRL"
-        query_params = {"start_at": start_at,
-                        "end_at": end_at,
-                        "currency_codes": currency_codes}
-        request = Mock(query_params=query_params)
+        request = Mock(query_params=self.query_params, META={})
         result = sut.ExchangeRateDataViewSpec._serialize_inputs(request)
         assert result\
-            == ExchangeRateDataInputs(start_at, end_at, ["EUR", "BRL"])
+            == ExchangeRateDataInputs(self.start_at, self.end_at, ["EUR", "BRL"], None)
+
+    def test_serialize_with_token(self):
+        headers = {sut.TOKEN_HEADER: "abc"}
+        request = Mock(query_params=self.query_params, META=headers)
+        result = sut.ExchangeRateDataViewSpec._serialize_inputs(request)
+        assert result\
+            == ExchangeRateDataInputs(self.start_at, self.end_at, ["EUR", "BRL"], "abc")

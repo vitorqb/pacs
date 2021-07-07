@@ -26,6 +26,7 @@ class ExchangeRateDataInputsSerializer(serializers.Serializer):
     start_at = _new_string_date_field()
     end_at = _new_string_date_field()
     currency_codes = CurrencyCodesField()
+    token = serializers.CharField(required=False, allow_null=True)
 
     def create(self, data):
         return ExchangeRateDataInputs(**data)

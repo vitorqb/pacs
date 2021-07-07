@@ -8,6 +8,8 @@ from django.conf import settings
 class ExchangeRateFetcher:
     """ Service to fetch exchange rates. """
 
+    token = attr.ib(default=None)
+
     _DATE_FORMAT = "%Y-%m-%d"
 
     def fetch(self, start_at, end_at, symbols, base, max_date=None):
@@ -21,6 +23,8 @@ class ExchangeRateFetcher:
                   "end_at": end_at,
                   "symbols": symbols,
                   "base": base}
+        if self.token:
+            params["access_key"] = self.token
         raw_data = third_party_fetcher.run(params)
         return translator.translate_raw_data(raw_data, self._DATE_FORMAT,
                                              max_date)
@@ -51,7 +55,7 @@ class ThirdPartyFetcher:
     rate service
     """
 
-    _URL = 'https://api.exchangeratesapi.io/history'
+    _URL = 'https://api.exchangeratesapi.io/v1/timeseries'
     _requests = requests
 
     @classmethod

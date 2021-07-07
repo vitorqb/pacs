@@ -1,16 +1,6 @@
 from rest_framework import serializers
-from django.core.validators import RegexValidator
 from .view_models import ExchangeRateDataInputs
-
-
-# Regexp used to validate dates
-_date_regex = "[0-9]{4}-[0-1][0-9]-[0-3][0-9]"
-
-
-def _new_string_date_field():
-    """ Returns a field for a date-like string """
-    validators_ = [RegexValidator(_date_regex)]
-    return serializers.CharField(validators=validators_)
+import common.models
 
 
 class CurrencyCodesField(serializers.Field):
@@ -23,8 +13,8 @@ class CurrencyCodesField(serializers.Field):
 
 
 class ExchangeRateDataInputsSerializer(serializers.Serializer):
-    start_at = _new_string_date_field()
-    end_at = _new_string_date_field()
+    start_at = common.models.new_string_date_field()
+    end_at = common.models.new_string_date_field()
     currency_codes = CurrencyCodesField()
     token = serializers.CharField(required=False, allow_null=True)
 

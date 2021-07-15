@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'pacs_auth',
     'exchange_rate_fetcher',
     'featuretoggles',
+    'exchangerates',
 ]
 
 if DEBUG:

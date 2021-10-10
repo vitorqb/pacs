@@ -9,3 +9,12 @@ def new_price_field():
         max_digits=N_DECIMAL_MAX_DIGITS,
         decimal_places=N_DECIMAL_PLACES
     )
+
+
+class CurrencyCodesField(serializers.Field):
+    """ Converts a string with comas into a list. """
+
+    def to_internal_value(self, data):
+        if not isinstance(data, str):
+            raise serializers.ValidationError("Should be a string!")
+        return data.split(",")

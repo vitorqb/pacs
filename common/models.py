@@ -3,6 +3,8 @@ from typing import List
 
 import django.db.models as m
 from django.core.validators import MinValueValidator
+from rest_framework import serializers
+from django.core.validators import RegexValidator
 
 # We store decimals with:
 #   - up to 20 digits
@@ -27,6 +29,16 @@ def new_price_field():
         max_digits=N_DECIMAL_MAX_DIGITS,
         decimal_places=N_DECIMAL_PLACES
     )
+
+
+# Regexp used to validate dates
+_date_regex = "[0-9]{4}-[0-1][0-9]-[0-3][0-9]"
+
+
+def new_string_date_field():
+    """ Returns a field for a date-like string """
+    validators_ = [RegexValidator(_date_regex)]
+    return serializers.CharField(validators=validators_)
 
 
 class NameField(m.CharField):

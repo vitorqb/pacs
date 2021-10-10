@@ -5,10 +5,9 @@ import common.serializers
 
 
 class ExchangeRateDataInputsSerializer(serializers.Serializer):
-    start_at = common.models.new_string_date_field()
-    end_at = common.models.new_string_date_field()
+    start_at = serializers.DateField()
+    end_at = serializers.DateField()
     currency_codes = common.serializers.CurrencyCodesField()
-    token = serializers.CharField(required=False, allow_null=True)
 
     def create(self, data):
         return ExchangeRateDataInputs(**data)

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from pytz import utc
@@ -24,3 +24,8 @@ def decimals_equal(one: Decimal, two: Decimal) -> bool:
 
 def round_decimal(x: Decimal) -> Decimal:
     return round(x, N_DECIMAL_PLACES)  # type: ignore
+
+
+def date_range(init, end):
+    assert end >= init
+    return [init + timedelta(days=x) for x in range((end - init).days + 1)]

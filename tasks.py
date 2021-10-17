@@ -17,6 +17,8 @@ BUILD_SOURCES = [
     "common",
     "currencies",
     "exchange_rate_fetcher",
+    "exchangerates",
+    "featuretoggles",
     "invoke.yaml",
     "manage.py",
     "movements",

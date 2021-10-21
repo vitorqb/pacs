@@ -5,7 +5,7 @@ import exchangerates.models as models
 import exchangerates.exceptions as exceptions
 from decimal import Decimal
 import pytest
-
+import django.db.utils
 
 test_data = (
     ("EUR", datetime.date(2020, 1, 1), Decimal("0.8")),
@@ -81,3 +81,8 @@ class TestImportExchangerate(PacsTestCase):
         assert model.currency_code == 'EUR'
         assert model.date == datetime.date(2020, 1, 1)
         assert model.value == Decimal('1.1')
+
+    def test_import_twice_failes(self):
+        sut.import_exchangerate(exchangerate_import_input)
+        with pytest.raises(django.db.utils.IntegrityError):
+            sut.import_exchangerate(exchangerate_import_input)

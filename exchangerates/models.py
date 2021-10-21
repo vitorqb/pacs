@@ -11,3 +11,4 @@ class ExchangeRate(models.Model):
         indexes = [
             models.Index(fields=['currency_code']),
         ]
+        unique_together = [['currency_code', 'date']]

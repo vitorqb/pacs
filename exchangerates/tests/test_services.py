@@ -16,6 +16,8 @@ test_data = (
     ("BRL", datetime.date(2020, 1, 5), Decimal("4.25")),
 )
 
+exchangerate_import_input = sut.ExchangeRateImportInput('EUR', '2020-01-01', 1.1)
+
 
 def create_test_data():
     for (c, d, v) in test_data:
@@ -65,3 +67,17 @@ class TestFetchExchangeRates(PacsTestCase):
                 datetime.date(2020, 1, 1),
                 currency_codes=["EUR", "BRL"]
             )
+
+
+class TestImportExchangerate(PacsTestCase):
+
+    def test_import_one(self):
+        assert models.ExchangeRate.objects.all().count() == 0
+
+        sut.import_exchangerate(exchangerate_import_input)
+
+        assert models.ExchangeRate.objects.all().count() == 1
+        model = sut.models.ExchangeRate.objects.all().first()
+        assert model.currency_code == 'EUR'
+        assert model.date == datetime.date(2020, 1, 1)
+        assert model.value == Decimal('1.1')

@@ -3,6 +3,8 @@ import exchangerates.exceptions as exceptions
 import collections
 import datetime
 import common.utils as utils
+from decimal import Decimal
+import attr
 
 
 A_DAY = datetime.timedelta(days=1)
@@ -38,3 +40,29 @@ def fetch_exchange_rates(start_at, end_at, currency_codes):
         }
         for currency_code in currency_codes
     ]
+
+
+@attr.s()
+class ExchangeRateImportInput:
+    currency_code = attr.ib()
+    date_str = attr.ib()
+    value_float = attr.ib()
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d['currency_code'], d['date'], d['value'])
+
+
+def import_exchangerates(exchangerate_import_inputs):
+    for exchangerate_import_input in exchangerate_import_inputs:
+        import_exchangerate(exchangerate_import_input)
+
+
+def import_exchangerate(exchangerate_import_input):
+    model = models.ExchangeRate.objects.create(
+        currency_code=exchangerate_import_input.currency_code,
+        date=utils.str_to_date(exchangerate_import_input.date_str),
+        value=utils.round_decimal(Decimal(exchangerate_import_input.value_float))
+    )
+    model.full_clean()
+    model.save()

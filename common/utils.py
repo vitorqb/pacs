@@ -13,6 +13,10 @@ def date_to_str(d):
     return d.strftime(DATE_FORMAT)
 
 
+def str_to_date(s, date_format=DATE_FORMAT):
+    return datetime.strptime(s, date_format).date()
+
+
 def utcdatetime(*args, **kwargs) -> datetime:
     return datetime(*args, **kwargs, tzinfo=utc)
 

@@ -125,12 +125,12 @@ class ExchangeRateDataTranslator:
 
     @staticmethod
     def _date_before_str(date, date_format):
-        date = datetime.strptime(date, date_format)
+        date = utils.str_to_date(date, date_format)
         date_before = date - timedelta(days=1)
         return date_before.strftime(date_format)
 
     @staticmethod
     def _date_after_str(date, date_format):
-        date = datetime.strptime(date, date_format)
+        date = utils.str_to_date(date, date_format)
         date_after = date + timedelta(days=1)
         return date_after.strftime(date_format)

@@ -1,5 +1,6 @@
 import attr
 import requests
+import common.utils as utils
 from datetime import datetime, timedelta
 from django.conf import settings
 
@@ -10,14 +11,12 @@ class ExchangeRateFetcher:
 
     token = attr.ib(default=None)
 
-    _DATE_FORMAT = "%Y-%m-%d"
-
     def fetch(self, start_at, end_at, symbols, base, max_date=None):
         translator = ExchangeRateDataTranslator()
         third_party_fetcher = _get_third_party_fetcher()
-        start_at = self._date_to_str(start_at, self._DATE_FORMAT)
-        end_at = self._date_to_str(end_at, self._DATE_FORMAT)
-        max_date = self._date_to_str(max_date, self._DATE_FORMAT, True)
+        start_at = self._date_to_str(start_at, utils.DATE_FORMAT)
+        end_at = self._date_to_str(end_at, utils.DATE_FORMAT)
+        max_date = self._date_to_str(max_date, utils.DATE_FORMAT, True)
         symbols = self._list_to_comma_separated_string(symbols)
         params = {"start_at": start_at,
                   "end_at": end_at,
@@ -26,7 +25,7 @@ class ExchangeRateFetcher:
         if self.token:
             params["access_key"] = self.token
         raw_data = third_party_fetcher.run(params)
-        return translator.translate_raw_data(raw_data, self._DATE_FORMAT,
+        return translator.translate_raw_data(raw_data, utils.DATE_FORMAT,
                                              max_date)
 
     @staticmethod

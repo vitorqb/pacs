@@ -13,6 +13,7 @@ from sqlalchemy.engine import Engine
 
 from currencies.models import Currency
 from currencies.money import Balance, Money, MoneyAggregator
+import common.utils as utils
 
 if TYPE_CHECKING:
     from accounts.models import Account
@@ -305,7 +306,7 @@ def _execute_query(str_query):
 
 
 def _str_to_date(x):
-    return datetime.strptime(x, '%Y-%m-%d').date()
+    return datetime.strptime(x, utils.DATE_FORMAT).date()
 
 
 def _get_currencies_in_dct() -> Dict[int, Currency]:

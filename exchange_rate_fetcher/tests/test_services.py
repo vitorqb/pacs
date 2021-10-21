@@ -1,6 +1,7 @@
 from unittest import TestCase
 from unittest.mock import patch, call
 import exchange_rate_fetcher.services as sut
+import common.utils as utils
 import pytest
 from datetime import date
 
@@ -24,7 +25,7 @@ class ExchangeRateFetcherTest(TestCase):
                   "symbols": sut.ExchangeRateFetcher
                                 ._list_to_comma_separated_string(symbols),
                   "base": base}
-        date_fmt = sut.ExchangeRateFetcher._DATE_FORMAT
+        date_fmt = utils.DATE_FORMAT
 
         with patch.object(sut.MockedThirdPartyFetcher, 'run') as m_run:
             m_run.return_value = raw_data
@@ -43,11 +44,11 @@ class ExchangeRateFetcherTest(TestCase):
             == exp
 
     def test__date_to_str__with_str_input(self):
-        assert sut.ExchangeRateFetcher._date_to_str("2019-01-01", "%Y-%m-%d")\
+        assert sut.ExchangeRateFetcher._date_to_str("2019-01-01", utils.DATE_FORMAT)\
             == "2019-01-01"
 
     def test__date_to_str__with_none(self):
-        assert sut.ExchangeRateFetcher._date_to_str(None, "%Y-%m-%d", True)\
+        assert sut.ExchangeRateFetcher._date_to_str(None, utils.DATE_FORMAT, True)\
             is None
 
     def test__date_to_str__error_with_none(self):
@@ -95,7 +96,6 @@ class ExchangeRateDataTranslatorTest(TestCase):
 
     def test__translate_raw_data(self):
         max_date = "2020-01-07"
-        date_fmt = "%Y-%m-%d"
         raw_data = {
             "rates": {
                 "2020-01-03": {"EUR": 1, "BRL": 4},
@@ -124,5 +124,5 @@ class ExchangeRateDataTranslatorTest(TestCase):
              ]}
         ]
         translator = sut.ExchangeRateDataTranslator()
-        result = translator.translate_raw_data(raw_data, date_fmt, max_date)
+        result = translator.translate_raw_data(raw_data, utils.DATE_FORMAT, max_date)
         self._compare_result(exp_data, result)

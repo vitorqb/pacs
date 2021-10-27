@@ -37,6 +37,6 @@ class GetExchangeRateDataTest(PacsTestCase):
             "currency_codes": "EUR,BRL",
         }
         request = APIRequestFactory().get("/exchange_rate/data/v2", params)
-        result = sut.get_exchangerates(request, fetch_fn=mock_fetch_exchange_rates)
+        result = sut.exchangerates(request, fetch_fn=mock_fetch_exchange_rates)
         assert result.status_code == 200
         assert result.data == mock_data

@@ -27,7 +27,7 @@ def fetch_exchange_rates(start_at, end_at, currency_codes):
                 prev_day = date - A_DAY
                 price = prices[currency_code].get(prev_day)
                 if price is None:
-                    raise exceptions.NotEnoughData(f"Missing data for date: {prev_day}")
+                    raise exceptions.NotEnoughData(f"Missing data for {currency_code} {date}")
                 prices[currency_code][date] = price
 
     return [

@@ -99,14 +99,18 @@ class TestRequests():
         return requests.get(f"{self.url}{path}", params=params,
                             headers=self.headers)
 
-    def post(self, path, json={}):
+    def post(self, path, json=None, files=None):
+        json = json or {}
+        files = files or {}
         return requests.post(
             f"{self.url}{path}",
             json=json,
+            files=files,
             headers=self.headers
         )
 
-    def patch(self, path, json={}):
+    def patch(self, path, json=None):
+        json = json or {}
         return requests.patch(
             f"{self.url}{path}",
             json=json,

@@ -80,7 +80,7 @@ class ExchangeRatesFunctionalTests(StaticLiveServerTestCase):
     def test_get_with_missing_data(self):
         result = self.run_get_request(new_params())
         assert result.status_code == 400
-        assert result.json() == {'detail': 'Missing data for date: 2019-12-31'}
+        assert result.json() == {'detail': 'Missing data for EUR 2020-01-01'}
 
     def test_post_and_get_exchange_rates(self):
         with temp_csv() as exchangerates_csv:

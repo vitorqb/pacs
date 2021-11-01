@@ -76,9 +76,12 @@ pacstask = partial(task, klass=PacsTask)
 #
 # Reusable tasks
 #
-def _run_pytest(c, opts):
+def _run_pytest(c, opts, coverage):
+    command = f"pytest {opts} "
+    if coverage is True:
+        command += "--cov "
     with c.prefix("export $(grep -v '^#' .env.test | xargs)"):
-        c.run(f"pytest {opts} --cov=.", pty=True)
+        c.run(command, pty=True)
 
 
 def _populate_db(c):
@@ -158,23 +161,23 @@ def venv(c):
 
 
 @pacstask()
-def unit_test(c, opts=""):
+def unit_test(c, opts="", coverage=False):
     """ Calls pytest for all unit tests. """
     opts += ' -m "not functional"'
-    _run_pytest(c, opts)
+    _run_pytest(c, opts, coverage)
 
 
 @pacstask()
-def func_test(c, opts=""):
+def func_test(c, opts="", coverage=False):
     """ Calls functional tests for python """
     opts += ' -m "functional"'
-    _run_pytest(c, opts)
+    _run_pytest(c, opts, coverage)
 
 
 @pacstask()
-def test(c, opts=""):
+def test(c, opts="", coverage=False):
     """ Runs functional and unit tests """
-    _run_pytest(c, f"{opts}")
+    _run_pytest(c, f"{opts}", coverage)
 
 
 @pacstask()

@@ -2,13 +2,13 @@ FROM python:3.7-alpine
 
 ARG VERSION
 
-# Dependencies
-RUN apk update && apk upgrade && apk add --no-cache bash tar
-RUN pip install invoke
-
 # Prepares working directory
 RUN mkdir /pacs
 WORKDIR /pacs
+
+# Dependencies
+RUN apk update && apk upgrade && apk add --no-cache bash tar
+RUN pip install invoke
 
 # Sends context to build
 COPY dist/pacs-${VERSION}.tar.gz pacs.tar.gz

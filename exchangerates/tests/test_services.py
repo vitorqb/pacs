@@ -86,3 +86,8 @@ class TestImportExchangerate(PacsTestCase):
         sut.import_exchangerate(exchangerate_import_input)
         with pytest.raises(django.db.utils.IntegrityError):
             sut.import_exchangerate(exchangerate_import_input)
+
+    def test_import_twice_works_if_ignore_existing(self):
+        options = sut.ExchangeRateImportOptions(skip_existing=True)
+        sut.import_exchangerates([exchangerate_import_input], options)
+        sut.import_exchangerates([exchangerate_import_input], options)

@@ -2,7 +2,6 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from pacs_auth.models import Token, token_factory
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
 
 
 @api_view(["GET", "POST"])

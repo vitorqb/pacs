@@ -3,6 +3,8 @@ import exchangerates.exceptions as exceptions
 import collections
 import datetime
 import common.utils as utils
+import django.db.utils
+import contextlib
 from decimal import Decimal
 import attr
 
@@ -53,9 +55,15 @@ class ExchangeRateImportInput:
         return cls(d['currency_code'], d['date'], d['value'])
 
 
-def import_exchangerates(exchangerate_import_inputs):
+@attr.s()
+class ExchangeRateImportOptions:
+    skip_existing = attr.ib(default=False)
+
+
+def import_exchangerates(exchangerate_import_inputs, options=None):
     for exchangerate_import_input in exchangerate_import_inputs:
-        import_exchangerate(exchangerate_import_input)
+        with _handle_duplicated_exchangerates(options, exchangerate_import_input):
+            import_exchangerate(exchangerate_import_input)
 
 
 def import_exchangerate(exchangerate_import_input):
@@ -66,3 +74,15 @@ def import_exchangerate(exchangerate_import_input):
     )
     model.full_clean()
     model.save()
+
+
+@contextlib.contextmanager
+def _handle_duplicated_exchangerates(options, exchangerate_import_input):
+    try:
+        yield
+    except django.db.utils.IntegrityError as e:
+        if "UNIQUE constraint failed" not in str(e):
+            raise e
+        if options and options.skip_existing is False:
+            msg = f"Exchange rate already exists for {exchangerate_import_input}"
+            raise exceptions.ExchangeRateAlreadyExists(msg) from e

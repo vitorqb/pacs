@@ -99,13 +99,15 @@ class TestRequests():
         return requests.get(f"{self.url}{path}", params=params,
                             headers=self.headers)
 
-    def post(self, path, json=None, files=None):
+    def post(self, path, json=None, files=None, params=None):
         json = json or {}
         files = files or {}
+        params = params or {}
         return requests.post(
             f"{self.url}{path}",
             json=json,
             files=files,
+            params=params,
             headers=self.headers
         )
 

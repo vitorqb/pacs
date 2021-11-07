@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from exchangerates.serializers import ExchangeRateDataInputsSerializer
+from exchangerates.serializers import ExchangeRateDataInputsSerializer, PostExchangeRatesInputsSerializer
 import exchangerates.services as services
 
 import csv
@@ -30,8 +30,12 @@ def get_exchangerates(request, fetch_fn):
 
 
 def post_exchangerates(request):
+    serializer = PostExchangeRatesInputsSerializer(data=request.query_params)
+    serializer.is_valid(True)
+    input_data = serializer.save()
+    options = services.ExchangeRateImportOptions(skip_existing=input_data.skip_existing)
     with open(request.FILES['exchangerates_csv'].temporary_file_path()) as f:
-        for row in csv.DictReader(f, delimiter=POST_CSV_DELIMITER):
-            exchangerate_import_input = services.ExchangeRateImportInput.from_dict(row)
-            services.import_exchangerate(exchangerate_import_input)
+        rows = csv.DictReader(f, delimiter=POST_CSV_DELIMITER)
+        exchangerates_inputs = [services.ExchangeRateImportInput.from_dict(row) for row in rows]
+        services.import_exchangerates(exchangerates_inputs, options)
     return Response()

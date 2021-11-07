@@ -51,8 +51,12 @@ class ExchangeRatesFunctionalTests(StaticLiveServerTestCase):
     def run_get_request(self, params):
         return TestRequests(self.live_server_url).get("/exchange_rates/data/v2", params)
 
-    def run_post_request(self, files):
-        return TestRequests(self.live_server_url).post("/exchange_rates/data/v2", files=files)
+    def run_post_request(self, exchangerates_csv=None, params=None):
+        files = {}
+        if exchangerates_csv is not None:
+            files[views.POST_CSV_FILE_NAME] = exchangerates_csv
+        request = TestRequests(self.live_server_url)
+        return request.post("/exchange_rates/data/v2", files=files, params=params)
 
     def test_get_exchange_rates(self):
         save_test_data()
@@ -84,7 +88,7 @@ class ExchangeRatesFunctionalTests(StaticLiveServerTestCase):
 
     def test_post_and_get_exchange_rates(self):
         with temp_csv() as exchangerates_csv:
-            result = self.run_post_request({views.POST_CSV_FILE_NAME: exchangerates_csv})
+            result = self.run_post_request(exchangerates_csv)
         assert result.status_code == 200
         get_params = new_params(start_at="2021-10-14", end_at="2021-10-15")
         get_result = self.run_get_request(get_params)
@@ -105,3 +109,25 @@ class ExchangeRatesFunctionalTests(StaticLiveServerTestCase):
                 ]
             }
         ]
+
+    def test_post_existing_exchange_rates_fails(self):
+        with temp_csv() as exchangerates_csv:
+            result_1 = self.run_post_request(exchangerates_csv)
+            exchangerates_csv.seek(0)
+            result_2 = self.run_post_request(exchangerates_csv)
+        assert result_1.status_code == 200
+        assert result_2.status_code == 400
+        assert result_2.json() == {
+            'detail': ('Exchange rate already exists for '
+                       'ExchangeRateImportInput(currency_code=\'EUR\', date_str=\'2021-10-15\''
+                       ', value_float=\'1.1600\')')
+        }
+
+    def test_post_existing_with_skip_option_works(self):
+        params = {"skip_existing": 'true'}
+        with temp_csv() as exchangerates_csv:
+            result_1 = self.run_post_request(exchangerates_csv, params)
+            exchangerates_csv.seek(0)
+            result_2 = self.run_post_request(exchangerates_csv, params)
+        assert result_1.status_code == 200
+        assert result_2.status_code == 200

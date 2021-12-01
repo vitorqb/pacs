@@ -42,12 +42,25 @@ class TokenAuthorizer():
 
 
 @attr.s(frozen=True)
+class ApiKeyAuthorizer:
+
+    request = attr.ib()
+
+    def run_validation(self):
+        # TODO
+        return False
+
+
+@attr.s(frozen=True)
 class AuthorizerFactory():
 
     request = attr.ib()
     allowed_urls = attr.ib(factory=(lambda: settings.PACS_AUTH_ALLOWED_URLS))
+    roles_auth_rules = attr.ib(factory=(lambda: settings.PACS_AUTH_ROLE_AUTH_RULES))
 
     def __call__(self):
         if self.request.path in self.allowed_urls:
             return AllAllowedAuthorizer(self.request)
+        if self.request.path in (x['path'] for x in self.roles_auth_rules):
+            return ApiKeyAuthorizer(self.request)
         return TokenAuthorizer(self.request)

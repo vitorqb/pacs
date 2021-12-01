@@ -51,16 +51,34 @@ class TestAuthorizerFactory(PacsTestCase):
         super().setUp()
         self.request_factory = APIRequestFactory()
 
+    def new_authorizer_factory(self, request, *, allowed_urls=None, roles_auth_rules=None):
+        allowed_urls = allowed_urls or []
+        roles_auth_rules = roles_auth_rules or []
+        return sut.AuthorizerFactory(
+            request,
+            allowed_urls=allowed_urls,
+            roles_auth_rules=roles_auth_rules
+        )
+
     def test_returns_all_allowed_if_inside_allowed_urls(self):
         request = self.request_factory.get("/bar")
         allowed_urls = ["/foo", "/bar"]
-        authorizer_factory = sut.AuthorizerFactory(request, allowed_urls=allowed_urls)
+        authorizer_factory = self.new_authorizer_factory(request, allowed_urls=allowed_urls)
         authorizer = authorizer_factory()
         assert isinstance(authorizer, sut.AllAllowedAuthorizer)
+
+    def test_returns_api_key_authorizer_if_role_is_set(self):
+        request = self.request_factory.get("/bar")
+        roles_auth_rules = [
+            {'path': '/bar', 'role': 'TEST_ROLE'}
+        ]
+        authorizer_factory = self.new_authorizer_factory(request, roles_auth_rules=roles_auth_rules)
+        authorizer = authorizer_factory()
+        assert isinstance(authorizer, sut.ApiKeyAuthorizer)
 
     def test_returns_token_authorizer_if_not_an_allowed_url(self):
         request = self.request_factory.get("/bar")
         allowed_urls = ["/foo"]
-        authorizer_factory = sut.AuthorizerFactory(request, allowed_urls=allowed_urls)
+        authorizer_factory = self.new_authorizer_factory(request, allowed_urls=allowed_urls)
         authorizer = authorizer_factory()
         assert isinstance(authorizer, sut.TokenAuthorizer)

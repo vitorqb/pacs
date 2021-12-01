@@ -13,7 +13,7 @@ class PacsTestCase(APITestCase):
 
     def setUp(self):
         super().setUp()
-        self.client = APIClient(HTTP_PACS_TEST_AUTH="1")
+        self.client = APIClient(HTTP_AUTHORIZATION="TOKEN valid_token")
 
     @staticmethod
     def populate_accounts():
@@ -92,7 +92,7 @@ class TestRequests():
     url = attr.ib()
 
     # Default headers sent in every request
-    headers = attr.ib(default={'pacs-test-auth': "1"})
+    headers = attr.ib(default={'authorization': "TOKEN valid_token"})
 
     def get(self, path, params=None, extra_headers={}):
         params = params or {}

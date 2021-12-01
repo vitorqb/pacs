@@ -9,8 +9,49 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+#
+# Token Validators
+#
+class ITokenValidator():
+
+    def is_valid(self, token_value):
+        raise NotImplementedError()
+
+
 @attr.s(frozen=True)
-class AllAllowedAuthorizer():
+class TokenValidator(ITokenValidator):
+
+    token_manager = attr.ib(factory=(lambda: Token.objects))
+
+    def is_valid(self, token_value):
+        return self.token_manager.is_valid_token_value(token_value)
+
+
+@attr.s(frozen=True)
+class SingleStaticTokenValidator(ITokenValidator):
+
+    valid_token = attr.ib(default='valid_token')
+
+    def is_valid(self, token_value):
+        return token_value == self.valid_token
+
+
+def get_token_validator():
+    if getattr(settings, 'TOKEN_VALIDATOR_CLASS', None) == 'SingleStaticTokenValidator':
+        return SingleStaticTokenValidator()
+    return TokenValidator()
+
+
+#
+# Authorizers
+#
+class IAuthorizer():
+    def run_validation(self):
+        raise NotImplementedError()
+
+
+@attr.s(frozen=True)
+class AllAllowedAuthorizer(IAuthorizer):
 
     request = attr.ib()
 
@@ -19,10 +60,10 @@ class AllAllowedAuthorizer():
 
 
 @attr.s(frozen=True)
-class TokenAuthorizer():
+class TokenAuthorizer(IAuthorizer):
 
     request = attr.ib()
-    token_manager = attr.ib(factory=(lambda: Token.objects))
+    token_validator = attr.ib(factory=get_token_validator)
 
     def run_validation(self):
         authorization = self.request.META.get('HTTP_AUTHORIZATION')
@@ -36,13 +77,13 @@ class TokenAuthorizer():
             raise PermissionDenied()
 
         token_value = token_match.groups()[1]
-        if not self.token_manager.is_valid_token_value(token_value):
+        if not self.token_validator.is_valid(token_value):
             logger.info("Permission denied due to invalid token")
             raise PermissionDenied()
 
 
 @attr.s(frozen=True)
-class ApiKeyAuthorizer:
+class ApiKeyAuthorizer(IAuthorizer):
 
     request = attr.ib()
 

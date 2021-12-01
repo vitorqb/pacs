@@ -7,11 +7,11 @@ import attr
 
 
 @attr.s()
-class TokenManagerMock():
+class TokenValidatorMock():
 
     single_valid_token = 'a_valid_token'
 
-    def is_valid_token_value(self, token_value):
+    def is_valid(self, token_value):
         return token_value == self.single_valid_token
 
 
@@ -35,13 +35,13 @@ class TestTokenAuthorizer(PacsTestCase):
 
     def test_fails_if_token_not_valid(self):
         request = self.request_factory.get('/foo', HTTP_AUTHORIZATION='TOKEN an_invalid_token')
-        authorizer = sut.TokenAuthorizer(request, token_manager=TokenManagerMock())
+        authorizer = sut.TokenAuthorizer(request, token_validator=TokenValidatorMock())
         with pytest.raises(PermissionDenied):
             authorizer.run_validation()
 
     def test_allows_if_valid_token(self):
         request = self.request_factory.get('/foo', HTTP_AUTHORIZATION='TOKEN a_valid_token')
-        authorizer = sut.TokenAuthorizer(request, token_manager=TokenManagerMock())
+        authorizer = sut.TokenAuthorizer(request, token_validator=TokenValidatorMock())
         authorizer.run_validation()
 
 

@@ -94,10 +94,10 @@ class TestRequests():
     # Default headers sent in every request
     headers = attr.ib(default={'pacs-test-auth': "1"})
 
-    def get(self, path, params=None):
+    def get(self, path, params=None, extra_headers={}):
         params = params or {}
         return requests.get(f"{self.url}{path}", params=params,
-                            headers=self.headers)
+                            headers={**self.headers, **extra_headers})
 
     def post(self, path, json=None, files=None, params=None):
         json = json or {}

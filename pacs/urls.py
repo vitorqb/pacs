@@ -44,6 +44,8 @@ urlpatterns += [
     path(f"exchange_rates/data/v2", exchangerates.views.exchangerates),
     path(f'exchange_rates/data/', exchange_rate_fetcher.views.data_view),
     path(f'auth/token', pacs_auth.views.token_view),
+    path(f'auth/api_key', pacs_auth.views.post_api_key),
+    path(f"auth/test", pacs_auth.views.get_test),
     path(f'featuretoggles', featuretoggles.views.get_featuretoggles),
 ]
 

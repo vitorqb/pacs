@@ -27,3 +27,13 @@ def post_token(request):
     token = token_factory()
     request.session["token_value"] = token.value
     return Response(data={"token_value": token.value})
+
+
+@api_view(["POST"])
+def post_api_key(request):
+    return Response()
+
+
+@api_view(["GET"])
+def get_test(request):
+    return Response()

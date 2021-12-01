@@ -61,6 +61,12 @@ if DEBUG:
 
 AUTH_MIDDLEWARE_NAME = 'PacsDummyAuthMiddleware' if TEST else 'PacsAuthMiddleware'
 PACS_AUTH_ALLOWED_URLS = ['/auth/token', '/featuretoggles']
+PACS_AUTH_ROLE_AUTH_RULES = [
+    {
+        'path': '/auth/test',
+        'role': 'API_KEY_TEST',
+    },
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

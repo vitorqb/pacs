@@ -65,7 +65,7 @@ class ApiKey(m.Model):
 
 
 class ApiKeyRole(m.Model):
-    api_key = m.ForeignKey(ApiKey, on_delete=m.CASCADE)
+    api_key = m.ForeignKey(ApiKey, on_delete=m.CASCADE, related_name="roles")
     role_name = m.TextField()
 
     class Meta:

@@ -2,6 +2,8 @@ from common.test import PacsTestCase
 from rest_framework.test import APIRequestFactory
 from django.core.exceptions import PermissionDenied
 import pacs_auth.services as sut
+import pacs_auth.exceptions as exceptions
+import pacs_auth.models as models
 import pytest
 import attr
 
@@ -13,6 +15,23 @@ class TokenValidatorMock():
 
     def is_valid(self, token_value):
         return token_value == self.single_valid_token
+
+
+@attr.s()
+class ApiKeyManagerMock():
+
+    api_key_value = "a_valid_api_key"
+    api_key_role_name = "a_role"
+
+    def get_valid_api_key(self, value):
+        if not value == self.api_key_value:
+            return
+        api_key = models.ApiKey(value=self.api_key_value)
+        api_key.save()
+        role = models.ApiKeyRole(api_key=api_key, role_name=self.api_key_role_name)
+        role.save()
+        api_key.roles.add(role)
+        return api_key
 
 
 class TestTokenAuthorizer(PacsTestCase):
@@ -82,3 +101,54 @@ class TestAuthorizerFactory(PacsTestCase):
         authorizer_factory = self.new_authorizer_factory(request, allowed_urls=allowed_urls)
         authorizer = authorizer_factory()
         assert isinstance(authorizer, sut.TokenAuthorizer)
+
+
+class TestApiKeyAuthorizer(PacsTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.request_factory = APIRequestFactory()
+
+    def mk_request(self, api_key="123"):
+        kwargs = {}
+        if api_key:
+            kwargs["HTTP_X_PACS_API_KEY"] = api_key
+        return self.request_factory.get("/auth/test", **kwargs)
+
+    def test_fails_because_missing_api_key(self):
+        request = self.mk_request(api_key=None)
+        authorizer = sut.ApiKeyAuthorizer(request)
+        with pytest.raises(exceptions.MissingApiKey):
+            authorizer.run_validation()
+
+    def test_fails_because_api_key_not_found(self):
+        request = self.mk_request()
+        api_key_manager = ApiKeyManagerMock()
+        authorizer = sut.ApiKeyAuthorizer(request, api_key_manager=api_key_manager)
+        with pytest.raises(exceptions.InvalidApiKey):
+            authorizer.run_validation()
+
+    def test_fails_because_wrong_role_for_call(self):
+        request = self.mk_request(api_key="a_valid_api_key")
+        api_key_manager = ApiKeyManagerMock()
+        roles_auth_rules = [{"path": "/auth/test", "role": "another_role"}]
+        authorizer = sut.ApiKeyAuthorizer(
+            request,
+            api_key_manager=api_key_manager,
+            roles_auth_rules=roles_auth_rules
+        )
+        with pytest.raises(exceptions.InvalidRole):
+            authorizer.run_validation()
+
+    def test_success(self):
+        request = self.mk_request(api_key="a_valid_api_key")
+        api_key_manager = ApiKeyManagerMock()
+        roles_auth_rules = [
+            {"path": "/auth/test", "role": api_key_manager.api_key_role_name}
+        ]
+        authorizer = sut.ApiKeyAuthorizer(
+            request,
+            api_key_manager=api_key_manager,
+            roles_auth_rules=roles_auth_rules
+        )
+        authorizer.run_validation()

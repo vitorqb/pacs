@@ -1,7 +1,8 @@
 import attr
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from pacs_auth.models import Token
+from pacs_auth.models import Token, ApiKey
+import pacs_auth.exceptions as exceptions
 import re
 import logging
 
@@ -86,10 +87,27 @@ class TokenAuthorizer(IAuthorizer):
 class ApiKeyAuthorizer(IAuthorizer):
 
     request = attr.ib()
+    api_key_manager = attr.ib(factory=(lambda: ApiKey.objects))
+    roles_auth_rules = attr.ib(factory=(lambda: settings.PACS_AUTH_ROLE_AUTH_RULES))
 
     def run_validation(self):
-        # TODO
-        return True
+        api_key_value = self.request.META.get("HTTP_X_PACS_API_KEY")
+
+        if not api_key_value:
+            logger.info("Missing api_key in request")
+            raise exceptions.MissingApiKey()
+
+        api_key = self.api_key_manager.get_valid_api_key(api_key_value)
+        if not api_key:
+            logger.info("No api_key found for given value")
+            raise exceptions.InvalidApiKey()
+
+        needed_role_name = next(
+            x["role"] for x in self.roles_auth_rules if x['path'] == self.request.path
+        )
+        if needed_role_name not in (x.role_name for x in api_key.roles.all()):
+            logger.info(f"Role {needed_role_name} not in api_key roles {api_key.roles.all()}")
+            raise exceptions.InvalidRole()
 
 
 @attr.s(frozen=True)

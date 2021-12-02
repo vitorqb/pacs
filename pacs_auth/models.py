@@ -7,6 +7,9 @@ from common.models import full_clean_and_save
 import common.utils
 
 
+#
+# Token
+#
 def gen_token():
     return ''.join(
         random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
@@ -49,3 +52,27 @@ class Token(m.Model):
 
     class Meta:
         indexes = [m.Index(fields=['value'])]
+
+
+#
+# ApiKey and Roles
+#
+class ApiKey(m.Model):
+    value = m.TextField()
+
+    class Meta:
+        indexes = [m.Index(fields=['value'])]
+
+
+class ApiKeyRole(m.Model):
+    api_key = m.ForeignKey(ApiKey, on_delete=m.CASCADE)
+    role_name = m.TextField()
+
+    class Meta:
+        indexes = [m.Index(fields=['api_key'])]
+
+
+@attr.s()
+class ApiKeyFactory():
+    # !!!! TODO
+    pass

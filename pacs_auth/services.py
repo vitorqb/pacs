@@ -89,7 +89,7 @@ class ApiKeyAuthorizer(IAuthorizer):
 
     def run_validation(self):
         # TODO
-        return False
+        return True
 
 
 @attr.s(frozen=True)

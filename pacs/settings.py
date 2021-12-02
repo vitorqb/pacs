@@ -60,7 +60,7 @@ if DEBUG:
     INSTALLED_APPS += ['django_extensions', 'debug_toolbar']
 
 TOKEN_VALIDATOR_CLASS = 'SingleStaticTokenValidator' if TEST else None
-PACS_AUTH_ALLOWED_URLS = ['/auth/token', '/featuretoggles']
+PACS_AUTH_ALLOWED_URLS = ['/auth/token', 'auth/api_key', '/featuretoggles']
 PACS_AUTH_ROLE_AUTH_RULES = [
     {
         'path': '/auth/test',

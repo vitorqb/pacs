@@ -12,17 +12,18 @@ class PacsAuthFunctionalTests(StaticLiveServerTestCase):
         api_key_request = TestRequests(self.live_server_url)
         api_key_result = api_key_request.post(
             "/auth/api_key",
-            json={"permissions": ["API_KEY_TEST"], "admin_token": "456"}
+            json={"roles": ["API_KEY_TEST"], "admin_token": "456"}
         )
-        assert api_key_result.status_code == 403
+        assert api_key_result.status_code == 400
 
     @override_settings(ADMIN_TOKEN=123)
     def test_creates_and_uses_api_key_with_permission_set(self):
         api_key_request = TestRequests(self.live_server_url)
         api_key_result = api_key_request.post(
             "/auth/api_key",
-            json={"permissions": ["API_KEY_TEST"], "admin_token": "123"}
+            json={"roles": ["API_KEY_TEST"], "admin_token": "123"}
         )
+        print(f"result: {api_key_result}")
         api_key = api_key_result.json()["api_key"]
 
         auth_headers = {"X_PACS_API_KEY": api_key}

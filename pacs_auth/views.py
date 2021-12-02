@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from pacs_auth.models import Token, token_factory
+from pacs_auth.models import Token, token_factory, ApiKeyFactory
+import pacs_auth.serializers as serializers
 from django.conf import settings
 
 
@@ -31,7 +32,18 @@ def post_token(request):
 
 @api_view(["POST"])
 def post_api_key(request):
-    return Response()
+    serializer = serializers.PostApiKeySerializer(data=request.data)
+    serializer.is_valid(True)
+    view_model = serializer.save()
+
+    if not view_model.admin_token == settings.ADMIN_TOKEN:
+        return Response(status=400)
+
+    if len(view_model.roles) < 1:
+        return Response(data={"error": "Missing roles!"}, status=400)
+
+    api_key = ApiKeyFactory()(view_model.roles)
+    return Response(data={"api_key": api_key.value})
 
 
 @api_view(["GET"])

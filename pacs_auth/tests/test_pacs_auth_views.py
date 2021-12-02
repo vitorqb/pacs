@@ -1,8 +1,10 @@
 from common.test import PacsTestCase
-from pacs_auth.models import TokenFactory, Token
+from pacs_auth.models import TokenFactory, Token, ApiKeyFactory, ApiKey
 from datetime import timedelta
 import common.utils
 from rest_framework.test import override_settings, APIClient
+from unittest import mock
+import attr
 
 
 def old_date_fn():
@@ -11,6 +13,12 @@ def old_date_fn():
 
 short_duration = timedelta(seconds=1)
 ADMIN_TOKEN = "secret_token"
+
+
+@attr.s()
+class MockApiKeyFactory:
+    def __call__(self, roles):
+        return ApiKey(value="FOO")
 
 
 class TestRecoverToken(PacsTestCase):
@@ -80,3 +88,30 @@ class TestCreateToken(PacsTestCase):
         response = self.get_client().post("/auth/token", {"admin_token": "123"})
         self.assertEqual(Token.objects.all().count(), 0)
         self.assertEqual(response.status_code, 400)
+
+
+@override_settings(ADMIN_TOKEN=ADMIN_TOKEN)
+class TestCreateApiKey(PacsTestCase):
+
+    def get_data(self, **kwargs):
+        return {
+            **{
+                "roles": ["TEST"],
+                "admin_token": ADMIN_TOKEN,
+            },
+            **kwargs,
+        }
+
+    def test_creates_api_key_using_factory(self):
+        with mock.patch('pacs_auth.views.ApiKeyFactory', MockApiKeyFactory):
+            response = self.client.post("/auth/api_key", data=self.get_data())
+        assert response.status_code == 200
+        assert response.json()["api_key"] == "FOO"
+
+    def test_fails_if_wrong_admin_token(self):
+        response = self.client.post("/auth/api_key", data=self.get_data(admin_token="INVALID"))
+        assert response.status_code == 400
+
+    def test_fails_if_missing_roles(self):
+        response = self.client.post("/auth/api_key", data=self.get_data(roles=[]))
+        assert response.status_code == 400

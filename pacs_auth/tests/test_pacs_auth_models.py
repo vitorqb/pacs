@@ -41,3 +41,15 @@ class TestToken(PacsTestCase):
         factory = sut.TokenFactory(now_fn=old_date_fn, duration=timedelta(days=1))
         token = factory()
         self.assertFalse(sut.Token.objects.is_valid_token_value(token.value))
+
+
+class TestApiKeyQuerySet(PacsTestCase):
+
+    def test_finds_and_returns(self):
+        api_key = sut.ApiKey.objects.create(value="123")
+        found = sut.ApiKey.objects.get_valid_api_key("123")
+        assert api_key == found
+
+    def test_does_not_finds_and_returns_none(self):
+        found = sut.ApiKey.objects.get_valid_api_key("123")
+        assert found is None

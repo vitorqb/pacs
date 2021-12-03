@@ -5,6 +5,7 @@ import random
 import string
 from common.models import full_clean_and_save
 import common.utils
+import django.db.transaction
 
 
 #
@@ -57,8 +58,15 @@ class Token(m.Model):
 #
 # ApiKey and Roles
 #
+class ApiKeyQuerySet(m.QuerySet):
+
+    def get_valid_api_key(self, value):
+        return self.filter(value=value).first()
+
+
 class ApiKey(m.Model):
     value = m.TextField()
+    objects = ApiKeyQuerySet.as_manager()
 
     class Meta:
         indexes = [m.Index(fields=['value'])]
@@ -74,5 +82,15 @@ class ApiKeyRole(m.Model):
 
 @attr.s()
 class ApiKeyFactory():
-    # !!!! TODO
-    pass
+
+    _gen_token_fn = attr.ib(default=gen_token)
+
+    @django.db.transaction.atomic
+    def __call__(self, roles):
+        value = self._gen_token_fn()
+        api_key = ApiKey.objects.create(value=value)
+        full_clean_and_save(api_key)
+        for role in roles:
+            role = ApiKeyRole.objects.create(api_key=api_key, role_name=role)
+            full_clean_and_save(role)
+        return ApiKey.objects.filter(value=value).first()

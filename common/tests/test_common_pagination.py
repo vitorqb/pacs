@@ -1,7 +1,7 @@
 from unittest.mock import Mock, call
 
 from common.pagination import OptionalPageNumberPaginator
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 
 
 class TestOptionalPageNumberPaginator(PacsTestCase):

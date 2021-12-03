@@ -1,7 +1,7 @@
 import pytest
 from django.test import override_settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from common.test import TestRequests
+from common.testutils import TestRequests
 
 
 @pytest.mark.functional

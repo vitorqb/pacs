@@ -12,7 +12,7 @@ from accounts.management.commands.populate_accounts import (account_populator,
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.tests.factories import AccountTestFactory
 from common.models import list_to_queryset
-from common.test import PacsTestCase, MockQset
+from common.testutils import PacsTestCase, MockQset
 from currencies.management.commands.populate_currencies import \
     currency_populator
 from currencies.money import Balance, Money

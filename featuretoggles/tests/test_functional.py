@@ -1,7 +1,7 @@
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 import featuretoggles.models as models
 import pytest
-from common.test import TestRequests
+from common.testutils import TestRequests
 
 
 @pytest.mark.functional

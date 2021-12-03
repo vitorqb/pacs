@@ -7,7 +7,7 @@ from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
 from accounts.models import (Account, AccountFactory, AccountType, AccTypeEnum,
                              get_root_acc, AccountDestroyer)
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 
 from .factories import AccountTestFactory
 from movements.tests.factories import MovementTestFactory

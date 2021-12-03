@@ -6,7 +6,7 @@ from django.urls.base import resolve
 
 import common.utils as utils
 from accounts.tests.factories import AccountTestFactory
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.currency_converter import (UnkownCurrencyForConversion,
                                            UnkownDateForCurrencyConversion)
 from currencies.models import Currency

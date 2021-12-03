@@ -1,4 +1,4 @@
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from rest_framework.test import APIRequestFactory
 from django.core.exceptions import PermissionDenied
 import pacs_auth.services as sut

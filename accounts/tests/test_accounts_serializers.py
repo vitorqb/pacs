@@ -8,7 +8,7 @@ from accounts.management.commands.populate_accounts import (account_populator,
 from accounts.models import Account, AccTypeEnum, get_root_acc
 from accounts.serializers import (AccountSerializer, AccTypeField,
                                   JournalSerializer)
-from common.test import PacsTestCase, MockQset
+from common.testutils import PacsTestCase, MockQset
 from currencies.serializers import BalanceSerializer
 from currencies.money import Balance
 from movements.serializers import TransactionSerializer

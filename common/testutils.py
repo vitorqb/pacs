@@ -88,6 +88,8 @@ class TestRequests():
     """ A wrapper around `requests` to make requests for the
     testing server """
 
+    __test__ = False
+
     # The base url
     url = attr.ib()
 

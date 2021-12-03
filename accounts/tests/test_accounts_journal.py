@@ -4,7 +4,7 @@ from unittest.mock import Mock, MagicMock
 from accounts.journal import Journal
 from accounts.tests.factories import AccountTestFactory
 from common.models import list_to_queryset
-from common.test import PacsTestCase, MockQset
+from common.testutils import PacsTestCase, MockQset
 from currencies.money import Balance, Money
 from currencies.tests.factories import MoneyTestFactory
 from movements.tests.factories import TransactionTestFactory

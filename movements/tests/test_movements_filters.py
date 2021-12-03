@@ -2,7 +2,7 @@ from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
 from accounts.models import AccTypeEnum
 from accounts.tests.factories import AccountTestFactory
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from movements.filters import TransactionFilterSet
 from movements.models import Transaction
 from movements.tests.factories import (MovementSpecTestFactory,

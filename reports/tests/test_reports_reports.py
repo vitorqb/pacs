@@ -9,7 +9,7 @@ from django.conf import settings
 from accounts.models import AccTypeEnum
 from accounts.tests.factories import AccountTestFactory
 from common.models import list_to_queryset
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.money import Balance, Money
 from currencies.tests.factories import CurrencyTestFactory
 from movements.tests.factories import TransactionTestFactory

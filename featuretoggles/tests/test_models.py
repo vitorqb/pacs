@@ -1,6 +1,6 @@
 import featuretoggles.models as sut
 from django.test import override_settings
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 
 
 class FeatureToggleQuerySetTest(PacsTestCase):

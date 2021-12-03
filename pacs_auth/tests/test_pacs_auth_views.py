@@ -1,4 +1,4 @@
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from pacs_auth.models import TokenFactory, Token, ApiKeyFactory, ApiKey
 from datetime import timedelta
 import common.utils

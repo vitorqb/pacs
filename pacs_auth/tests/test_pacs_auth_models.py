@@ -1,4 +1,4 @@
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 import pacs_auth.models as sut
 from common import utils
 from datetime import timedelta

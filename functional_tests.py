@@ -1,5 +1,5 @@
 from functools import partialmethod
-from common.test import TestRequests
+from common.testutils import TestRequests
 import pytest
 import attr
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase

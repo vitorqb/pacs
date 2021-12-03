@@ -8,7 +8,7 @@ from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
 from accounts.models import AccTypeEnum
 from accounts.tests.factories import AccountTestFactory
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.money import Money
 from currencies.serializers import MoneySerializer
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory

@@ -1,4 +1,4 @@
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 import featuretoggles.models as models
 
 

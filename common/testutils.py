@@ -13,7 +13,7 @@ class PacsTestCase(APITestCase):
 
     def setUp(self):
         super().setUp()
-        self.client = APIClient(HTTP_PACS_TEST_AUTH="1")
+        self.client = APIClient(HTTP_AUTHORIZATION="TOKEN valid_token")
 
     @staticmethod
     def populate_accounts():
@@ -88,16 +88,18 @@ class TestRequests():
     """ A wrapper around `requests` to make requests for the
     testing server """
 
+    __test__ = False
+
     # The base url
     url = attr.ib()
 
     # Default headers sent in every request
-    headers = attr.ib(default={'pacs-test-auth': "1"})
+    headers = attr.ib(default={'authorization': "TOKEN valid_token"})
 
-    def get(self, path, params=None):
+    def get(self, path, params=None, extra_headers={}):
         params = params or {}
-        return requests.get(f"{self.url}{path}", params=params,
-                            headers=self.headers)
+        headers = {**self.headers, **extra_headers}
+        return requests.get(f"{self.url}{path}", params=params, headers=headers)
 
     def post(self, path, json=None, files=None, params=None):
         json = json or {}

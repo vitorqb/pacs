@@ -7,7 +7,7 @@ from accounts.paginators import (JournalAllPaginator, JournalPagePaginator,
 from accounts.tests.factories import AccountTestFactory
 from common.constants import PAGE_QUERY_PARAM, PAGE_SIZE_QUERY_PARAM
 from common.models import list_to_queryset
-from common.test import MockQset, PacsTestCase
+from common.testutils import MockQset, PacsTestCase
 from currencies.money import Balance
 from currencies.serializers import BalanceSerializer
 from movements.tests.factories import TransactionTestFactory

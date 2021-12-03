@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import Mock
 
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.currency_converter import (CurrencyConverter,
                                            CurrencyPricePortifolio,
                                            CurrencyPricePortifolioConverter,

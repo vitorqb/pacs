@@ -1,5 +1,5 @@
 from functools import partialmethod
-from common.test import TestRequests
+from common.testutils import TestRequests
 import pytest
 import attr
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -87,9 +87,9 @@ class FunctionalTests(StaticLiveServerTestCase):
             "User should have been unauthorized because of no header!"
 
         # Then he puts the correct token and it works!
-        self.requests.headers = {'pacs-test-auth': "1"}
+        self.requests.headers = {'authorization': "TOKEN valid_token"}
         assert self.requests.get(URLS.account).status_code == 200, \
-            "User should have been successfull becase he has the header"
+            "User should have been successfull becase he has the header with a valid token"
 
     def test_creates_an_account_hierarchy(self):
         # The user enters and only sees the default accounts there

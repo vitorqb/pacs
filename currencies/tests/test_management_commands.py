@@ -1,6 +1,6 @@
 import attr
 
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.management.commands.populate_currencies import \
     currency_populator
 from currencies.models import Currency, CurrencyFactory

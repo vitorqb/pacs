@@ -2,7 +2,7 @@ from unittest.mock import Mock, call, patch
 
 from rest_framework.exceptions import ValidationError
 
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.models import Currency
 from currencies.money import Money
 from currencies.serializers import (BalanceSerializer, CurrencySerializer,

@@ -8,7 +8,7 @@ from accounts.models import Account, AccTypeEnum, get_root_acc
 from accounts.serializers import AccountSerializer
 from accounts.tests.factories import AccountTestFactory
 from accounts.views import AccountViewSet
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.serializers import BalanceSerializer
 from currencies.money import Balance
 from currencies.tests.factories import MoneyTestFactory

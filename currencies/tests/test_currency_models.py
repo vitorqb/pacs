@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 from django.core.exceptions import ValidationError
 
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies import models as currency_models
 from currencies.management.commands.populate_currencies import \
     currency_populator

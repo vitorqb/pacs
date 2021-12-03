@@ -5,9 +5,8 @@ from django.core.exceptions import PermissionDenied
 
 from unittest.mock import Mock
 
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from pacs_auth.middleware import PacsAuthMiddleware
-from pacs_auth.models import token_factory
 
 
 class TestPacsAuthMiddleware(PacsTestCase):
@@ -32,8 +31,7 @@ class TestPacsAuthMiddleware(PacsTestCase):
             self.middleware(request)
 
     def test_parses_request_if_token_is_set(self):
-        token = token_factory()
-        request = self.request_factory.get('/accounts/', HTTP_AUTHORIZATION=f'Token {token.value}')
+        request = self.request_factory.get('/accounts/', HTTP_AUTHORIZATION=f'TOKEN valid_token')
         self.middleware(request)
         # No failed authentication!
 

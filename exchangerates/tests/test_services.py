@@ -1,4 +1,4 @@
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 import datetime
 import exchangerates.services as sut
 import exchangerates.models as models

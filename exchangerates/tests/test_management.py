@@ -1,4 +1,4 @@
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from contextlib import contextmanager
 from django.core.management import call_command
 from exchangerates import models

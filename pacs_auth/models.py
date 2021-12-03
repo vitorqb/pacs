@@ -5,8 +5,12 @@ import random
 import string
 from common.models import full_clean_and_save
 import common.utils
+import django.db.transaction
 
 
+#
+# Token
+#
 def gen_token():
     return ''.join(
         random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
@@ -49,3 +53,44 @@ class Token(m.Model):
 
     class Meta:
         indexes = [m.Index(fields=['value'])]
+
+
+#
+# ApiKey and Roles
+#
+class ApiKeyQuerySet(m.QuerySet):
+
+    def get_valid_api_key(self, value):
+        return self.filter(value=value).first()
+
+
+class ApiKey(m.Model):
+    value = m.TextField()
+    objects = ApiKeyQuerySet.as_manager()
+
+    class Meta:
+        indexes = [m.Index(fields=['value'])]
+
+
+class ApiKeyRole(m.Model):
+    api_key = m.ForeignKey(ApiKey, on_delete=m.CASCADE, related_name="roles")
+    role_name = m.TextField()
+
+    class Meta:
+        indexes = [m.Index(fields=['api_key'])]
+
+
+@attr.s()
+class ApiKeyFactory():
+
+    _gen_token_fn = attr.ib(default=gen_token)
+
+    @django.db.transaction.atomic
+    def __call__(self, roles):
+        value = self._gen_token_fn()
+        api_key = ApiKey.objects.create(value=value)
+        full_clean_and_save(api_key)
+        for role in roles:
+            role = ApiKeyRole.objects.create(api_key=api_key, role_name=role)
+            full_clean_and_save(role)
+        return ApiKey.objects.filter(value=value).first()

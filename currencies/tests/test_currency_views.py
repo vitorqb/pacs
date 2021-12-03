@@ -1,7 +1,7 @@
 from django.urls import resolve
 from rest_framework.test import APIRequestFactory
 
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.models import Currency
 from currencies.serializers import CurrencySerializer
 from currencies.views import CurrencyViewSet

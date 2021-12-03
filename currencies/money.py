@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from currencies.models import Currency
 
 
-@attr.s(frozen=True, cmp=False)
+@attr.s(frozen=True, eq=False)
 class Money():
     """ A combination of a quantity and a currency. """
     quantity: Decimal = attr.ib(converter=Decimal)
@@ -68,7 +68,7 @@ class MoneyAggregator:
         return Balance(self.get_moneys())
 
 
-@attr.s(frozen=True, cmp=False)
+@attr.s(frozen=True, eq=False)
 class Balance:
     """ An aggregation of Money from different currencies """
     _moneys: List[Money] = attr.ib()

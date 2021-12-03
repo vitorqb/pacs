@@ -59,8 +59,14 @@ INSTALLED_APPS = [
 if DEBUG:
     INSTALLED_APPS += ['django_extensions', 'debug_toolbar']
 
-AUTH_MIDDLEWARE_NAME = 'PacsDummyAuthMiddleware' if TEST else 'PacsAuthMiddleware'
-PACS_AUTH_ALLOWED_URLS = ['/auth/token', '/featuretoggles']
+TOKEN_VALIDATOR_CLASS = 'SingleStaticTokenValidator' if TEST else None
+PACS_AUTH_ALLOWED_URLS = ['/auth/token', '/auth/api_key', '/featuretoggles']
+PACS_AUTH_ROLE_AUTH_RULES = [
+    {
+        'path': '/auth/test',
+        'role': 'API_KEY_TEST',
+    },
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -73,7 +79,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Mine
-    f'pacs_auth.middleware.{AUTH_MIDDLEWARE_NAME}',
+    f'pacs_auth.middleware.PacsAuthMiddleware',
     'featuretoggles.middlewares.FeatureToggleMiddleware'
 ]
 

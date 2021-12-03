@@ -18,3 +18,7 @@ class CurrencyCodesField(serializers.Field):
         if not isinstance(data, str):
             raise serializers.ValidationError("Should be a string!")
         return data.split(",")
+
+
+class StringListField(serializers.ListSerializer):
+    child = serializers.CharField()

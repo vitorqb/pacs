@@ -1,7 +1,7 @@
 from decimal import Decimal
 from unittest.mock import Mock
 
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.money import Balance, Money, MoneyAggregator
 
 from .factories import MoneyTestFactory

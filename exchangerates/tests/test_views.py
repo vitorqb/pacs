@@ -1,4 +1,4 @@
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 import datetime
 from rest_framework.test import APIRequestFactory
 import exchangerates.views as sut

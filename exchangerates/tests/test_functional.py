@@ -2,7 +2,7 @@ import exchangerates.models as models
 import pytest
 import datetime
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from common.test import TestRequests
+from common.testutils import TestRequests
 import tempfile
 from contextlib import contextmanager
 import exchangerates.views as views

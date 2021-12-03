@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock, call, patch, sentinel
 from rest_framework.serializers import PrimaryKeyRelatedField, SlugRelatedField
 
 from accounts.tests.factories import AccountTestFactory
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 from currencies.models import Currency
 from currencies.money import Money
 from currencies.serializers import BalanceSerializer

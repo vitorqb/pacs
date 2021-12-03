@@ -3,7 +3,7 @@ from attr import evolve
 from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
 from accounts.models import AccountType
-from common.test import PacsTestCase
+from common.testutils import PacsTestCase
 
 
 class PopulateAccountTestCase(PacsTestCase):

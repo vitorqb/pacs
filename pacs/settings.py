@@ -66,6 +66,10 @@ PACS_AUTH_ROLE_AUTH_RULES = [
         'path': '/auth/test',
         'role': 'API_KEY_TEST',
     },
+    {
+        'path': '/exchange_rates/data/v2',
+        'role': 'EXCHANGERATES_DATA'
+    }
 ]
 
 MIDDLEWARE = [

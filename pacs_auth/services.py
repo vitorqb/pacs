@@ -67,7 +67,7 @@ class TokenAuthorizer(IAuthorizer):
     token_validator = attr.ib(factory=get_token_validator)
 
     def run_validation(self):
-        authorization = self.request.META.get('HTTP_AUTHORIZATION')
+        authorization = self.get_authorization(self.request)
         if not authorization:
             logger.info("Permission denied due to missing token")
             raise PermissionDenied()
@@ -81,6 +81,10 @@ class TokenAuthorizer(IAuthorizer):
         if not self.token_validator.is_valid(token_value):
             logger.info("Permission denied due to invalid token")
             raise PermissionDenied()
+
+    @classmethod
+    def get_authorization(cls, request):
+        return request.META.get('HTTP_AUTHORIZATION')
 
 
 @attr.s(frozen=True)
@@ -120,6 +124,8 @@ class AuthorizerFactory():
     def __call__(self):
         if self.request.path in self.allowed_urls:
             return AllAllowedAuthorizer(self.request)
+        if TokenAuthorizer.get_authorization(self.request) is not None:
+            return TokenAuthorizer(self.request)
         if self.request.path in (x['path'] for x in self.roles_auth_rules):
             return ApiKeyAuthorizer(self.request)
         return TokenAuthorizer(self.request)

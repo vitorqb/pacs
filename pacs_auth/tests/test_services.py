@@ -102,6 +102,13 @@ class TestAuthorizerFactory(PacsTestCase):
         authorizer = authorizer_factory()
         assert isinstance(authorizer, sut.TokenAuthorizer)
 
+    def test_returns_token_authorizer_if_a_token_is_present_even_if_api_key(self):
+        request = self.request_factory.get("/bar", HTTP_AUTHORIZATION='TOKEN a_valid_token')
+        roles_auth_rules = [{'path': '/bar', 'role': 'TEST_ROLE'}]
+        authorizer_factory = self.new_authorizer_factory(request, roles_auth_rules=roles_auth_rules)
+        authorizer = authorizer_factory()
+        assert isinstance(authorizer, sut.TokenAuthorizer)
+
 
 class TestApiKeyAuthorizer(PacsTestCase):
 

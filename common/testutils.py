@@ -7,6 +7,9 @@ from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
 from currencies.management.commands.populate_currencies import \
     currency_populator
+import common.models
+import exchangerates.models
+from decimal import Decimal
 
 
 class PacsTestCase(APITestCase):
@@ -123,3 +126,12 @@ class TestRequests():
 
     def delete(self, path):
         return requests.delete(f"{self.url}{path}", headers=self.headers)
+
+
+def populate_exchangerates_with_mock_data():
+    for x in (
+            {"currency_code": "EUR", "date": "2020-01-01", "value": Decimal('1')},
+            {"currency_code": "BRL", "date": "2020-01-01", "value": Decimal('0.25')},
+            {"currency_code": "BRL", "date": "2020-01-06", "value": Decimal('0.2')}
+    ):
+        common.models.full_clean_and_save(exchangerates.models.ExchangeRate(**x))

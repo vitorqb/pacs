@@ -22,7 +22,6 @@ from accounts.views import AccountViewSet
 from currencies.views import CurrencyViewSet
 from movements.views import TransactionViewSet
 from reports.views import flow_evolution_view, balance_evolution_view
-import exchange_rate_fetcher.views
 import featuretoggles.views
 import pacs_auth.views
 import exchangerates.views
@@ -42,7 +41,6 @@ urlpatterns += [
     path(r'reports/flow-evolution/', flow_evolution_view),
     path(f'reports/balance-evolution/', balance_evolution_view),
     path(f"exchange_rates/data/v2", exchangerates.views.exchangerates),
-    path(f'exchange_rates/data/', exchange_rate_fetcher.views.data_view),
     path(f'auth/token', pacs_auth.views.token_view),
     path(f'auth/api_key', pacs_auth.views.post_api_key),
     path(f"auth/test", pacs_auth.views.get_test),

@@ -16,7 +16,6 @@ BUILD_SOURCES = [
     "accounts",
     "common",
     "currencies",
-    "exchange_rate_fetcher",
     "exchangerates",
     "featuretoggles",
     "invoke.yaml",

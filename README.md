@@ -41,3 +41,11 @@ PACS_LOG_FILE=... # Where to send logs. May have ~.
 ```
 
 See .env.example for an example.
+
+## Usefull commands
+
+### Connecting to the db
+
+```sh
+ssh -t "root@${PACS_HOST}" "sqlite3" "/pacs_db.sqlite3"
+```

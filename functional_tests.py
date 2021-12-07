@@ -1,5 +1,5 @@
 from functools import partialmethod
-from common.testutils import TestRequests
+from common.testutils import TestRequests, populate_exchangerates_with_mock_data
 import pytest
 import attr
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -23,7 +23,7 @@ class URLS:
 
     class exchange_rates:
         _base = '/exchange_rates/'
-        data = _base + 'data'
+        data = _base + 'data/v2'
 
 
 @pytest.mark.functional
@@ -616,6 +616,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         ]
 
     def test_get_exchange_rates(self):
+        populate_exchangerates_with_mock_data()
         start_at = "2020-01-01"
         end_at = "2020-01-06"
         currency_codes = "BRL,EUR"
@@ -630,6 +631,7 @@ class FunctionalTests(StaticLiveServerTestCase):
                  {"date": "2020-01-06", "price": 1.0},
                  {"date": "2020-01-03", "price": 1.0},
                  {"date": "2020-01-02", "price": 1.0},
+                 {"date": "2020-01-01", "price": 1.0},
                  {"date": "2020-01-05", "price": 1.0},
                  {"date": "2020-01-04", "price": 1.0},
              ]},
@@ -638,6 +640,7 @@ class FunctionalTests(StaticLiveServerTestCase):
                  {"date": "2020-01-06", "price": 1/5},
                  {"date": "2020-01-03", "price": 1/4},
                  {"date": "2020-01-02", "price": 1/4},
+                 {"date": "2020-01-01", "price": 1/4},
                  {"date": "2020-01-05", "price": 1/4},
                  {"date": "2020-01-04", "price": 1/4},
              ]}

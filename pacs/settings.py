@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-import logging
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -51,7 +50,6 @@ INSTALLED_APPS = [
     'accounts',
     'movements',
     'pacs_auth',
-    'exchange_rate_fetcher',
     'featuretoggles',
     'exchangerates',
 ]

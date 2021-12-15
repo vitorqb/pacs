@@ -10,18 +10,19 @@ from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
 
 from accounts.models import Account
-from common.models import full_clean_and_save, new_money_quantity_field
+from common.models import full_clean_and_save, new_money_quantity_field, tag_validator
 from common.utils import round_decimal, decimals_equal
 from currencies.models import Currency
 from currencies.money import Money, Balance
+
 
 if TYPE_CHECKING:
     import datetime
 
 
-def _char_field(max_length=120):
+def _char_field(max_length=120, validators=[]):
     """Returns a standardized char field."""
-    return m.CharField(max_length=max_length, blank=True, null=True)
+    return m.CharField(max_length=max_length, blank=True, null=True, validators=validators)
 
 
 @attr.s()
@@ -35,6 +36,7 @@ class TransactionFactory():
             date_: datetime.date,
             movements_specs: List[MovementSpec],
             reference: str = None,
+            tags: List['TransactionTag'] = []
     ) -> Transaction:
         """ Creates a new Transaction. `movements_specs` should be a list
         of MovementSpec describing the movements for this transaction. """
@@ -42,6 +44,7 @@ class TransactionFactory():
             Transaction(description=description, date=date_, reference=reference)
         )
         trans.set_movements(movements_specs)
+        trans.set_tags(tags)
         return trans
 
 
@@ -83,6 +86,18 @@ class TransactionQuerySet(m.QuerySet):
         """ Returns a queryset of all Movements related to self (distincted) """
         pks = self.values_list('movement__pk', flat=True)
         return Movement.objects.filter(pk__in=pks)
+
+
+class TransactionTag(m.Model):
+    """
+    Tags (key-value pairs) for transactions.
+    """
+    transaction = m.ForeignKey('Transaction', on_delete=m.CASCADE, related_name="tags")
+    name = _char_field(validators=[tag_validator])
+    value = _char_field(validators=[tag_validator])
+
+    def has_transaction(self):
+        return hasattr(self, 'transaction') and self.transaction is not None
 
 
 class Transaction(m.Model):
@@ -154,6 +169,19 @@ class Transaction(m.Model):
         for mov_spec in movements_specs:
             self._convert_specs(mov_spec)
         full_clean_and_save(self)
+
+    @atomic
+    def set_tags(self, tags: List[TransactionTag]) -> None:
+        """ Set's tags, using an interable of TransactionTag """
+        for tag in tags:
+            assert tag.has_transaction() is False
+            tag.transaction = self
+            full_clean_and_save(tag)
+        full_clean_and_save(self)
+
+    def get_tags(self) -> List[TransactionTag]:
+        """ Returns all tags for this transaction """
+        return [x for x in self.tags.all()]
 
     def _convert_specs(self, mov_spec: MovementSpec) -> MovementSpec:
         """ Converts a MovementSpec into a Movement for self. """

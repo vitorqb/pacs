@@ -197,6 +197,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         assert len(transactions) == 1
         assert transactions[0]['date'] == trans_raw_data['date']
         assert transactions[0]['description'] == trans_raw_data['description']
+        assert transactions[0]['tags'] == trans_raw_data['tags']
         # Reference is empty since we did not provide it.
         assert transactions[0]['reference'] is None
 
@@ -830,6 +831,12 @@ class DataMaker:
         return {
             "description": "Earned some money!",
             "date": "2018-01-01",
+            "tags": [
+                {
+                    "name": "earning-type",
+                    "value": "ocasional",
+                }
+            ],
             "movements_specs": [
                 {
                     "account": from_acc['pk'],

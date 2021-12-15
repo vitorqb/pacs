@@ -13,7 +13,7 @@ from currencies.money import Money
 from currencies.serializers import MoneySerializer
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
 from movements.models import MovementSpec, TransactionFactory
-from movements.serializers import MovementSpecSerializer, TransactionSerializer
+from movements.serializers import MovementSpecSerializer, TransactionSerializer, TransactionTagSerializer
 from movements.tests.factories import TransactionTestFactory
 
 
@@ -98,6 +98,9 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
             'reference': trans.get_reference(),
             'movements_specs': [
                 MovementSpecSerializer(m).data for m in trans.get_movements_specs()
+            ],
+            'tags': [
+                TransactionTagSerializer(m).data for m in trans.get_tags()
             ]
         }
 

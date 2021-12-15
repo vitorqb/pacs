@@ -1,6 +1,8 @@
 from decimal import Decimal
 from typing import List
+import string
 
+from django.core.exceptions import ValidationError
 import django.db.models as m
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
@@ -15,6 +17,15 @@ N_DECIMAL_PLACES: int = 5
 N_DECIMAL_MAX_DIGITS: int = 20
 DECIMAL_PLACES: Decimal = Decimal('10') ** -N_DECIMAL_PLACES
 N_DECIMAL_COMPARISON: int = 2
+
+# Characters to be considered for tags
+TAGS_CHARS = set(string.ascii_lowercase + string.ascii_uppercase + string.digits + '-_')
+
+
+def tag_validator(value):
+    invalid_chars = set(x for x in value if x not in TAGS_CHARS)
+    if len(invalid_chars) > 0:
+        raise ValidationError(f"Invalid characters for tag: {invalid_chars}")
 
 
 def new_money_quantity_field():

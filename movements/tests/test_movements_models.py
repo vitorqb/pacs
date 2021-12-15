@@ -1,18 +1,17 @@
-from unittest.mock import Mock
-from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
+import django.core.exceptions
 
 import attr
 
-from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
 
 from accounts.management.commands.populate_accounts import (account_populator,
                                                             account_type_populator)
 from accounts.models import AccountFactory, AccTypeEnum, get_root_acc
 from accounts.tests.factories import AccountTestFactory
 from common.models import list_to_queryset
-from common.testutils import PacsTestCase, MockQset
+from common.testutils import PacsTestCase
 from currencies.management.commands.populate_currencies import \
     currency_populator
 from currencies.money import Balance, Money
@@ -20,7 +19,7 @@ from currencies.tests.factories import CurrencyTestFactory
 from movements.models import (Movement, MovementSpec, Transaction,
                               TransactionFactory,
                               TransactionMovementSpecListValidator,
-                              TransactionQuerySet)
+                              TransactionTag)
 
 from .factories import TransactionTestFactory, MovementTestFactory
 
@@ -197,13 +196,50 @@ class TestTransactionFactory(MovementsModelsTestCase):
         trans = self.call()
         assert trans.get_reference() == None
 
+    def test_with_tags(self):
+        self.data['tags'] = [
+            TransactionTag(name="tag_name", value="tag_value")
+        ]
+        trans = self.call()
+        assert trans.get_tags() == self.data['tags']
+
+    def test_fails_if_tag_name_or_value_are_invalid(self):
+        for (name, value) in [
+                ("x" * 129, "value"),
+                ("name", "x"*129),
+                ("x" * 129, "x" * 129),
+                ("with spaces", "value"),
+                ("name", "with spaces"),
+                ("unicode ✔", "value"),
+                ("name", "unicode ✔"),
+        ]:
+            with self.subTest(f"name={name},value={value}"):
+                print((name, value))
+                self.data['tags'] = [TransactionTag(name=name, value=value)]
+                with self.assertRaises(django.core.exceptions.ValidationError):
+                    self.call()
+
+    def test_tags_that_does_not_fail(self):
+        for (name, value) in [
+                ("a_b", "value"),
+                ("a-b", "value"),
+                ("123-abc_def", "value"),
+                ("name", "a_b"),
+                ("name", "a-b"),
+                ("name", "123-abc_def"),
+        ]:
+            with self.subTest(f"name={name},value={value}"):
+                self.data['tags'] = [TransactionTag(name=name, value=value)]
+                # Nothing raised
+                self.call()
+
     def test_fails_if_movements_have_a_single_acc(self):
         self.data_update(movements_specs=[
             MovementSpec(self.accs[0], Money(100, self.cur)),
             MovementSpec(self.accs[0], Money(-100, self.cur))
         ])
         errmsg = TransactionMovementSpecListValidator.ERR_MSGS['SINGLE_ACCOUNT']
-        with self.assertRaisesMessage(ValidationError, errmsg):
+        with self.assertRaisesMessage(serializers.ValidationError, errmsg):
             self.call()
 
     def test_fails_on_unbalanced_movements_and_single_account(self):
@@ -214,7 +250,7 @@ class TestTransactionFactory(MovementsModelsTestCase):
         errmsg = TransactionMovementSpecListValidator\
             .ERR_MSGS['UNBALANCED_SINGLE_CURRENCY']
         self.assertRaisesMessage(
-            ValidationError,
+            serializers.ValidationError,
             errmsg,
             self.call
         )
@@ -228,7 +264,7 @@ class TestTransactionFactory(MovementsModelsTestCase):
         errmsg = TransactionMovementSpecListValidator.ERR_MSGS[
             "REPEATED_CURRENCY_ACCOUNT_PAIR"
         ]
-        with self.assertRaisesMessage(ValidationError, errmsg):
+        with self.assertRaisesMessage(serializers.ValidationError, errmsg):
             self.call()
 
 

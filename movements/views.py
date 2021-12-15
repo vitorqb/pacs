@@ -15,7 +15,8 @@ def _get_transaction_qset():
         'movement_set',
         'movement_set__account',
         'movement_set__account__acc_type',
-        'movement_set__currency'
+        'movement_set__currency',
+        'tags',
     )
     return out
 

@@ -7,7 +7,7 @@ from accounts.tests.factories import AccountTestFactory
 from common.models import list_to_queryset
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
 from movements.models import (Movement, MovementSpec, Transaction,
-                              TransactionFactory)
+                              TransactionFactory, TransactionTag)
 
 # Custom faker w/ controlable seed
 faker = Faker()
@@ -22,6 +22,14 @@ class MovementSpecTestFactory(f.Factory):
     money = f.SubFactory(MoneyTestFactory)
 
 
+class TransactionTagFactory(f.DjangoModelFactory):
+    name = f.LazyFunction(lambda: faker.text().split(' ')[0])
+    value = f.LazyFunction(lambda: faker.text().split(' ')[0])
+
+    class Meta:
+        model = TransactionTag
+
+
 class TransactionTestFactory(f.DjangoModelFactory):
     class Meta:
         model = Transaction
@@ -32,6 +40,7 @@ class TransactionTestFactory(f.DjangoModelFactory):
         f.SubFactory(MovementSpecTestFactory),
         f.SubFactory(MovementSpecTestFactory)
     ])
+    tags = f.RelatedFactoryList(TransactionTagFactory, 'transaction')
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

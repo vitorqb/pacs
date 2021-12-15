@@ -6,7 +6,7 @@ from accounts.models import Account
 from currencies.money import Money
 from currencies.serializers import MoneySerializer
 
-from .models import MovementSpec, Transaction, TransactionFactory
+from .models import MovementSpec, Transaction, TransactionFactory, TransactionTag
 
 
 class MovementSpecSerializer(Serializer):
@@ -20,15 +20,27 @@ class MovementSpecSerializer(Serializer):
         return MovementSpec(**validated_data)
 
 
+class TransactionTagSerializer(ModelSerializer):
+    class Meta:
+        model = TransactionTag
+        fields = ['name', 'value']
+
+
 class TransactionSerializer(ModelSerializer):
     movements_specs = ListSerializer(
         child=MovementSpecSerializer(),
         source='get_movements_specs'
     )
+    tags = ListSerializer(
+        child=TransactionTagSerializer(),
+        source='get_tags',
+        default=list,
+        required=False
+    )
 
     class Meta:
         model = Transaction
-        fields = ['pk', 'description', 'reference', 'date', 'movements_specs']
+        fields = ['pk', 'description', 'reference', 'date', 'movements_specs', 'tags']
         read_only_fields = ['pk']
 
     def create(self, validated_data):
@@ -38,6 +50,10 @@ class TransactionSerializer(ModelSerializer):
             for mov_data in movements_data
         ]
         validated_data['date_'] = validated_data.pop('date')
+        tags_data = validated_data.pop('get_tags')
+        validated_data['tags'] = [
+            TransactionTag(name=x['name'], value=x['value']) for x in tags_data
+        ]
         return TransactionFactory()(**validated_data)
 
     def update(self, instance: Transaction, validated_data):

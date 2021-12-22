@@ -294,6 +294,22 @@ class TestTransactionModel(MovementsModelsTestCase):
         self.trans.set_movements(self.mov_specs)
         assert self.trans.get_movements_specs() == self.mov_specs
 
+    def test_set_tags_to_empty(self):
+        self.trans.set_tags([])
+        updated_trans = Transaction.objects.get(pk=self.trans.pk)
+        assert updated_trans.get_tags() == []
+
+    def test_set_tags_to_none(self):
+        self.trans.set_tags(None)
+        updated_trans = Transaction.objects.get(pk=self.trans.pk)
+        assert updated_trans.get_tags() == []
+
+    def test_set_tags_to_not_empty(self):
+        new_tags = [TransactionTag(name="foo", value="bar")]
+        self.trans.set_tags(new_tags)
+        updated_trans = Transaction.objects.get(pk=self.trans.pk)
+        assert updated_trans.get_tags() == new_tags
+
 
 class TestMovementSpec(MovementsModelsTestCase):
 

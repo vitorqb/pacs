@@ -173,6 +173,8 @@ class Transaction(m.Model):
     @atomic
     def set_tags(self, tags: List[TransactionTag]) -> None:
         """ Set's tags, using an interable of TransactionTag """
+        tags = [] if tags is None else tags
+        self.tags.all().delete()
         for tag in tags:
             assert tag.has_transaction() is False
             tag.transaction = self

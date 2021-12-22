@@ -14,7 +14,7 @@ from currencies.serializers import MoneySerializer
 from currencies.tests.factories import CurrencyTestFactory, MoneyTestFactory
 from movements.models import MovementSpec, TransactionFactory
 from movements.serializers import MovementSpecSerializer, TransactionSerializer, TransactionTagSerializer
-from movements.tests.factories import TransactionTestFactory
+from movements.tests.factories import TransactionTestFactory, TransactionTagFactory
 
 
 class MovementsSerializersTestCase(PacsTestCase):
@@ -67,12 +67,18 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
             MovementSpec(self.accs[0], self.moneys[0]),
             MovementSpec(self.accs[1], self.moneys[1])
         ]
+        self.tags = [
+            TransactionTagFactory.build()
+        ]
         self.data = {
             'description': 'hola',
             'date': date(1993, 11, 23),
             'movements_specs': [
                 MovementSpecSerializer(self.movements_specs[0]).data,
                 MovementSpecSerializer(self.movements_specs[1]).data
+            ],
+            'tags': [
+                TransactionTagSerializer(self.tags[0]).data
             ]
         }
 
@@ -167,3 +173,23 @@ class TransactionSerializerTest(MovementsSerializersTestCase):
         assert obj.get_date() != self.data['date']
         new_obj = self.update(obj)
         assert new_obj.get_date() == self.data['date']
+
+    def test_update_tags(self):
+        obj = self.create()
+        tags = TransactionTagFactory.build_batch(2)
+        tags_data = [TransactionTagSerializer(t).data for t in tags]
+        self.data['tags'] = tags_data
+        new_obj = self.update(obj)
+        new_obj_tags = new_obj.get_tags()
+        assert len(new_obj_tags) == 2
+        assert new_obj_tags[0].name == tags[0].name
+        assert new_obj_tags[0].value == tags[0].value
+        assert new_obj_tags[1].name == tags[1].name
+        assert new_obj_tags[1].value == tags[1].value
+
+    def test_update_tags_to_empty(self):
+        obj = self.create()
+        assert len(obj.get_tags()) > 0
+        self.data['tags'] = []
+        new_obj = self.update(obj)
+        assert new_obj.get_tags() == []

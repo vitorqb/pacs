@@ -21,6 +21,7 @@ class MovementSpecSerializer(Serializer):
 
 
 class TransactionTagSerializer(ModelSerializer):
+
     class Meta:
         model = TransactionTag
         fields = ['name', 'value']
@@ -70,4 +71,8 @@ class TransactionSerializer(ModelSerializer):
             instance.set_description(validated_data['description'])
         if 'reference' in validated_data:
             instance.set_reference(validated_data['reference'])
+        if 'get_tags' in validated_data:
+            tags_data = validated_data.pop('get_tags')
+            tags = [TransactionTag(**d) for d in tags_data]
+            instance.set_tags(tags)
         return instance

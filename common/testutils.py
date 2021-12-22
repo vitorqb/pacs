@@ -298,12 +298,12 @@ class TestRequestMaker:
 
 class TestHelpers:
     @staticmethod
-    def _find_root(acc_list):
+    def find_root(acc_list):
         """Returns the root account out of a list of accounts"""
         return next(a for a in acc_list if a["acc_type"] == "Root")
 
     @staticmethod
-    def _assert_contains(list_, key, value):
+    def assert_contains(list_, key, value):
         """Asserts that one of the dictionaries in list_ has a key whose
         value is equal to name"""
         assert any(
@@ -311,13 +311,13 @@ class TestHelpers:
         ), f"{value} not found for key {key} in list {list_}"
 
     @staticmethod
-    def _assert_not_contains(list_, key, value):
-        """Opposite of _assert_contains"""
+    def assert_not_contains(list_, key, value):
+        """Opposite of assert_contains"""
         assert not any(
             x[key] == value for x in list_
         ), f"{value} WAS FOUND for key {key} in list {list_}"
 
     @staticmethod
-    def _select_by(list_, key, value):
+    def select_by(list_, key, value):
         """Selects the (first) dict from list_ that has value in it's key"""
         return next(x for x in list_ if x[key] == value)

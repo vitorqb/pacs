@@ -10,6 +10,22 @@ from currencies.management.commands.populate_currencies import \
 import common.models
 import exchangerates.models
 from decimal import Decimal
+from functools import partialmethod
+
+
+class URLS:
+    account = '/accounts/'
+    currency = '/currencies/'
+    transaction = '/transactions/'
+
+    class reports:
+        _base = '/reports/'
+        flow_evolution = _base + 'flow-evolution/'
+        balance_evolution = _base + 'balance-evolution/'
+
+    class exchange_rates:
+        _base = '/exchange_rates/'
+        data = _base + 'data/v2'
 
 
 class PacsTestCase(APITestCase):
@@ -311,3 +327,54 @@ class DataMaker:
         if reference:
             out['reference'] = reference
         return out
+
+
+@attr.s()
+class TestRequestMaker:
+
+    __test__ = False
+
+    test_requests: TestRequests = attr.ib()
+
+    @staticmethod
+    def assert_response_status_okay(resp):
+        """ Asserts that a Response has a 2xx status code """
+        assert str(resp.status_code)[0] == "2", \
+            f"Response for {resp.url} had status code " +\
+            f"{resp.status_code} and not 2xx. \nContent: {resp.content}"
+
+    def get_json(self, path, params=None):
+        """
+        Makes a get request, ensures that it returns 2**, and parses the json
+        """
+        resp = self.test_requests.get(f"{path}", params=params)
+        self.assert_response_status_okay(resp)
+        return resp.json()
+
+    def post_json(self, path, json={}):
+        """ Makes a json request, ensures it returns 2**, and parses the json """
+        resp = self.test_requests.post(f"{path}", json=json)
+        self.assert_response_status_okay(resp)
+        return resp.json()
+
+    def patch_json(self, path, json={}):
+        """ Makes a json request, ensures it returns 2**, and parses the json """
+        resp = self.test_requests.patch(f"{path}", json=json)
+        self.assert_response_status_okay(resp)
+        return resp.json()
+
+    get_accounts = partialmethod(get_json, URLS.account)
+    get_currencies = partialmethod(get_json, URLS.currency)
+    get_transactions = partialmethod(get_json, URLS.transaction)
+    get_exchange_rates_data = partialmethod(get_json, URLS.exchange_rates.data)
+    post_account = partialmethod(post_json, URLS.account)
+    post_transaction = partialmethod(post_json, URLS.transaction)
+    post_currency = partialmethod(post_json, URLS.currency)
+    post_flow_evolution_report = partialmethod(
+        post_json,
+        URLS.reports.flow_evolution
+    )
+    post_balance_evolution_report = partialmethod(
+        post_json,
+        URLS.reports.balance_evolution
+    )

@@ -13,24 +13,22 @@ if TYPE_CHECKING:
 
 
 @attr.s(frozen=True, eq=False)
-class Money():
-    """ A combination of a quantity and a currency. """
+class Money:
+    """A combination of a quantity and a currency."""
+
     quantity: Decimal = attr.ib(converter=Decimal)
     currency: Currency = attr.ib()
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Money):
             return False
-        return (
-            self.currency == other.currency and
-            decimals_equal(self.quantity, other.quantity)
-        )
+        return self.currency == other.currency and decimals_equal(self.quantity, other.quantity)
 
     def __add__(self, other):
         if not isinstance(other, Money):
-            raise TypeError('Can only sum Money')
+            raise TypeError("Can only sum Money")
         if not self.currency == other.currency:
-            raise ValueError('Can not sum Moneys from different currencies.')
+            raise ValueError("Can not sum Moneys from different currencies.")
         return attr.evolve(self, quantity=self.quantity + other.quantity)
 
 
@@ -41,6 +39,7 @@ class MoneyAggregator:
     per currency. When appending a new money, if there is already a money in
     the list for that currency, sum then instead of appending.
     """
+
     _moneys: List[Money] = attr.ib(factory=list, init=False)
     _currencies_set: Set[Currency] = attr.ib(factory=set, init=False)
 
@@ -70,18 +69,19 @@ class MoneyAggregator:
 
 @attr.s(frozen=True, eq=False)
 class Balance:
-    """ An aggregation of Money from different currencies """
+    """An aggregation of Money from different currencies"""
+
     _moneys: List[Money] = attr.ib()
 
     def get_for_currency(self, currency: Currency) -> Money:
-        """ Returns the Money representing the Balance for a specific currency """
-        quantity = Decimal('0')
+        """Returns the Money representing the Balance for a specific currency"""
+        quantity = Decimal("0")
         for m in (m for m in self._moneys if m.currency == currency):
             quantity += m.quantity
         return Money(quantity, currency)
 
     def add_money(self, money: Money) -> Balance:
-        """ Returns a new balance with money added. """
+        """Returns a new balance with money added."""
         return attr.evolve(self, moneys=[*self._moneys, money])
 
     def add_moneys(self, moneys: List[Money]) -> Balance:
@@ -91,14 +91,12 @@ class Balance:
         return out
 
     def get_currencies(self) -> Set[Currency]:
-        """ Returns a set with all the currencies for this Balance """
+        """Returns a set with all the currencies for this Balance"""
         return set(x.currency for x in self._moneys)
 
     def get_moneys(self) -> List[Money]:
-        """ Returns a list of Money, one ofr each currency of self. """
-        return [
-            self.get_for_currency(c) for c in self.get_currencies()
-        ]
+        """Returns a list of Money, one ofr each currency of self."""
+        return [self.get_for_currency(c) for c in self.get_currencies()]
 
     def __add__(self, other: object) -> Balance:
         assert isinstance(other, Balance)

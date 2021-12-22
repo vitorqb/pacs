@@ -1,13 +1,14 @@
-import exchangerates.models as models
-import exchangerates.exceptions as exceptions
 import collections
-import datetime
-import common.utils as utils
-import django.db.utils
 import contextlib
+import datetime
 from decimal import Decimal
-import attr
 
+import attr
+import django.db.utils
+
+import common.utils as utils
+import exchangerates.exceptions as exceptions
+import exchangerates.models as models
 
 A_DAY = datetime.timedelta(days=1)
 
@@ -17,7 +18,7 @@ def fetch_exchange_rates(start_at, end_at, currency_codes):
         currency_code__in=currency_codes,
         date__lte=end_at,
         date__gte=start_at,
-    ).order_by('currency_code', 'date')
+    ).order_by("currency_code", "date")
     prices = collections.defaultdict(dict)
 
     for exchange_rate in exchange_rates:
@@ -36,9 +37,12 @@ def fetch_exchange_rates(start_at, end_at, currency_codes):
         {
             "currency": currency_code,
             "prices": [
-                {"date": date.strftime(utils.DATE_FORMAT), "price": float(prices[currency_code][date])}
+                {
+                    "date": date.strftime(utils.DATE_FORMAT),
+                    "price": float(prices[currency_code][date]),
+                }
                 for date in sorted(prices[currency_code].keys())
-            ]
+            ],
         }
         for currency_code in currency_codes
     ]
@@ -52,7 +56,7 @@ class ExchangeRateImportInput:
 
     @classmethod
     def from_dict(cls, d):
-        return cls(d['currency_code'], d['date'], d['value'])
+        return cls(d["currency_code"], d["date"], d["value"])
 
 
 @attr.s()
@@ -70,7 +74,7 @@ def import_exchangerate(exchangerate_import_input):
     model = models.ExchangeRate.objects.create(
         currency_code=exchangerate_import_input.currency_code,
         date=utils.str_to_date(exchangerate_import_input.date_str),
-        value=utils.round_decimal(Decimal(exchangerate_import_input.value_float))
+        value=utils.round_decimal(Decimal(exchangerate_import_input.value_float)),
     )
     model.full_clean()
     model.save()

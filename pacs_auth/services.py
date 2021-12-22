@@ -1,11 +1,12 @@
+import logging
+import re
+
 import attr
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from pacs_auth.models import Token, ApiKey
-import pacs_auth.exceptions as exceptions
-import re
-import logging
 
+import pacs_auth.exceptions as exceptions
+from pacs_auth.models import ApiKey, Token
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,7 @@ logger = logging.getLogger(__name__)
 #
 # Token Validators
 #
-class ITokenValidator():
-
+class ITokenValidator:
     def is_valid(self, token_value):
         raise NotImplementedError()
 
@@ -31,14 +31,14 @@ class TokenValidator(ITokenValidator):
 @attr.s(frozen=True)
 class SingleStaticTokenValidator(ITokenValidator):
 
-    valid_token = attr.ib(default='valid_token')
+    valid_token = attr.ib(default="valid_token")
 
     def is_valid(self, token_value):
         return token_value == self.valid_token
 
 
 def get_token_validator():
-    if getattr(settings, 'TOKEN_VALIDATOR_CLASS', None) == 'SingleStaticTokenValidator':
+    if getattr(settings, "TOKEN_VALIDATOR_CLASS", None) == "SingleStaticTokenValidator":
         return SingleStaticTokenValidator()
     return TokenValidator()
 
@@ -46,7 +46,7 @@ def get_token_validator():
 #
 # Authorizers
 #
-class IAuthorizer():
+class IAuthorizer:
     def run_validation(self):
         raise NotImplementedError()
 
@@ -84,7 +84,7 @@ class TokenAuthorizer(IAuthorizer):
 
     @classmethod
     def get_authorization(cls, request):
-        return request.META.get('HTTP_AUTHORIZATION')
+        return request.META.get("HTTP_AUTHORIZATION")
 
 
 @attr.s(frozen=True)
@@ -107,7 +107,7 @@ class ApiKeyAuthorizer(IAuthorizer):
             raise exceptions.InvalidApiKey()
 
         needed_role_name = next(
-            x["role"] for x in self.roles_auth_rules if x['path'] == self.request.path
+            x["role"] for x in self.roles_auth_rules if x["path"] == self.request.path
         )
         if needed_role_name not in (x.role_name for x in api_key.roles.all()):
             logger.info(f"Role {needed_role_name} not in api_key roles {api_key.roles.all()}")
@@ -115,7 +115,7 @@ class ApiKeyAuthorizer(IAuthorizer):
 
 
 @attr.s(frozen=True)
-class AuthorizerFactory():
+class AuthorizerFactory:
 
     request = attr.ib()
     allowed_urls = attr.ib(factory=(lambda: settings.PACS_AUTH_ALLOWED_URLS))
@@ -126,6 +126,6 @@ class AuthorizerFactory():
             return AllAllowedAuthorizer(self.request)
         if TokenAuthorizer.get_authorization(self.request) is not None:
             return TokenAuthorizer(self.request)
-        if self.request.path in (x['path'] for x in self.roles_auth_rules):
+        if self.request.path in (x["path"] for x in self.roles_auth_rules):
             return ApiKeyAuthorizer(self.request)
         return TokenAuthorizer(self.request)

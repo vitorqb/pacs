@@ -1,7 +1,8 @@
-from common.testutils import PacsTestCase
+from datetime import timedelta
+
 import pacs_auth.models as sut
 from common import utils
-from datetime import timedelta
+from common.testutils import PacsTestCase
 
 
 def now_fn():
@@ -17,7 +18,6 @@ def gen_token_fn():
 
 
 class TestTokenFactory(PacsTestCase):
-
     def test_create_token(self):
         factory = sut.TokenFactory(now_fn, gen_token_fn)
         token = factory()
@@ -26,7 +26,6 @@ class TestTokenFactory(PacsTestCase):
 
 
 class TestToken(PacsTestCase):
-
     def test_is_valid_token_value_true(self):
         factory = sut.TokenFactory()
         token = factory()
@@ -44,7 +43,6 @@ class TestToken(PacsTestCase):
 
 
 class TestApiKeyQuerySet(PacsTestCase):
-
     def test_finds_and_returns(self):
         api_key = sut.ApiKey.objects.create(value="123")
         found = sut.ApiKey.objects.get_valid_api_key("123")

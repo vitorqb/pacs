@@ -1,12 +1,12 @@
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-import featuretoggles.models as models
 import pytest
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+
+import featuretoggles.models as models
 from common.testutils import TestRequests
 
 
 @pytest.mark.functional
 class FunctionalTests(StaticLiveServerTestCase):
-
     def test_get_feature_toggles(self):
         models.FeatureToggle.objects.create(name="foo", is_active=True).save()
         models.FeatureToggle.objects.create(name="bar", is_active=False).save()

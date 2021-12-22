@@ -1,4 +1,5 @@
 from django.db import models
+
 import common.models
 
 
@@ -9,6 +10,6 @@ class ExchangeRate(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=['currency_code']),
+            models.Index(fields=["currency_code"]),
         ]
-        unique_together = [['currency_code', 'date']]
+        unique_together = [["currency_code", "date"]]

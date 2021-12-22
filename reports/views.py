@@ -1,26 +1,31 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Callable, Optional
-import attr
+from typing import TYPE_CHECKING, Callable, List, Optional
 
+import attr
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from currencies.currency_converter import CurrencyPricePortifolioConverter
 
-from .reports import FlowEvolutionQuery, BalanceEvolutionReport, BalanceEvolutionQuery
-from .serializers import (FlowEvolutionInputSerializer, FlowEvolutionOutputSerializer, BalanceEvolutionInputSerializer, BalanceEvolutionOutputSerializer)
-from .view_models import FlowEvolutionInput, CurrencyOpts, BalanceEvolutionInput
+from .reports import BalanceEvolutionQuery, BalanceEvolutionReport, FlowEvolutionQuery
+from .serializers import (
+    BalanceEvolutionInputSerializer,
+    BalanceEvolutionOutputSerializer,
+    FlowEvolutionInputSerializer,
+    FlowEvolutionOutputSerializer,
+)
+from .view_models import BalanceEvolutionInput, CurrencyOpts, FlowEvolutionInput
 
 if TYPE_CHECKING:
-    from reports.reports import AccountFlows
-    from currencies.money import Money
     from datetime import date
+
+    from currencies.money import Money
+    from reports.reports import AccountFlows
 
 
 # Balance evolution
 class BalanceEvolutionViewSpec:
-
     @staticmethod
     def _serialize_inputs(request) -> BalanceEvolutionInput:
         serializer = BalanceEvolutionInputSerializer(data=request.data)
@@ -39,12 +44,11 @@ class BalanceEvolutionViewSpec:
         return Response(data)
 
 
-balance_evolution_view = api_view(['POST'])(BalanceEvolutionViewSpec.post)
+balance_evolution_view = api_view(["POST"])(BalanceEvolutionViewSpec.post)
 
 
 # Flow evolution
 class FlowEvolutionViewSpec:
-
     @staticmethod
     def _serialize_inputs(request) -> FlowEvolutionInput:
         serializer = FlowEvolutionInputSerializer(data=request.data)
@@ -67,8 +71,8 @@ class FlowEvolutionViewSpec:
 
     @classmethod
     def _get_converter_fn(
-            cls,
-            currency_opts: Optional[CurrencyOpts],
+        cls,
+        currency_opts: Optional[CurrencyOpts],
     ) -> Callable[[Money, date], Money]:
         if currency_opts is None:
             return lambda m, _: m
@@ -86,4 +90,4 @@ class FlowEvolutionViewSpec:
         return Response(serialized_report)
 
 
-flow_evolution_view = api_view(['POST'])(FlowEvolutionViewSpec.post)
+flow_evolution_view = api_view(["POST"])(FlowEvolutionViewSpec.post)

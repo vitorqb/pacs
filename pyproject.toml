@@ -1,0 +1,7 @@
+[tool.isort]
+profile = "black"
+extend_skip = 'migrations'
+
+[tool.black]
+line-length = 100
+extend-exclude = 'migrations'

@@ -1,15 +1,16 @@
+from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from pacs_auth.models import Token, token_factory, ApiKeyFactory
+
 import pacs_auth.serializers as serializers
-from django.conf import settings
+from pacs_auth.models import ApiKeyFactory, Token, token_factory
 
 
 @api_view(["GET", "POST"])
 def token_view(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         return post_token(request)
-    if request.method == 'GET':
+    if request.method == "GET":
         return get_token(request)
 
 
@@ -23,7 +24,7 @@ def get_token(request):
 
 
 def post_token(request):
-    if not request.data.get('admin_token') == settings.ADMIN_TOKEN:
+    if not request.data.get("admin_token") == settings.ADMIN_TOKEN:
         return Response(status=400)
     token = token_factory()
     request.session["token_value"] = token.value

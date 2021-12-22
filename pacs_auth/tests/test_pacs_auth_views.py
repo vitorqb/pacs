@@ -1,10 +1,12 @@
-from common.testutils import PacsTestCase
-from pacs_auth.models import TokenFactory, Token, ApiKeyFactory, ApiKey
 from datetime import timedelta
-import common.utils
-from rest_framework.test import override_settings, APIClient
 from unittest import mock
+
 import attr
+from rest_framework.test import APIClient, override_settings
+
+import common.utils
+from common.testutils import PacsTestCase
+from pacs_auth.models import ApiKey, ApiKeyFactory, Token, TokenFactory
 
 
 def old_date_fn():
@@ -22,7 +24,6 @@ class MockApiKeyFactory:
 
 
 class TestRecoverToken(PacsTestCase):
-
     def store_token_in_session(self, token_value):
         session = self.client.session
         session["token_value"] = token_value
@@ -58,7 +59,6 @@ class TestRecoverToken(PacsTestCase):
 
 @override_settings(ADMIN_TOKEN=ADMIN_TOKEN)
 class TestCreateToken(PacsTestCase):
-
     def get_client(self):
         return APIClient(HTTP_PACS_TEST_AUTH="1")
 
@@ -92,7 +92,6 @@ class TestCreateToken(PacsTestCase):
 
 @override_settings(ADMIN_TOKEN=ADMIN_TOKEN)
 class TestCreateApiKey(PacsTestCase):
-
     def get_data(self, **kwargs):
         return {
             **{
@@ -103,7 +102,7 @@ class TestCreateApiKey(PacsTestCase):
         }
 
     def test_creates_api_key_using_factory(self):
-        with mock.patch('pacs_auth.views.ApiKeyFactory', MockApiKeyFactory):
+        with mock.patch("pacs_auth.views.ApiKeyFactory", MockApiKeyFactory):
             response = self.client.post("/auth/api_key", data=self.get_data())
         assert response.status_code == 200
         assert response.json()["api_key"] == "FOO"

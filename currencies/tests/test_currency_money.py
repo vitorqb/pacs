@@ -12,11 +12,10 @@ class MoneyTestCase(PacsTestCase):
 
 
 class TestMoney(MoneyTestCase):
-
     def test_base(self):
         currency = Mock()
-        money = Money('10.24', currency)
-        assert money.quantity == Decimal('10.24')
+        money = Money("10.24", currency)
+        assert money.quantity == Decimal("10.24")
         assert money.currency == currency
 
     def test_sum(self):
@@ -33,7 +32,6 @@ class TestMoney(MoneyTestCase):
 
 
 class TestMoneyAggregator:
-
     def test_empty(self):
         money_aggregator = MoneyAggregator()
         assert money_aggregator.get_moneys() == []
@@ -55,10 +53,7 @@ class TestMoneyAggregator:
 
     def test_aggregates_if_same_currency(self):
         currencies = [Mock(), Mock()]
-        same_currency_moneys = MoneyTestFactory.create_batch(
-            2,
-            currency=currencies[0]
-        )
+        same_currency_moneys = MoneyTestFactory.create_batch(2, currency=currencies[0])
         other_currency_money = MoneyTestFactory(currency=currencies[1])
         money_aggregator = MoneyAggregator()
         for money in [*same_currency_moneys, other_currency_money]:
@@ -70,7 +65,6 @@ class TestMoneyAggregator:
 
 
 class TestBalance(MoneyTestCase):
-
     def test_get_for_currency_empty(self):
         currency = Mock()
         balance = Balance([])
@@ -96,7 +90,7 @@ class TestBalance(MoneyTestCase):
         assert balance.get_for_currency(currencies[1]) == Money(-8, currencies[1])
 
     def test_add_money_zero(self):
-        money = Mock(quantity=Decimal('10'))
+        money = Mock(quantity=Decimal("10"))
         balance = Balance([])
         assert balance.add_money(money) == Balance([money])
 
@@ -107,29 +101,29 @@ class TestBalance(MoneyTestCase):
 
     def test_get_currencies_base(self):
         currencies = [Mock(), Mock()]
-        balance = Balance([Money('11', currencies[0]), Money('7', currencies[1])])
+        balance = Balance([Money("11", currencies[0]), Money("7", currencies[1])])
         assert balance.get_currencies() == set(currencies)
 
     def test_equal_true(self):
         currency = Mock()
-        one = Balance([Money('10', currency)])
-        two = Balance([Money('7', currency), Money('3', currency)])
+        one = Balance([Money("10", currency)])
+        two = Balance([Money("7", currency), Money("3", currency)])
         assert one == two
 
     def test_equal_empty_and_not_empty(self):
         currency = Mock()
         one = Balance([])
-        two = Balance([Money('10', currency)])
+        two = Balance([Money("10", currency)])
         assert one != two
 
     def test_equal_false_diff_currencies(self):
         currencies = [Mock(), Mock()]
-        one = Balance([Money('10', currencies[0])])
-        two = Balance([Money('10', currencies[1])])
+        one = Balance([Money("10", currencies[0])])
+        two = Balance([Money("10", currencies[1])])
         assert one != two
 
     def test_equal_false_diff_quantities(self):
         currency = Mock()
-        one = Balance([Money('10', currency)])
-        two = Balance([Money('9', currency)])
+        one = Balance([Money("10", currency)])
+        two = Balance([Money("9", currency)])
         assert one != two

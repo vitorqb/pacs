@@ -6,11 +6,10 @@ from common.testutils import PacsTestCase
 from currencies.currency_converter import CurrencyPricePortifolio, DateAndPrice
 from currencies.money import Money
 from currencies.tests.factories import CurrencyTestFactory
-from reports.view_models import CurrencyOpts, BalanceEvolutionInput
+from reports.view_models import BalanceEvolutionInput, CurrencyOpts
 
 
 class TestCurrencyOptsAsCurrencyConversionFn(PacsTestCase):
-
     def test_base(self):
         date = datetime.date(2019, 1, 1)
         convert_from = CurrencyTestFactory(code="BRL")
@@ -18,7 +17,7 @@ class TestCurrencyOptsAsCurrencyConversionFn(PacsTestCase):
         price_portifolio = [
             CurrencyPricePortifolio(
                 currency=convert_from,
-                prices=[DateAndPrice(date=date, price=Decimal('0.25'))],
+                prices=[DateAndPrice(date=date, price=Decimal("0.25"))],
             ),
             CurrencyPricePortifolio(
                 currency=convert_to,
@@ -33,7 +32,6 @@ class TestCurrencyOptsAsCurrencyConversionFn(PacsTestCase):
 
 
 class TestBalanceEvolutionInputAsDict:
-
     def test_no_currency_opts(self):
         args = {"accounts": Mock(), "dates": Mock()}
         input_ = BalanceEvolutionInput(**args)
@@ -43,6 +41,4 @@ class TestBalanceEvolutionInputAsDict:
         args = {"accounts": Mock(), "dates": Mock(), "currency_opts": Mock()}
         input_ = BalanceEvolutionInput(**args)
         resp = input_.as_dict()
-        assert resp['currency_conversion_fn'] == (
-            args['currency_opts'].as_currency_conversion_fn()
-        )
+        assert resp["currency_conversion_fn"] == (args["currency_opts"].as_currency_conversion_fn())

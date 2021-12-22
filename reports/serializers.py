@@ -3,13 +3,12 @@ from rest_framework import serializers
 from accounts.models import Account
 from accounts.serializers import BalanceSerializer
 from common.serializers import new_price_field
-from currencies.currency_converter import (CurrencyPricePortifolio,
-                                           DateAndPrice,)
+from currencies.currency_converter import CurrencyPricePortifolio, DateAndPrice
 from currencies.models import Currency
 from currencies.serializers import MoneySerializer
 from reports.reports import Period
 
-from .view_models import FlowEvolutionInput, BalanceEvolutionInput, CurrencyOpts
+from .view_models import BalanceEvolutionInput, CurrencyOpts, FlowEvolutionInput
 
 
 def _new_account_field():
@@ -19,7 +18,7 @@ def _new_account_field():
 def _new_currency_field():
     return serializers.SlugRelatedField(
         queryset=Currency.objects.all(),
-        slug_field='code',
+        slug_field="code",
     )
 
 
@@ -28,31 +27,27 @@ def _new_account_list_serializer():
 
 
 def _new_periods_serializer():
-
     def validator(x):
         if len(x) == 0:
-            msg = 'At least one period must be passed'
+            msg = "At least one period must be passed"
             raise serializers.ValidationError(msg)
 
     return serializers.ListSerializer(child=PeriodField(), validators=[validator])
 
 
 class PeriodField(serializers.Field):
-
     def to_internal_value(self, data):
         if not isinstance(data, list) or len(data) != 2:
-            raise serializers.ValidationError(
-                "Incorrect format: expectd a list of 2 dates."
-            )
+            raise serializers.ValidationError("Incorrect format: expectd a list of 2 dates.")
         return Period(
             serializers.DateField().to_internal_value(data[0]),
-            serializers.DateField().to_internal_value(data[1])
+            serializers.DateField().to_internal_value(data[1]),
         )
 
     def to_representation(self, period):
         return [
             serializers.DateField().to_representation(period.start),
-            serializers.DateField().to_representation(period.end)
+            serializers.DateField().to_representation(period.end),
         ]
 
 
@@ -69,31 +64,29 @@ class CurrencyPricePortifolioSerializer(serializers.Serializer):
     prices = serializers.ListSerializer(child=DateAndPriceSerialzier())
 
     def create(self, data):
-        prices_data = data['prices']
+        prices_data = data["prices"]
         prices = self._create_prices(prices_data)
-        return CurrencyPricePortifolio(currency=data['currency'], prices=prices)
+        return CurrencyPricePortifolio(currency=data["currency"], prices=prices)
 
     def _create_prices(self, data):
-        field = self.fields['prices']
+        field = self.fields["prices"]
         return field.create(data)
 
 
 class CurrencyOptsSerializer(serializers.Serializer):
-    price_portifolio = serializers.ListSerializer(
-        child=CurrencyPricePortifolioSerializer()
-    )
+    price_portifolio = serializers.ListSerializer(child=CurrencyPricePortifolioSerializer())
     convert_to = _new_currency_field()
 
     def create(self, data):
-        price_portifolio_data = data['price_portifolio']
+        price_portifolio_data = data["price_portifolio"]
         price_portifolio = self._create_price_portfilio(price_portifolio_data)
         return CurrencyOpts(
             price_portifolio=price_portifolio,
-            convert_to=data['convert_to'],
+            convert_to=data["convert_to"],
         )
 
     def _create_price_portfilio(self, data):
-        field = self.fields['price_portifolio']
+        field = self.fields["price_portifolio"]
         return field.create(data)
 
 
@@ -103,18 +96,18 @@ class FlowEvolutionInputSerializer(serializers.Serializer):
     currency_opts = CurrencyOptsSerializer(default=None)
 
     def create(self, data):
-        currency_opts_data = data.get('currency_opts')
+        currency_opts_data = data.get("currency_opts")
         currency_opts = self._create_currency_opts(currency_opts_data)
         return FlowEvolutionInput(
-            periods=data['periods'],
-            accounts=data['accounts'],
+            periods=data["periods"],
+            accounts=data["accounts"],
             currency_opts=currency_opts,
         )
 
     def _create_currency_opts(self, data):
         if not data:
             return None
-        return self.fields['currency_opts'].create(data)
+        return self.fields["currency_opts"].create(data)
 
 
 class FlowSerializer(serializers.Serializer):
@@ -128,10 +121,7 @@ class FlowEvolutionDataSerializer(serializers.Serializer):
 
 
 class FlowEvolutionOutputSerializer(serializers.Serializer):
-    data = serializers.ListSerializer(
-        child=FlowEvolutionDataSerializer(),
-        source='*'
-    )
+    data = serializers.ListSerializer(child=FlowEvolutionDataSerializer(), source="*")
 
 
 class BalanceEvolutionReportDataSerializer(serializers.Serializer):
@@ -141,9 +131,7 @@ class BalanceEvolutionReportDataSerializer(serializers.Serializer):
 
 
 class BalanceEvolutionOutputSerializer(serializers.Serializer):
-    data = serializers.ListSerializer(
-        child=BalanceEvolutionReportDataSerializer()
-    )
+    data = serializers.ListSerializer(child=BalanceEvolutionReportDataSerializer())
 
 
 class BalanceEvolutionInputSerializer(serializers.Serializer):
@@ -152,10 +140,10 @@ class BalanceEvolutionInputSerializer(serializers.Serializer):
     currency_opts = CurrencyOptsSerializer(default=None)
 
     def create(self, data):
-        created_data = {'accounts': data['accounts'], 'dates': data['dates']}
-        if data['currency_opts'] is not None:
-            created_data['currency_opts'] = self._create_currency_opts(data)
+        created_data = {"accounts": data["accounts"], "dates": data["dates"]}
+        if data["currency_opts"] is not None:
+            created_data["currency_opts"] = self._create_currency_opts(data)
         return BalanceEvolutionInput(**created_data)
 
     def _create_currency_opts(self, data):
-        return self.fields['currency_opts'].create(data['currency_opts'])
+        return self.fields["currency_opts"].create(data["currency_opts"])

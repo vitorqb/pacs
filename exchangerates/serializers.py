@@ -1,7 +1,9 @@
 from rest_framework import serializers
-from .view_models import ExchangeRateDataInputs, PostExchangeRatesInputs
+
 import common.models
 import common.serializers
+
+from .view_models import ExchangeRateDataInputs, PostExchangeRatesInputs
 
 
 class ExchangeRateDataInputsSerializer(serializers.Serializer):

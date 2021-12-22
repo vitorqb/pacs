@@ -1,12 +1,12 @@
 import pytest
-from django.test import override_settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.test import override_settings
+
 from common.testutils import TestRequests
 
 
 @pytest.mark.functional
 class PacsAuthFunctionalTests(StaticLiveServerTestCase):
-
     def gen_test_requests(self):
         return TestRequests(self.live_server_url, headers={})
 
@@ -14,8 +14,7 @@ class PacsAuthFunctionalTests(StaticLiveServerTestCase):
     def test_fails_to_create_if_missing_admin_token(self):
         api_key_request = self.gen_test_requests()
         api_key_result = api_key_request.post(
-            "/auth/api_key",
-            json={"roles": ["API_KEY_TEST"], "admin_token": "456"}
+            "/auth/api_key", json={"roles": ["API_KEY_TEST"], "admin_token": "456"}
         )
         assert api_key_result.status_code == 400
 
@@ -23,8 +22,7 @@ class PacsAuthFunctionalTests(StaticLiveServerTestCase):
     def test_creates_and_uses_api_key_with_permission_set(self):
         api_key_request = self.gen_test_requests()
         api_key_result = api_key_request.post(
-            "/auth/api_key",
-            json={"roles": ["API_KEY_TEST"], "admin_token": "123"}
+            "/auth/api_key", json={"roles": ["API_KEY_TEST"], "admin_token": "123"}
         )
         api_key = api_key_result.json()["api_key"]
 

@@ -1,12 +1,11 @@
-import exchangerates.services as services
-
-from django.core.management import BaseCommand
-
 import argparse
 import csv
 
+from django.core.management import BaseCommand
 
-CSV_DELIMITER = ','
+import exchangerates.services as services
+
+CSV_DELIMITER = ","
 
 
 class Command(BaseCommand):
@@ -27,9 +26,9 @@ class Command(BaseCommand):
     """.strip()
 
     def add_arguments(self, parser):
-        parser.add_argument('file',  type=argparse.FileType("r"))
+        parser.add_argument("file", type=argparse.FileType("r"))
 
     def handle(self, *args, **options):
-        for row in csv.DictReader(options['file'], delimiter=CSV_DELIMITER):
+        for row in csv.DictReader(options["file"], delimiter=CSV_DELIMITER):
             exchangerate_import_input = services.ExchangeRateImportInput.from_dict(row)
             services.import_exchangerate(exchangerate_import_input)

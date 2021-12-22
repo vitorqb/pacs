@@ -1,8 +1,10 @@
 """ Test factories for Accounts """
-import factory as f
-from random import randint
-from faker import Faker
 from datetime import timedelta
+from random import randint
+
+import factory as f
+from faker import Faker
+
 A_DAY = timedelta(days=1)
 
 from reports.reports import Period

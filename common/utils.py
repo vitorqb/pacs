@@ -5,7 +5,6 @@ from pytz import utc
 
 from .models import N_DECIMAL_COMPARISON, N_DECIMAL_PLACES
 
-
 DATE_FORMAT = "%Y-%m-%d"
 
 

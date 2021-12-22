@@ -1,25 +1,27 @@
-import django.db.models as m
-import attr
-from datetime import datetime, timedelta
 import random
 import string
-from common.models import full_clean_and_save
-import common.utils
+from datetime import datetime, timedelta
+
+import attr
+import django.db.models as m
 import django.db.transaction
+
+import common.utils
+from common.models import full_clean_and_save
 
 
 #
 # Token
 #
 def gen_token():
-    return ''.join(
+    return "".join(
         random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
         for _ in range(128)
     )
 
 
 @attr.s()
-class TokenFactory():
+class TokenFactory:
 
     _now_fn = attr.ib(default=common.utils.utcnow)
     _gen_token_fn = attr.ib(default=gen_token)
@@ -36,13 +38,8 @@ token_factory = TokenFactory()
 
 
 class TokenQuerySet(m.QuerySet):
-
     def is_valid_token_value(self, token_value):
-        return (
-            self
-            .filter(value=token_value)
-            .filter(valid_until__gt=common.utils.utcnow()).exists()
-        )
+        return self.filter(value=token_value).filter(valid_until__gt=common.utils.utcnow()).exists()
 
 
 class Token(m.Model):
@@ -52,14 +49,13 @@ class Token(m.Model):
     objects = TokenQuerySet.as_manager()
 
     class Meta:
-        indexes = [m.Index(fields=['value'])]
+        indexes = [m.Index(fields=["value"])]
 
 
 #
 # ApiKey and Roles
 #
 class ApiKeyQuerySet(m.QuerySet):
-
     def get_valid_api_key(self, value):
         return self.filter(value=value).first()
 
@@ -69,7 +65,7 @@ class ApiKey(m.Model):
     objects = ApiKeyQuerySet.as_manager()
 
     class Meta:
-        indexes = [m.Index(fields=['value'])]
+        indexes = [m.Index(fields=["value"])]
 
 
 class ApiKeyRole(m.Model):
@@ -77,11 +73,11 @@ class ApiKeyRole(m.Model):
     role_name = m.TextField()
 
     class Meta:
-        indexes = [m.Index(fields=['api_key'])]
+        indexes = [m.Index(fields=["api_key"])]
 
 
 @attr.s()
-class ApiKeyFactory():
+class ApiKeyFactory:
 
     _gen_token_fn = attr.ib(default=gen_token)
 

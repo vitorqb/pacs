@@ -1,7 +1,8 @@
-from django.core.exceptions import PermissionDenied
-from pacs_auth.services import AuthorizerFactory
 import logging
 
+from django.core.exceptions import PermissionDenied
+
+from pacs_auth.services import AuthorizerFactory
 
 logger = logging.getLogger(__name__)
 

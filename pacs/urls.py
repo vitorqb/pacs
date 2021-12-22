@@ -18,35 +18,36 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+import exchangerates.views
+import featuretoggles.views
+import pacs_auth.views
 from accounts.views import AccountViewSet
 from currencies.views import CurrencyViewSet
 from movements.views import TransactionViewSet
-from reports.views import flow_evolution_view, balance_evolution_view
-import featuretoggles.views
-import pacs_auth.views
-import exchangerates.views
+from reports.views import balance_evolution_view, flow_evolution_view
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
 ]
 
 router = DefaultRouter()
-router.register(r'accounts', AccountViewSet, 'accounts')
-router.register(r'currencies', CurrencyViewSet, 'currencies')
-router.register(r'transactions', TransactionViewSet, 'transactions')
+router.register(r"accounts", AccountViewSet, "accounts")
+router.register(r"currencies", CurrencyViewSet, "currencies")
+router.register(r"transactions", TransactionViewSet, "transactions")
 
 urlpatterns += router.urls
 
 urlpatterns += [
-    path(r'reports/flow-evolution/', flow_evolution_view),
-    path(f'reports/balance-evolution/', balance_evolution_view),
+    path(r"reports/flow-evolution/", flow_evolution_view),
+    path(f"reports/balance-evolution/", balance_evolution_view),
     path(f"exchange_rates/data/v2", exchangerates.views.exchangerates),
-    path(f'auth/token', pacs_auth.views.token_view),
-    path(f'auth/api_key', pacs_auth.views.post_api_key),
+    path(f"auth/token", pacs_auth.views.token_view),
+    path(f"auth/api_key", pacs_auth.views.post_api_key),
     path(f"auth/test", pacs_auth.views.get_test),
-    path(f'featuretoggles', featuretoggles.views.get_featuretoggles),
+    path(f"featuretoggles", featuretoggles.views.get_featuretoggles),
 ]
 
 if settings.DEBUG:
     import debug_toolbar
-    urlpatterns += [path('__debug__/', include(debug_toolbar.urls))]
+
+    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]

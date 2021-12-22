@@ -3,7 +3,6 @@ from decimal import Decimal
 from unittest.mock import Mock, call, patch, sentinel
 
 import attr
-
 from django.conf import settings
 
 from accounts.models import AccTypeEnum
@@ -13,17 +12,25 @@ from common.testutils import PacsTestCase
 from currencies.money import Balance, Money
 from currencies.tests.factories import CurrencyTestFactory
 from movements.tests.factories import TransactionTestFactory
-from reports.reports import (AccountFlows, FlowEvolutionQuery, Period, SqlAlchemyLoader, Flow, BalanceEvolutionQuery, BalanceEvolutionReport, BalanceEvolutionReportData)
+from reports.reports import (
+    AccountFlows,
+    BalanceEvolutionQuery,
+    BalanceEvolutionReport,
+    BalanceEvolutionReportData,
+    Flow,
+    FlowEvolutionQuery,
+    Period,
+    SqlAlchemyLoader,
+)
 
 from .factories import PeriodTestFactory
 
 A_DAY = timedelta(days=1)
 
 
-@patch('reports.reports.create_engine')
-@patch('reports.reports.MetaData')
+@patch("reports.reports.create_engine")
+@patch("reports.reports.MetaData")
 class TestSqlAlchemyLoader(PacsTestCase):
-
     def tearDown(self):
         super().tearDown()
         SqlAlchemyLoader.reset_cache()
@@ -38,9 +45,9 @@ class TestSqlAlchemyLoader(PacsTestCase):
 
     def test_returns_engine(self, m_MetaData, m_create_engine):
         meta, engine = SqlAlchemyLoader.get_meta_and_engine()
-        assert m_create_engine.call_args_list == [call(
-            f'sqlite:///{settings.DATABASES["default"]["TEST"]["NAME"]}'
-        )]
+        assert m_create_engine.call_args_list == [
+            call(f'sqlite:///{settings.DATABASES["default"]["TEST"]["NAME"]}')
+        ]
         assert engine is m_create_engine.return_value
 
     def test_caches_result(self, m_MetaData, m_create_engine):
@@ -53,18 +60,13 @@ class TestSqlAlchemyLoader(PacsTestCase):
 
 
 class TestFlowEvolutionQuery:
-
     @staticmethod
     def patch_get_flows_for(return_value):
-        return patch.object(
-            FlowEvolutionQuery,
-            '_get_flows_for',
-            return_value=return_value
-        )
+        return patch.object(FlowEvolutionQuery, "_get_flows_for", return_value=return_value)
 
     @staticmethod
     def patch_get_currencies_in_dct():
-        return patch('reports.reports._get_currencies_in_dct', autospec=True)
+        return patch("reports.reports._get_currencies_in_dct", autospec=True)
 
     def test_run(self):
         accounts = [Mock(), Mock()]
@@ -79,7 +81,6 @@ class TestFlowEvolutionQuery:
 
 
 class TestIntegrationBalanceEvolutionQuery(PacsTestCase):
-
     def setUp(self):
         super().setUp()
         self.populate_accounts()
@@ -100,59 +101,58 @@ class TestIntegrationBalanceEvolutionQuery(PacsTestCase):
 
         # Give them some transactions
         salary_transaction = TransactionTestFactory.create(
-            date_='2019-07-01',
+            date_="2019-07-01",
             movements_specs__0__account=salary_account,
             movements_specs__1__account=cash_account,
         )
         supermarket_transaction = TransactionTestFactory.create(
-            date_='2019-08-15',
+            date_="2019-08-15",
             movements_specs__0__account=cash_account,
             movements_specs__1__account=supermarket_account,
         )
 
         # Run the query
         query = BalanceEvolutionQuery(
-            accounts=[revenues_account, assets_account, expenses_account],
-            dates=dates
+            accounts=[revenues_account, assets_account, expenses_account], dates=dates
         )
         report = query.run()
-        exp = BalanceEvolutionReport(data=[
-            BalanceEvolutionReportData(
-                date=dates[0],
-                account=revenues_account,
-                balance=salary_transaction.get_balance_for_account(revenues_account),
-            ),
-            BalanceEvolutionReportData(
-                date=dates[1],
-                account=revenues_account,
-                balance=salary_transaction.get_balance_for_account(revenues_account),
-            ),
-            BalanceEvolutionReportData(
-                date=dates[0],
-                account=assets_account,
-                balance=salary_transaction.get_balance_for_account(assets_account),
-            ),
-            BalanceEvolutionReportData(
-                date=dates[1],
-                account=assets_account,
-                balance=(
-                    salary_transaction.get_balance_for_account(assets_account)
-                    +
-                    supermarket_transaction.get_balance_for_account(assets_account)
-                )
-            ),
-            BalanceEvolutionReportData(
-                date=dates[0],
-                account=expenses_account,
-                balance=Balance([]),
-            ),
-            BalanceEvolutionReportData(
-                date=dates[1],
-                account=expenses_account,
-                balance=supermarket_transaction.get_balance_for_account(
-                    expenses_account
-                ))
-        ])
+        exp = BalanceEvolutionReport(
+            data=[
+                BalanceEvolutionReportData(
+                    date=dates[0],
+                    account=revenues_account,
+                    balance=salary_transaction.get_balance_for_account(revenues_account),
+                ),
+                BalanceEvolutionReportData(
+                    date=dates[1],
+                    account=revenues_account,
+                    balance=salary_transaction.get_balance_for_account(revenues_account),
+                ),
+                BalanceEvolutionReportData(
+                    date=dates[0],
+                    account=assets_account,
+                    balance=salary_transaction.get_balance_for_account(assets_account),
+                ),
+                BalanceEvolutionReportData(
+                    date=dates[1],
+                    account=assets_account,
+                    balance=(
+                        salary_transaction.get_balance_for_account(assets_account)
+                        + supermarket_transaction.get_balance_for_account(assets_account)
+                    ),
+                ),
+                BalanceEvolutionReportData(
+                    date=dates[0],
+                    account=expenses_account,
+                    balance=Balance([]),
+                ),
+                BalanceEvolutionReportData(
+                    date=dates[1],
+                    account=expenses_account,
+                    balance=supermarket_transaction.get_balance_for_account(expenses_account),
+                ),
+            ]
+        )
         assert exp == report
 
     def test_integration_with_currency_conversion(self):
@@ -179,23 +179,24 @@ class TestIntegrationBalanceEvolutionQuery(PacsTestCase):
         ]
 
         result = BalanceEvolutionQuery([account], dates, currency_conversion_fn).run()
-        exp = BalanceEvolutionReport(data=[
-            BalanceEvolutionReportData(
-                dates[0],
-                account,
-                balance=Balance([Money(999, currency)]),
-            ),
-            BalanceEvolutionReportData(
-                dates[1],
-                account,
-                balance=Balance([Money(999 * 2, currency)]),
-            )
-        ])
+        exp = BalanceEvolutionReport(
+            data=[
+                BalanceEvolutionReportData(
+                    dates[0],
+                    account,
+                    balance=Balance([Money(999, currency)]),
+                ),
+                BalanceEvolutionReportData(
+                    dates[1],
+                    account,
+                    balance=Balance([Money(999 * 2, currency)]),
+                ),
+            ]
+        )
         assert exp == result
 
 
 class TestIntegrationFlowEvolutionQuery(PacsTestCase):
-
     def setUp(self):
         super().setUp()
         self.populate_accounts()
@@ -209,23 +210,23 @@ class TestIntegrationFlowEvolutionQuery(PacsTestCase):
         car_expenses_acc = AccountTestFactory(parent=expenses_acc)
         # The periods
         periods = [
-            Period.from_strings('2017-01-01', '2017-12-31'),
-            Period.from_strings('2018-01-01', '2018-12-31'),
+            Period.from_strings("2017-01-01", "2017-12-31"),
+            Period.from_strings("2018-01-01", "2018-12-31"),
         ]
         # Two transactions for the first period
         house_expense_tra = TransactionTestFactory(
-            date_='2017-01-01',
+            date_="2017-01-01",
             movements_specs__0__account=current_account_acc,
             movements_specs__1__account=house_expenses_acc,
         )
         car_expense_tra = TransactionTestFactory(
-            date_='2017-12-31',
+            date_="2017-12-31",
             movements_specs__0__account=current_account_acc,
             movements_specs__1__account=car_expenses_acc,
         )
         # One outside the periods
         outside_house_expense_tra = TransactionTestFactory(
-            date_='2016-12-31',
+            date_="2016-12-31",
             movements_specs__0__account=current_account_acc,
             movements_specs__1__account=house_expenses_acc,
         )
@@ -242,9 +243,8 @@ class TestIntegrationFlowEvolutionQuery(PacsTestCase):
                 period=periods[0],
                 moneys=(
                     car_expense_tra.get_balance_for_account(current_account_acc)
-                    +
-                    house_expense_tra.get_balance_for_account(current_account_acc)
-                ).get_moneys()
+                    + house_expense_tra.get_balance_for_account(current_account_acc)
+                ).get_moneys(),
             ),
             Flow(period=periods[1], moneys=[]),
         ]
@@ -255,20 +255,18 @@ class TestIntegrationFlowEvolutionQuery(PacsTestCase):
                 period=periods[0],
                 moneys=(
                     car_expense_tra.get_balance_for_account(expenses_acc)
-                    +
-                    house_expense_tra.get_balance_for_account(expenses_acc)
-                ).get_moneys()
+                    + house_expense_tra.get_balance_for_account(expenses_acc)
+                ).get_moneys(),
             ),
             Flow(period=periods[1], moneys=[]),
         ]
 
 
 class TestPeriod:
-
     def test_from_strings(self):
-        date_str_one = '2019-01-01'
+        date_str_one = "2019-01-01"
         date_one = date(2019, 1, 1)
-        date_str_two = '2019-12-31'
+        date_str_two = "2019-12-31"
         date_two = date(2019, 12, 31)
         period = Period.from_strings(date_str_one, date_str_two)
         assert period == Period(date_one, date_two)

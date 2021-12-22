@@ -1,9 +1,9 @@
 from unittest import TestCase
+
 import featuretoggles.utils as sut
 
 
 class ParseTogglesTest(TestCase):
-
     def test_empty(self):
         assert sut.parse_toggles("") == {}
 
@@ -12,7 +12,6 @@ class ParseTogglesTest(TestCase):
 
 
 class SerializeTogglesTest(TestCase):
-
     def test_empty(self):
         assert sut.serialize_toggles({}) == ""
 

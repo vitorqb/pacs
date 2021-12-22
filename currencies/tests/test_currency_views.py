@@ -10,35 +10,33 @@ from .factories import CurrencyTestFactory
 
 
 class CurrencyViewTestCase(PacsTestCase):
-
     def setUp(self):
         super().setUp()
         self.req_fact = APIRequestFactory()
 
 
 class TestCurrencyView(CurrencyViewTestCase):
-
     def test_url_resolves_to_view_function(self):
-        func = resolve('/currencies/').func
+        func = resolve("/currencies/").func
         assert func.cls == CurrencyViewSet
 
     def test_url_for_specific_currency_resolves_to_view(self):
-        resolver = resolve('/currencies/1/')
+        resolver = resolve("/currencies/1/")
         assert resolver.func.cls == CurrencyViewSet
-        assert resolver.kwargs == {'pk': '1'}
+        assert resolver.kwargs == {"pk": "1"}
 
     def test_get_currencies(self):
         curs = CurrencyTestFactory.create_batch(3)
-        resp = self.client.get('/currencies/').json()
+        resp = self.client.get("/currencies/").json()
         assert [CurrencySerializer(x).data for x in curs] == resp
 
     def test_get_single_currency(self):
         cur = CurrencyTestFactory()
-        resp = self.client.get(f'/currencies/{cur.pk}/').json()
+        resp = self.client.get(f"/currencies/{cur.pk}/").json()
         assert CurrencySerializer(cur).data == resp
 
     def test_post_single_currency(self):
-        data = {'name': 'Yen'}
-        resp = self.client.post('/currencies/', data).json()
+        data = {"name": "Yen"}
+        resp = self.client.post("/currencies/", data).json()
         cur = Currency.objects.get(name="Yen")
         assert resp == CurrencySerializer(cur).data

@@ -1,11 +1,12 @@
-import pytest
 from unittest import TestCase
-import common.models as sut
+
+import pytest
 from rest_framework.validators import ValidationError
+
+import common.models as sut
 
 
 class newStringDateFieldTest(TestCase):
-
     def test_valid(self):
         valid_date = "2019-01-01"
         field = sut.new_string_date_field()

@@ -4,9 +4,9 @@ from rest_framework import pagination
 
 # !!!! TODO -> Remove (has same effect as usual PageNumberPagination)
 @attr.s()
-class OptionalPageNumberPaginator():
-    """ A wrapper around PageNumberPagination that only paginates if
-    the query_param is parsed. """
+class OptionalPageNumberPaginator:
+    """A wrapper around PageNumberPagination that only paginates if
+    the query_param is parsed."""
 
     # A paginator being wrapped
     _paginator: pagination.BasePagination = attr.ib()

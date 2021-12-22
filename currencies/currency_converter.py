@@ -10,42 +10,43 @@ from rest_framework.exceptions import APIException
 from currencies.money import Money
 
 if TYPE_CHECKING:
-    from currencies.models import Currency
     from datetime import date as Date
+
+    from currencies.models import Currency
 
 
 class UnkownCurrencyForConversion(APIException):
     status_code = 400
-    default_code = 'unkown_currency_for_conversion'
+    default_code = "unkown_currency_for_conversion"
 
 
 class UnkownDateForCurrencyConversion(APIException):
     status_code = 400
-    default_code = 'unkown_date_for_currency_conversion'
+    default_code = "unkown_date_for_currency_conversion"
     default_detail = (
-        'An attempt was made to convert money between currencies for'
-        ' a date where there was not enough information on the currency'
-        ' prices to perform the conversion. This probably means you did'
-        ' not sent enough currency information for the operation you attempted.'
-        ' Please review the data sent and try again with complete data.'
+        "An attempt was made to convert money between currencies for"
+        " a date where there was not enough information on the currency"
+        " prices to perform the conversion. This probably means you did"
+        " not sent enough currency information for the operation you attempted."
+        " Please review the data sent and try again with complete data."
     )
 
 
 @attr.s()
 class CurrencyConverter:
-    """ A converter for money, from one currency to the other """
+    """A converter for money, from one currency to the other"""
 
     # A dict mapping currency code -> value in dollars for 1 currency unit
     _currency_code_to_value_dct: Dict[str, Decimal] = attr.ib()
 
     def __attrs_post_init__(self):
         # We always consider dollar to have value 1, it is our base currency.
-        USD_value = self._currency_code_to_value_dct.get('USD', Decimal(1))
+        USD_value = self._currency_code_to_value_dct.get("USD", Decimal(1))
         assert USD_value == Decimal(1)
-        self._currency_code_to_value_dct['USD'] = Decimal(1)
+        self._currency_code_to_value_dct["USD"] = Decimal(1)
 
     def convert(self, money: Money, currency: Currency) -> Money:
-        """ Converts `money` to a `money` with `currency` """
+        """Converts `money` to a `money` with `currency`"""
         # Skip if same currency
         if money.currency == currency:
             return money
@@ -65,10 +66,10 @@ class CurrencyConverter:
     def _assert_known_currency(self, currency: Currency) -> None:
         if currency.get_code() not in self._currency_code_to_value_dct.keys():
             msg = (
-                f'Missing data for currency with code {currency.get_code()}.'
-                f' This usually means that you tried to call an operation passing'
-                f' currency conversion options that were insufficient for the'
-                f' operation requested. Please review it and try again.'
+                f"Missing data for currency with code {currency.get_code()}."
+                f" This usually means that you tried to call an operation passing"
+                f" currency conversion options that were insufficient for the"
+                f" operation requested. Please review it and try again."
             )
             raise UnkownCurrencyForConversion(msg)
 
@@ -93,6 +94,7 @@ class CurrencyPricePortifolioConverter:
     A converted based on a currency price portifolio, which is a mapping of
     (currency, date) -> currency_price (in dollars).
     """
+
     _date_to_currency_prices: Dict[Date, Dict[str, Decimal]]
     _dates: Set[Date]
 

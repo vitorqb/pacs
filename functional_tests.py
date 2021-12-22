@@ -1,5 +1,5 @@
 from functools import partialmethod
-from common.testutils import TestRequests, populate_exchangerates_with_mock_data, DataMaker, TestRequestMaker, URLS
+from common.testutils import TestRequests, populate_exchangerates_with_mock_data, DataMaker, TestRequestMaker, URLS, TestHelpers
 import pytest
 import attr
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -25,7 +25,7 @@ class FunctionalTests(StaticLiveServerTestCase):
 
         # Sets up a root account and the DataMaker
         self.trm = TestRequestMaker(self.requests)
-        self.root_acc = _find_root(self.trm.get_json(URLS.account))
+        self.root_acc = TestHelpers._find_root(self.trm.get_json(URLS.account))
         self.data_maker = DataMaker(self.root_acc)
 
     def test_unlogged_user_cant_make_queries(self):
@@ -57,7 +57,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         # And he can see them
         accounts = self.trm.get_accounts()
         for x in 'Expenses', 'Supermarket':
-            _assert_contains(accounts, 'name', x)
+            TestHelpers._assert_contains(accounts, 'name', x)
 
     def test_user_changes_name_of_account(self):
         # The user had previously creates an account
@@ -66,7 +66,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         orig_name = current_acc['name']
 
         # Which he sees when he opens the app
-        acc_data = _select_by(self.trm.get_accounts(), 'name', orig_name)
+        acc_data = TestHelpers._select_by(self.trm.get_accounts(), 'name', orig_name)
 
         # It now decides to change the name
         new_name = "Current Account (La Caixa)"
@@ -74,8 +74,8 @@ class FunctionalTests(StaticLiveServerTestCase):
 
         # And he sees it worked, and he is happy
         accounts = self.trm.get_accounts()
-        _assert_contains(accounts, 'name', new_name)
-        _assert_not_contains(accounts, 'name', orig_name)
+        TestHelpers._assert_contains(accounts, 'name', new_name)
+        TestHelpers._assert_not_contains(accounts, 'name', orig_name)
 
     def test_user_changes_account_hierarchy(self):
         # The user had previously created an Current Account whose
@@ -98,8 +98,8 @@ class FunctionalTests(StaticLiveServerTestCase):
         )
         # And sees that it worked
         accounts = self.trm.get_accounts()
-        _assert_contains(accounts, 'name', 'Current Account Itau')
-        _assert_not_contains(accounts, 'name', cur_acc['name'])
+        TestHelpers._assert_contains(accounts, 'name', 'Current Account Itau')
+        TestHelpers._assert_not_contains(accounts, 'name', cur_acc['name'])
 
         # He creates the new father for it
         new_father = self.trm.post_account({
@@ -109,7 +109,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         })
         # And sees that it worked
         accounts = self.trm.get_accounts()
-        _assert_contains(accounts, 'name', new_father['name'])
+        TestHelpers._assert_contains(accounts, 'name', new_father['name'])
 
         # He sets the old acc to have this father
         resp_data = self.trm.patch_json(
@@ -125,7 +125,7 @@ class FunctionalTests(StaticLiveServerTestCase):
                 "acc_type": "Leaf"
         })
         accounts = self.trm.get_accounts()
-        _assert_contains(accounts, 'name', "Current Account LaCaixa")
+        TestHelpers._assert_contains(accounts, 'name', "Current Account LaCaixa")
 
     def test_first_transaction(self):
         # The user creates two accounts
@@ -227,7 +227,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         bank_account = self.trm.post_account(self.data_maker.current_acc(assets))
 
         # And two transactions
-        euro = _select_by(self.trm.get_currencies(), 'name', 'Euro')
+        euro = TestHelpers._select_by(self.trm.get_currencies(), 'name', 'Euro')
         withdrawal = self.trm.post_transaction(self.data_maker.withdrawal(
             bank_account, cash_account, euro, date_='2018-01-03'
         ))
@@ -263,7 +263,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         assert journal['transactions'] == transactions[::-1]
 
     def test_get_accounts_evolution_report(self):
-        euro = _select_by(self.trm.get_currencies(), 'name', 'Euro')
+        euro = TestHelpers._select_by(self.trm.get_currencies(), 'name', 'Euro')
 
         # The user has three (leaf) accounts: bank, cash, supermarket
         assets = self.trm.post_account(self.data_maker.assets_acc())
@@ -360,8 +360,8 @@ class FunctionalTests(StaticLiveServerTestCase):
     def test_get_flow_report(self):
         # First select two currencies
         all_currencies = self.trm.get_currencies()
-        euro = _select_by(all_currencies, 'name', 'Euro')
-        real = _select_by(all_currencies, 'name', 'Real')
+        euro = TestHelpers._select_by(all_currencies, 'name', 'Euro')
+        real = TestHelpers._select_by(all_currencies, 'name', 'Real')
 
         # Create accounts for salary, current acc, and supermarket
         revenue_acc_data = self.data_maker.revenues_acc()
@@ -431,7 +431,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         flow_report_data = self.trm.post_flow_evolution_report(flow_report_opts)
 
         # And for revenue we have the wages won and 0
-        revenues_data = _select_by(
+        revenues_data = TestHelpers._select_by(
             flow_report_data['data'],
             'account',
             revenue_acc['pk'],
@@ -457,7 +457,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         ]
 
         # And for expenses...
-        expenses_data = _select_by(
+        expenses_data = TestHelpers._select_by(
             flow_report_data['data'],
             'account',
             expenses_acc['pk'],
@@ -512,7 +512,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         flow_report_data = self.trm.post_flow_evolution_report(flow_report_opts)
 
         # And revenues are ok
-        revenues_data = _select_by(
+        revenues_data = TestHelpers._select_by(
             flow_report_data['data'],
             'account',
             revenue_acc['pk'],
@@ -535,7 +535,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         ]
 
         # And so is expenses
-        expenses_data = _select_by(
+        expenses_data = TestHelpers._select_by(
             flow_report_data['data'],
             'account',
             expenses_acc['pk'],
@@ -609,7 +609,7 @@ class FunctionalTests(StaticLiveServerTestCase):
 
     def test_create_movement_with_comment(self):
         # Currencies setup
-        euro = _select_by(self.trm.get_currencies(), 'name', 'Euro')
+        euro = TestHelpers._select_by(self.trm.get_currencies(), 'name', 'Euro')
 
         # Accounts setup
         current_acc = self.trm.post_account(
@@ -633,7 +633,7 @@ class FunctionalTests(StaticLiveServerTestCase):
 
     def test_query_for_transaction_based_on_description(self):
         # Get Currency
-        euro = _select_by(self.trm.get_currencies(), 'name', 'Euro')
+        euro = TestHelpers._select_by(self.trm.get_currencies(), 'name', 'Euro')
 
         # Accounts setup
         assets = self.trm.post_account(self.data_maker.assets_acc())
@@ -669,29 +669,3 @@ class FunctionalTests(StaticLiveServerTestCase):
         assert len(result_3) == 2
         assert result_3[0] == deposit_2  # Most recent
         assert result_3[1] == deposit_1  # Most recent
-
-
-#
-# Helpers
-#
-def _find_root(acc_list):
-    """ Returns the root account out of a list of accounts """
-    return next(a for a in acc_list if a['acc_type'] == 'Root')
-
-
-def _assert_contains(list_, key, value):
-    """ Asserts that one of the dictionaries in list_ has a key whose
-    value is equal to name """
-    assert any(x[key] == value for x in list_), \
-        f"{value} not found for key {key} in list {list_}"
-
-
-def _assert_not_contains(list_, key, value):
-    """ Opposite of _assert_contains """
-    assert not any(x[key] == value for x in list_), \
-        f"{value} WAS FOUND for key {key} in list {list_}"
-
-
-def _select_by(list_, key, value):
-    """ Selects the (first) dict from list_ that has value in it's key """
-    return next(x for x in list_ if x[key] == value)

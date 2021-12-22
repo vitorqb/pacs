@@ -239,3 +239,9 @@ def build(c, build_dir="./build", dist_dir="./dist", tag_latest=False):
 def lint(c):
     c.run("isort .")
     c.run("python -m black .")
+
+
+@pacstask()
+def check(c):
+    c.run("isort . --check")
+    c.run("black . --check")

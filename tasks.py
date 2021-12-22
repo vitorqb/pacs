@@ -212,7 +212,7 @@ def collectstatic(c, no_input=False):
     c.run_manage(cmd, pty=True)
 
 @pacstask()
-def build(c, build_dir="./build", dist_dir="./dist"):
+def build(c, build_dir="./build", dist_dir="./dist", tag_latest=False):
     version = c.run("git describe --tags").stdout.strip()
     c.run(f"rm -rf {build_dir}")
     c.run(f"mkdir -p {build_dir}")
@@ -224,4 +224,7 @@ def build(c, build_dir="./build", dist_dir="./dist"):
     with c.cd(build_dir):
         c.run(f"tar -vzcf pacs-{version}.tar.gz **")
     c.run(f"mv {build_dir}/pacs-{version}.tar.gz {dist_dir}/pacs-{version}.tar.gz")
-    c.run(f"{DOCKER_CMD} build -t 'pacs:{version}' --build-arg 'VERSION={version}' -f docker/Dockerfile .")
+    tags_opts = f"-t 'pacs:{version}'"
+    if tag_latest:
+        tags_opts = f"{tags_opts} -t 'pacs:latest'"
+    c.run(f"{DOCKER_CMD} build {tags_opts} --build-arg 'VERSION={version}' -f docker/Dockerfile .")

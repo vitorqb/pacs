@@ -285,6 +285,12 @@ class TestRequestMaker:
         self.assert_response_status_okay(resp)
         return resp.json()
 
+    def delete_pk(self, path, pk):
+        """Makes a DELETE request, ensures it returns 2**, and parses the json"""
+        resp = self.test_requests.delete(f"{path}{pk}/")
+        self.assert_response_status_okay(resp)
+        return resp
+
     get_accounts = partialmethod(get_json, URLS.account)
     get_currencies = partialmethod(get_json, URLS.currency)
     get_transactions = partialmethod(get_json, URLS.transaction)
@@ -294,6 +300,7 @@ class TestRequestMaker:
     post_currency = partialmethod(post_json, URLS.currency)
     post_flow_evolution_report = partialmethod(post_json, URLS.reports.flow_evolution)
     post_balance_evolution_report = partialmethod(post_json, URLS.reports.balance_evolution)
+    delete_transaction = partialmethod(delete_pk, URLS.transaction)
 
 
 class TestHelpers:

@@ -1,12 +1,11 @@
+import string
 from decimal import Decimal
 from typing import List
-import string
 
-from django.core.exceptions import ValidationError
 import django.db.models as m
-from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, RegexValidator
 from rest_framework import serializers
-from django.core.validators import RegexValidator
 
 # We store decimals with:
 #   - up to 20 digits
@@ -15,11 +14,11 @@ from django.core.validators import RegexValidator
 #   - 2 decimal places
 N_DECIMAL_PLACES: int = 5
 N_DECIMAL_MAX_DIGITS: int = 20
-DECIMAL_PLACES: Decimal = Decimal('10') ** -N_DECIMAL_PLACES
+DECIMAL_PLACES: Decimal = Decimal("10") ** -N_DECIMAL_PLACES
 N_DECIMAL_COMPARISON: int = 2
 
 # Characters to be considered for tags
-TAGS_CHARS = set(string.ascii_lowercase + string.ascii_uppercase + string.digits + '-_')
+TAGS_CHARS = set(string.ascii_lowercase + string.ascii_uppercase + string.digits + "-_")
 
 
 def tag_validator(value):
@@ -29,16 +28,16 @@ def tag_validator(value):
 
 
 def new_money_quantity_field():
-    """ Returns a new field to be used to store currency quantities """
+    """Returns a new field to be used to store currency quantities"""
     return m.DecimalField(max_digits=20, decimal_places=N_DECIMAL_PLACES)
 
 
 def new_price_field():
-    """ Returns a Fied to be used as price """
+    """Returns a Fied to be used as price"""
     return m.DecimalField(
         validators=[MinValueValidator(0, "Prices must be positive")],
         max_digits=N_DECIMAL_MAX_DIGITS,
-        decimal_places=N_DECIMAL_PLACES
+        decimal_places=N_DECIMAL_PLACES,
     )
 
 
@@ -47,18 +46,19 @@ _date_regex = "[0-9]{4}-[0-1][0-9]-[0-3][0-9]"
 
 
 def new_string_date_field():
-    """ Returns a field for a date-like string """
+    """Returns a field for a date-like string"""
     validators_ = [RegexValidator(_date_regex)]
     return serializers.CharField(validators=validators_)
 
 
 class NameField(m.CharField):
-    """ Fields for names """
+    """Fields for names"""
+
     MAX_LENGTH = 150
 
     def __init__(self, *args, **kwargs):
-        kwargs['max_length'] = self.MAX_LENGTH
-        kwargs['unique'] = True
+        kwargs["max_length"] = self.MAX_LENGTH
+        kwargs["unique"] = True
         super().__init__(*args, **kwargs)
 
 
@@ -69,7 +69,7 @@ def full_clean_and_save(x: m.Model) -> m.Model:
 
 
 def list_to_queryset(lst: List[m.Model]) -> m.QuerySet:
-    """ Converts a list of objects into a queryset. """
+    """Converts a list of objects into a queryset."""
     if len(lst) == 0:
         return m.QuerySet().none()
     return type(lst[0]).objects.filter(pk__in=[x.pk for x in lst])

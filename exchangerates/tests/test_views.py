@@ -1,11 +1,12 @@
-from common.testutils import PacsTestCase
 import datetime
+
 from rest_framework.test import APIRequestFactory
+
 import exchangerates.views as sut
+from common.testutils import PacsTestCase
 
 
 class GetExchangeRateDataTest(PacsTestCase):
-
     def test_returns_200_with_exchange_rates_from_service(self):
 
         mock_data = [
@@ -14,15 +15,15 @@ class GetExchangeRateDataTest(PacsTestCase):
                 "prices": [
                     {"date": "2020-01-01", "price": 0.8},
                     {"date": "2020-01-02", "price": 0.85},
-                ]
+                ],
             },
             {
                 "currency": "BRL",
                 "prices": [
                     {"date": "2020-01-01", "price": 4},
                     {"date": "2020-01-02", "price": 4.2},
-                ]
-            }
+                ],
+            },
         ]
 
         def mock_fetch_exchange_rates(start_at, end_at, currency_codes):

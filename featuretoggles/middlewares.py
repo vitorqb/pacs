@@ -1,9 +1,8 @@
-import featuretoggles.services as services
 import featuretoggles.models as models
+import featuretoggles.services as services
 
 
-class FeatureToggleMiddleware():
-
+class FeatureToggleMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 

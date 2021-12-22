@@ -11,10 +11,9 @@ from rest_framework.exceptions import ValidationError
 
 from accounts.models import Account
 from common.models import full_clean_and_save, new_money_quantity_field, tag_validator
-from common.utils import round_decimal, decimals_equal
+from common.utils import decimals_equal, round_decimal
 from currencies.models import Currency
-from currencies.money import Money, Balance
-
+from currencies.money import Balance, Money
 
 if TYPE_CHECKING:
     import datetime
@@ -26,20 +25,20 @@ def _char_field(max_length=120, validators=[]):
 
 
 @attr.s()
-class TransactionFactory():
-    """ Encapsulates the creation of Transactions (with Movements) """
+class TransactionFactory:
+    """Encapsulates the creation of Transactions (with Movements)"""
 
     @atomic
     def __call__(
-            self,
-            description: str,
-            date_: datetime.date,
-            movements_specs: List[MovementSpec],
-            reference: str = None,
-            tags: List['TransactionTag'] = []
+        self,
+        description: str,
+        date_: datetime.date,
+        movements_specs: List[MovementSpec],
+        reference: str = None,
+        tags: List["TransactionTag"] = [],
     ) -> Transaction:
-        """ Creates a new Transaction. `movements_specs` should be a list
-        of MovementSpec describing the movements for this transaction. """
+        """Creates a new Transaction. `movements_specs` should be a list
+        of MovementSpec describing the movements for this transaction."""
         trans = full_clean_and_save(
             Transaction(description=description, date=date_, reference=reference)
         )
@@ -49,42 +48,35 @@ class TransactionFactory():
 
 
 class TransactionQuerySet(m.QuerySet):
-
     def filter_by_account(self, acc: Account) -> TransactionQuerySet:
-        """ Returns only transactions for which a movement uses an account """
+        """Returns only transactions for which a movement uses an account"""
         acc_descendants_pks = acc.get_descendants_ids(True, True)
         return self.filter(movement__account__id__in=acc_descendants_pks)
 
-    def filter_before_transaction(
-            self,
-            transaction: Transaction
-    ) -> TransactionQuerySet:
-        """ Filters itself to only consider transactions before another transaction,
-        considering an ordering of (date, id) """
+    def filter_before_transaction(self, transaction: Transaction) -> TransactionQuerySet:
+        """Filters itself to only consider transactions before another transaction,
+        considering an ordering of (date, id)"""
         date_ = transaction.get_date()
         pk = transaction.pk
 
-        x = self.order_by('date', 'pk')
+        x = self.order_by("date", "pk")
         x = x.filter(m.Q(date__lt=date_) | m.Q(date=date_, pk__lt=pk))
         return x
 
     def get_balance_for_account(self, account: Account) -> Balance:
-        """ Returns the Moneys for an account considering all transactions,
-        in an efficient way. """
+        """Returns the Moneys for an account considering all transactions,
+        in an efficient way."""
         movements = self.filter_by_account(account)._get_movements_qset().distinct()
-        data_dct = (
-            movements
-            .values("currency_id")                   # Group by currency
-            .annotate(quantity=m.Sum("quantity"))    # Sum value
+        data_dct = movements.values("currency_id").annotate(  # Group by currency
+            quantity=m.Sum("quantity")
+        )  # Sum value
+        return Balance(
+            [Money(x["quantity"], Currency.objects.get(id=x["currency_id"])) for x in data_dct]
         )
-        return Balance([
-            Money(x['quantity'], Currency.objects.get(id=x['currency_id']))
-            for x in data_dct
-        ])
 
     def _get_movements_qset(self):
-        """ Returns a queryset of all Movements related to self (distincted) """
-        pks = self.values_list('movement__pk', flat=True)
+        """Returns a queryset of all Movements related to self (distincted)"""
+        pks = self.values_list("movement__pk", flat=True)
         return Movement.objects.filter(pk__in=pks)
 
 
@@ -92,12 +84,13 @@ class TransactionTag(m.Model):
     """
     Tags (key-value pairs) for transactions.
     """
-    transaction = m.ForeignKey('Transaction', on_delete=m.CASCADE, related_name="tags")
+
+    transaction = m.ForeignKey("Transaction", on_delete=m.CASCADE, related_name="tags")
     name = _char_field(validators=[tag_validator])
     value = _char_field(validators=[tag_validator])
 
     def has_transaction(self):
-        return hasattr(self, 'transaction') and self.transaction is not None
+        return hasattr(self, "transaction") and self.transaction is not None
 
 
 class Transaction(m.Model):
@@ -145,25 +138,23 @@ class Transaction(m.Model):
         full_clean_and_save(self)
 
     def get_movements_specs(self) -> List[MovementSpec]:
-        """ Returns a list of MovementSpec with all movements for this
-        transaction """
+        """Returns a list of MovementSpec with all movements for this
+        transaction"""
         movements = self.movement_set.all()
         return [MovementSpec.from_movement(m) for m in movements]
 
     def get_balance_for_account(self, account: Account) -> Balance:
-        """ Returns a list of Money object that represents the impact
-        of this transaction for an account. """
+        """Returns a list of Money object that represents the impact
+        of this transaction for an account."""
         acc_descendants_pks = account.get_descendants_ids(True, True)
-        return Balance([
-            x.money
-            for x in self.get_movements_specs()
-            if x.account.pk in acc_descendants_pks
-        ])
+        return Balance(
+            [x.money for x in self.get_movements_specs() if x.account.pk in acc_descendants_pks]
+        )
 
     # !!!! TODO -> rename to set_movements_specs
     @atomic
     def set_movements(self, movements_specs: List[MovementSpec]) -> None:
-        """ Set's movements, using an iterable of MovementSpec """
+        """Set's movements, using an iterable of MovementSpec"""
         TransactionMovementSpecListValidator().validate(movements_specs)
         self.movement_set.all().delete()
         for mov_spec in movements_specs:
@@ -172,7 +163,7 @@ class Transaction(m.Model):
 
     @atomic
     def set_tags(self, tags: List[TransactionTag]) -> None:
-        """ Set's tags, using an interable of TransactionTag """
+        """Set's tags, using an interable of TransactionTag"""
         tags = [] if tags is None else tags
         self.tags.all().delete()
         for tag in tags:
@@ -182,26 +173,29 @@ class Transaction(m.Model):
         full_clean_and_save(self)
 
     def get_tags(self) -> List[TransactionTag]:
-        """ Returns all tags for this transaction """
+        """Returns all tags for this transaction"""
         return [x for x in self.tags.all()]
 
     def _convert_specs(self, mov_spec: MovementSpec) -> MovementSpec:
-        """ Converts a MovementSpec into a Movement for self. """
-        return full_clean_and_save(Movement(
-            account=mov_spec.account,
-            transaction=self,
-            currency=mov_spec.money.currency,
-            quantity=round_decimal(mov_spec.money.quantity),
-            comment=mov_spec.comment
-        ))
+        """Converts a MovementSpec into a Movement for self."""
+        return full_clean_and_save(
+            Movement(
+                account=mov_spec.account,
+                transaction=self,
+                currency=mov_spec.money.currency,
+                quantity=round_decimal(mov_spec.money.quantity),
+                comment=mov_spec.comment,
+            )
+        )
 
 
 @attr.s(frozen=True)
-class MovementSpec():
+class MovementSpec:
     """
     The specification for a movement. A Value-Object wrapper around Movement,
     used in it's creation.
     """
+
     account: Account = attr.ib()
     money: Money = attr.ib()
     comment: str = attr.ib(default="")
@@ -214,7 +208,7 @@ class MovementSpec():
 
     @classmethod
     def from_movement(cls, mov: Movement) -> MovementSpec:
-        """ Creates a MovementSpec from a Movement """
+        """Creates a MovementSpec from a Movement"""
         return MovementSpec(mov.get_account(), mov.get_money(), mov.get_comment())
 
 
@@ -266,31 +260,27 @@ class Movement(m.Model):
 # Auxiliary classes
 #
 class TransactionMovementSpecListValidator:
-    """ Auxiliar class to validate a list of movement specs for a Transaction """
+    """Auxiliar class to validate a list of movement specs for a Transaction"""
 
     ERR_MSGS: Dict[str, str] = {
-        'SINGLE_ACCOUNT': "A Transaction can not have a single Account.",
-        'UNBALANCED_SINGLE_CURRENCY': (
+        "SINGLE_ACCOUNT": "A Transaction can not have a single Account.",
+        "UNBALANCED_SINGLE_CURRENCY": (
             "If all movements of a Transaction have a single currency, then"
             " the transaction must be balanced, having 0 value."
         ),
-        'TWO_OR_MORE_MOVEMENTS': (
-            "A transactions must have two or more movements."
-        ),
-        'REPEATED_CURRENCY_ACCOUNT_PAIR': (
+        "TWO_OR_MORE_MOVEMENTS": ("A transactions must have two or more movements."),
+        "REPEATED_CURRENCY_ACCOUNT_PAIR": (
             "There can NOT be two movements with the same (account, currency) pair"
-        )
+        ),
     }
 
     def fail(self, key: str) -> NoReturn:
-        raise ValidationError({'movements_specs': self.ERR_MSGS[key]})
+        raise ValidationError({"movements_specs": self.ERR_MSGS[key]})
 
     def validate(self, movement_specs: List[MovementSpec]) -> None:
         currency_set = set(x.money.currency for x in movement_specs)
         account_set = set(x.account for x in movement_specs)
-        account_currency_pair_set = set(
-            (x.money.currency, x.account) for x in movement_specs
-        )
+        account_currency_pair_set = set((x.money.currency, x.account) for x in movement_specs)
 
         if len(movement_specs) < 2:
             self.fail("TWO_OR_MORE_MOVEMENTS")
@@ -305,4 +295,4 @@ class TransactionMovementSpecListValidator:
 
         # Each pair (account, currency) should only appear once
         if len(account_currency_pair_set) < len(movement_specs):
-            self.fail('REPEATED_CURRENCY_ACCOUNT_PAIR')
+            self.fail("REPEATED_CURRENCY_ACCOUNT_PAIR")

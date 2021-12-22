@@ -2,8 +2,12 @@ from datetime import date
 from unittest.mock import MagicMock, Mock, call, patch
 
 from accounts.journal import Journal
-from accounts.paginators import (JournalAllPaginator, JournalPagePaginator,
-                                 _reversed_journal_data, get_journal_paginator)
+from accounts.paginators import (
+    JournalAllPaginator,
+    JournalPagePaginator,
+    _reversed_journal_data,
+    get_journal_paginator,
+)
 from accounts.tests.factories import AccountTestFactory
 from common.constants import PAGE_QUERY_PARAM, PAGE_SIZE_QUERY_PARAM
 from common.models import list_to_queryset
@@ -14,12 +18,8 @@ from movements.tests.factories import TransactionTestFactory
 
 
 class Test_get_journal_paginator(PacsTestCase):
-
     def test_with_page_and_page_size_returns_JournalPagePaginator(self):
-        request = Mock(query_params={
-            PAGE_QUERY_PARAM: 1,
-            PAGE_SIZE_QUERY_PARAM: 1
-        })
+        request = Mock(query_params={PAGE_QUERY_PARAM: 1, PAGE_SIZE_QUERY_PARAM: 1})
         paginator = get_journal_paginator(request, Mock())
         assert isinstance(paginator, JournalPagePaginator)
 
@@ -34,9 +34,8 @@ class Test_get_journal_paginator(PacsTestCase):
         assert isinstance(paginator, JournalAllPaginator)
 
 
-@patch('accounts.paginators.JournalSerializer')
+@patch("accounts.paginators.JournalSerializer")
 class TestJournalAllPaginator(PacsTestCase):
-
     def setUp(self):
         super().setUp()
         self.m_request = Mock()
@@ -44,56 +43,50 @@ class TestJournalAllPaginator(PacsTestCase):
         self.paginator = JournalAllPaginator(self.m_request, self.m_journal)
 
     def test_get_data_simple_returns_serialized_journal(self, m_JournalSerializer):
-        """ JournalAllPaginator should not do any pagination, only return the
-        serialized Journal """
+        """JournalAllPaginator should not do any pagination, only return the
+        serialized Journal"""
         data = self.paginator.get_data()
         assert m_JournalSerializer.call_count == 1
         assert m_JournalSerializer.call_args == call(self.m_journal)
         assert data == m_JournalSerializer().data
 
-    @patch('accounts.paginators._reversed_journal_data')
+    @patch("accounts.paginators._reversed_journal_data")
     def test_get_data_reversed_uses_revert_data(
-            self,
-            m_reversed_journal_data,
-            m_JournalSerializer,
+        self,
+        m_reversed_journal_data,
+        m_JournalSerializer,
     ):
         data = self.paginator.get_data(reverse=True)
         # returns the reversed
         assert data == m_reversed_journal_data.return_value
         # called with the serialized data
         assert m_reversed_journal_data.call_count == 1
-        assert m_reversed_journal_data.call_args == \
-            call(m_JournalSerializer().data)
+        assert m_reversed_journal_data.call_args == call(m_JournalSerializer().data)
 
 
 class TestJournalPagePaginator(PacsTestCase):
-
     def setUp(self):
-        """ Prepares a paginator with all arguments mocked """
+        """Prepares a paginator with all arguments mocked"""
         self.m_request = Mock()
         self.m_journal = Mock(transactions=MockQset())
         self.m_base_paginator = MagicMock()
-        self.paginator = JournalPagePaginator(
-            self.m_request,
-            self.m_journal,
-            self.m_base_paginator
-        )
+        self.paginator = JournalPagePaginator(self.m_request, self.m_journal, self.m_base_paginator)
 
         # Patches the JournalSerializer so we don't try to serialize a Mock() obj
-        patcher_JournalSerializer = patch('accounts.paginators.JournalSerializer')
+        patcher_JournalSerializer = patch("accounts.paginators.JournalSerializer")
         self.m_JournalSerializer = patcher_JournalSerializer.start()
-        self.m_JournalSerializer.return_value.return_value = {'a': 'b'}
+        self.m_JournalSerializer.return_value.return_value = {"a": "b"}
         self.addCleanup(patcher_JournalSerializer.stop)
 
     def test_get_data_returns_count_of_transactions_from_base_paginator(self):
         data = self.paginator.get_data()
-        assert data['count'] == self.m_base_paginator.page.paginator.count
+        assert data["count"] == self.m_base_paginator.page.paginator.count
 
     def test_get_data_returns_previous_page_from_base_paginator(self):
         data = self.paginator.get_data()
         # The method that should have been called
         m_get_previous_link = self.m_base_paginator.get_previous_link
-        assert data['previous'] == m_get_previous_link.return_value
+        assert data["previous"] == m_get_previous_link.return_value
         assert m_get_previous_link.call_count == 1
         assert m_get_previous_link.call_args == call()
 
@@ -101,25 +94,25 @@ class TestJournalPagePaginator(PacsTestCase):
         data = self.paginator.get_data()
         # The method that should have been called
         m_get_next_link = self.m_base_paginator.get_next_link
-        assert data['next'] == m_get_next_link.return_value
+        assert data["next"] == m_get_next_link.return_value
         assert m_get_next_link.call_count == 1
         assert m_get_next_link.call_args == call()
 
-    @patch('accounts.paginators.JournalPagePaginator.paginate_journal')
+    @patch("accounts.paginators.JournalPagePaginator.paginate_journal")
     def test_get_data_serializes_correct_journal(self, m_paginate_journal):
         data = self.paginator.get_data()
 
         # The serialized journal should be the one generated by paginate_journal
-        assert data['journal'] == self.m_JournalSerializer.return_value.data
+        assert data["journal"] == self.m_JournalSerializer.return_value.data
         assert self.m_JournalSerializer.call_count == 1
-        assert self.m_JournalSerializer.call_args == \
-            call(m_paginate_journal.return_value)
+        assert self.m_JournalSerializer.call_args == call(m_paginate_journal.return_value)
 
         # And m_paginate_journal should have been called once with journal and
         # the paginated transaction qset
         assert m_paginate_journal.call_count == 1
-        assert m_paginate_journal.call_args == \
-            call(self.m_journal, self.m_base_paginator.paginate_queryset())
+        assert m_paginate_journal.call_args == call(
+            self.m_journal, self.m_base_paginator.paginate_queryset()
+        )
 
     def test_paginate_journal_returns_empty_journal_for_empty_page(self):
         transactions_page = []
@@ -130,37 +123,25 @@ class TestJournalPagePaginator(PacsTestCase):
         assert resp.initial_balance == journal.initial_balance
         assert resp.transactions.is_none is True
 
-    def test_paginate_journal_extracts_first_transaction_regardless_of_ordering(
-            self
-    ):
+    def test_paginate_journal_extracts_first_transaction_regardless_of_ordering(self):
         # Unordered transactions page
-        dates = [
-            date(*x)
-            for x in ((2019, 1, 2), (2019, 1, 1), (2019, 1, 1), (2019, 1, 3))
-        ]
+        dates = [date(*x) for x in ((2019, 1, 2), (2019, 1, 1), (2019, 1, 1), (2019, 1, 3))]
         pks = [4, 3, 2, 1]
-        transactions_page = [
-            Mock(date=date, pk=pk) for date, pk in zip(dates, pks)
-        ]
+        transactions_page = [Mock(date=date, pk=pk) for date, pk in zip(dates, pks)]
         first_transaction = min(transactions_page, key=lambda x: (x.date, x.pk))
         journal = Mock()
         JournalPagePaginator.paginate_journal(journal, transactions_page)
-        assert journal.get_balance_before_transaction.call_args == \
-            call(first_transaction)
+        assert journal.get_balance_before_transaction.call_args == call(first_transaction)
 
 
 class TestIntegrationJournalPagePaginator(PacsTestCase):
-
     def test_integration_get_data_reversed(self):
         def make_url(page, page_size):
             return f"/accounts/1/journal/?page={page}&page_size={page_size}"
 
         self.populate_accounts()
         account = AccountTestFactory()
-        transactions = TransactionTestFactory.create_batch(
-            5,
-            movements_specs__0__account=account
-        )
+        transactions = TransactionTestFactory.create_batch(5, movements_specs__0__account=account)
         transactions_qset = list_to_queryset(transactions)
         page, page_size = 1, 2
         request = Mock(query_params=dict(page=page, page_size=page_size))
@@ -168,42 +149,35 @@ class TestIntegrationJournalPagePaginator(PacsTestCase):
         paginator = JournalPagePaginator(request, journal)
         data = paginator.get_data(reverse=True)
 
-        assert data['count'] == len(transactions)
-        assert data['previous'] is None
-        assert data['next'] is not None
+        assert data["count"] == len(transactions)
+        assert data["previous"] is None
+        assert data["next"] is not None
 
-        journal_data = data['journal']
-        transactions_data = journal_data['transactions']
-        balances_data = journal_data['balances']
+        journal_data = data["journal"]
+        transactions_data = journal_data["transactions"]
+        balances_data = journal_data["balances"]
 
         assert len(transactions_data) == page_size
         assert len(balances_data) == page_size
 
-        last_transactions = sorted(
-            transactions,
-            key=lambda x: (x.date, x.pk),
-            reverse=True
-        )
+        last_transactions = sorted(transactions, key=lambda x: (x.date, x.pk), reverse=True)
         last_transactions_pks = [x.pk for x in last_transactions]
-        assert [x['pk'] for x in transactions_data] == last_transactions_pks[:2]
+        assert [x["pk"] for x in transactions_data] == last_transactions_pks[:2]
 
         exp_balances = journal.get_balances()[::-1][:2]
         exp_balances_data = BalanceSerializer(exp_balances, many=True).data
         for money_data, exp_money_data in zip(balances_data, exp_balances_data):
             # To compare money data, we need to sort (hehe)
-            money_data = sorted(money_data, key=lambda x: x['currency'])
-            exp_money_data = sorted(exp_money_data, key=lambda x: x['currency'])
+            money_data = sorted(money_data, key=lambda x: x["currency"])
+            exp_money_data = sorted(exp_money_data, key=lambda x: x["currency"])
             assert money_data == exp_money_data
 
     def test_paginate_journal_integration_base(self):
         # Creates an account and transactions for it
         self.populate_accounts()
         account = AccountTestFactory()
-        transactions = TransactionTestFactory.create_batch(
-            8,
-            movements_specs__0__account=account
-        )
-        transactions_qset = list_to_queryset(transactions).order_by('date', 'id')
+        transactions = TransactionTestFactory.create_batch(8, movements_specs__0__account=account)
+        transactions_qset = list_to_queryset(transactions).order_by("date", "id")
 
         # And a complete account journal
         journal = Journal(account, Balance([]), transactions_qset)
@@ -212,10 +186,7 @@ class TestIntegrationJournalPagePaginator(PacsTestCase):
         transactions_qset_page = transactions_qset[2:6]
 
         # And the paginated journal
-        journal_page = JournalPagePaginator.paginate_journal(
-            journal,
-            transactions_qset_page
-        )
+        journal_page = JournalPagePaginator.paginate_journal(journal, transactions_qset_page)
 
         # The new journal should have as initial balance the balance after
         # the two first transactions
@@ -225,16 +196,14 @@ class TestIntegrationJournalPagePaginator(PacsTestCase):
         assert exp_initial_balance == journal_page.initial_balance
 
         # And should have the 4 middle transactions
-        exp_transactions_ids = transactions_qset_page.values_list('pk', flat=True)
-        resp_transactions_ids = journal_page.transactions.values_list(
-            'pk', flat=True)
+        exp_transactions_ids = transactions_qset_page.values_list("pk", flat=True)
+        resp_transactions_ids = journal_page.transactions.values_list("pk", flat=True)
         assert list(exp_transactions_ids) == list(resp_transactions_ids)
 
 
 class TestFun_revert_journal_data(PacsTestCase):
-
     def test_base(self):
         data = {"balances": [1, 2, 3], "transactions": [4, 5, 6]}
         resp = _reversed_journal_data(data)
-        assert resp['balances'] == [3, 2, 1]
-        assert resp['transactions'] == [6, 5, 4]
+        assert resp["balances"] == [3, 2, 1]
+        assert resp["transactions"] == [6, 5, 4]

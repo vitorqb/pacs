@@ -1,13 +1,14 @@
 import copy
+
 from django.conf import settings
-import featuretoggles.utils
+
 import featuretoggles.models
+import featuretoggles.utils
 
 
-class FeatureToggleService():
-
+class FeatureToggleService:
     def __init__(self, default_toggles, request):
-        request_toggles_str = request.META.get(settings.FEATURE_TOGGLE_REQUEST_HEADER, '')
+        request_toggles_str = request.META.get(settings.FEATURE_TOGGLE_REQUEST_HEADER, "")
         settings_toggles_str = settings.FEATURE_TOGGLES
         self._features = {
             **default_toggles,
@@ -24,9 +25,11 @@ class FeatureToggleService():
 
 instance = None
 
+
 def set_instance(x):
     global instance
     instance = x
+
 
 def get_instance():
     if instance is None:

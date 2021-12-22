@@ -1,13 +1,13 @@
 import os
 import sys
-from functools import partial
-from invoke import task
-from invoke.tasks import Context, Task
-from invoke.runners import Result
-from invoke.exceptions import Exit
-from contextlib import contextmanager
-
 import tempfile
+from contextlib import contextmanager
+from functools import partial
+
+from invoke import task
+from invoke.exceptions import Exit
+from invoke.runners import Result
+from invoke.tasks import Context, Task
 
 FUNCTIONAL_TESTS_PATH = "functional_tests.py"
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -25,7 +25,7 @@ BUILD_SOURCES = [
     "pacs_auth",
     "reports",
     "requirements",
-    "tasks.py"
+    "tasks.py",
 ]
 DOCKER_CMD = os.environ.get("PACS_DOCKER_CMD", "docker")
 
@@ -34,7 +34,8 @@ DOCKER_CMD = os.environ.get("PACS_DOCKER_CMD", "docker")
 # Set Up
 #
 class PacsContext:
-    """ Wrapper around invoke.context.Context to provide usefull apis to us. """
+    """Wrapper around invoke.context.Context to provide usefull apis to us."""
+
     _context: Context
 
     def __init__(self, context: Context):
@@ -54,16 +55,17 @@ class PacsContext:
             yield
 
     def run_manage(self, cmd: str, pty: bool = False):
-        """ Runs a django management command """
+        """Runs a django management command"""
         self.run(f"python {MANAGE_PATH} {cmd}", pty=pty)
 
 
 class PacsTask(Task):
-    """ We need to subclass otherwise invoke don't detect that it is a Task.
+    """We need to subclass otherwise invoke don't detect that it is a Task.
     We just want to adapt __call__ so that it uses PacsContext instead of
-    Context. """
+    Context."""
+
     def __call__(self, context: Context, *args, **kwargs):
-        """ Converts the context into a PacsContext """
+        """Converts the context into a PacsContext"""
         result = self.body(PacsContext(context), *args, **kwargs)
         self.times_called += 1
         return result
@@ -91,8 +93,8 @@ def _populate_db(c):
 def _new_venv(c, path, requirements_file="requirements/development.txt"):
     c.run(f'python -m venv "{path}"')
     with c.prefix(f'source "{path}/bin/activate"'):
-        c.run(f'pip install --upgrade pip')
-        c.run(f'pip install -r {requirements_file}')
+        c.run(f"pip install --upgrade pip")
+        c.run(f"pip install -r {requirements_file}")
 
 
 #
@@ -101,11 +103,11 @@ def _new_venv(c, path, requirements_file="requirements/development.txt"):
 @pacstask(
     help={
         "path": "The path to the virtualenv.",
-        "force": "If set to true, whatever is in path is removed before."
+        "force": "If set to true, whatever is in path is removed before.",
     }
 )
 def prepare_virtualenv(c, path, force=False):
-    """ Prepares a virtualenv in a path """
+    """Prepares a virtualenv in a path"""
     path_exists = c.run(f'[ -d "{path}" ] || [ -f "{path}" ]', warn=True).ok
     if path_exists:
         if force is not True:
@@ -117,7 +119,7 @@ def prepare_virtualenv(c, path, force=False):
 
 @pacstask(help={"dev": "Install dev requirements", "deploy": "Install deploy requirements"})
 def requirements(c, dev=False, deploy=False):
-    """ Installs requirements for pacs """
+    """Installs requirements for pacs"""
     cmd = "pip install -r requirements/base_frozen.txt"
 
     if dev:
@@ -131,7 +133,7 @@ def requirements(c, dev=False, deploy=False):
 
 @pacstask(help={"dep_name": "Name of the dependency"})
 def add_base_requirement(c, dep_name):
-    """ Adds a base requirement for pacs by installing the most recent
+    """Adds a base requirement for pacs by installing the most recent
     dependency version compatible and adding it to
     `base_frozen.txt`"""
     tmp_file_name = tempfile.NamedTemporaryFile(suffix=".txt").name
@@ -143,9 +145,10 @@ def add_base_requirement(c, dep_name):
     c.run(f"echo '{dep_name}' | tee --append requirements/base.txt")
     c.run(f"rm -rf {tmp_file_name}")
 
+
 @pacstask()
 def update_frozen_requirements(c):
-    """ Updates the `base_frozen` file with the most up-to-date requirements"""
+    """Updates the `base_frozen` file with the most up-to-date requirements"""
     venv_dir = tempfile.mkdtemp()
     _new_venv(c, venv_dir, "requirements/base.txt")
     with c.prefix(f'source "{venv_dir}/bin/activate"'):
@@ -154,62 +157,64 @@ def update_frozen_requirements(c):
 
 @pacstask()
 def venv(c):
-    """ Prepares virtualenv in "./venv" """
+    """Prepares virtualenv in "./venv" """
     c.run("rm -rf ./venv")
     _new_venv(c, "./venv")
 
 
 @pacstask()
 def unit_test(c, opts="", coverage=False):
-    """ Calls pytest for all unit tests. """
+    """Calls pytest for all unit tests."""
     opts += ' -m "not functional"'
     _run_pytest(c, opts, coverage)
 
 
 @pacstask()
 def func_test(c, opts="", coverage=False):
-    """ Calls functional tests for python """
+    """Calls functional tests for python"""
     opts += ' -m "functional"'
     _run_pytest(c, opts, coverage)
 
 
 @pacstask()
 def test(c, opts="", coverage=False):
-    """ Runs functional and unit tests """
+    """Runs functional and unit tests"""
     _run_pytest(c, f"{opts}", coverage)
 
 
 @pacstask()
 def populate_db(c):
-    """ Calls the management commands to populate the db """
+    """Calls the management commands to populate the db"""
     _populate_db(c)
 
 
 @pacstask()
 def runserver(c):
-    """ Runs the development server """
+    """Runs the development server"""
     _populate_db(c)
     c.run_manage("runserver_plus --print-sql 0.0.0.0:8000", pty=True)
 
 
 @pacstask()
 def migrate(c, no_input=False):
-    """ Runs migrations """
+    """Runs migrations"""
     cmd = "migrate" + (" --no-input" if no_input else "")
     c.run_manage(cmd, pty=True)
 
 
 @pacstask()
 def makemigrations(c, no_input=False):
-    """ Runs makemigrations """
+    """Runs makemigrations"""
     cmd = "makemigrations" + (" --no-input" if no_input else "")
     c.run_manage(cmd, pty=True)
 
+
 @pacstask()
 def collectstatic(c, no_input=False):
-    """ Runs collectstatic """
+    """Runs collectstatic"""
     cmd = "collectstatic" + (" --no-input" if no_input else "")
     c.run_manage(cmd, pty=True)
+
 
 @pacstask()
 def build(c, build_dir="./build", dist_dir="./dist", tag_latest=False):
@@ -220,7 +225,7 @@ def build(c, build_dir="./build", dist_dir="./dist", tag_latest=False):
     for x in BUILD_SOURCES:
         c.run(f"cp -r {x} {build_dir}/{x}")
     for x in ["__pycache__", ".mypy_cache", "tests"]:
-        c.run(f'find build -depth -type d -name "{x}" -exec rm -rf '+'"{}" \;')
+        c.run(f'find build -depth -type d -name "{x}" -exec rm -rf ' + '"{}" \;')
     with c.cd(build_dir):
         c.run(f"tar -vzcf pacs-{version}.tar.gz **")
     c.run(f"mv {build_dir}/pacs-{version}.tar.gz {dist_dir}/pacs-{version}.tar.gz")
@@ -228,3 +233,15 @@ def build(c, build_dir="./build", dist_dir="./dist", tag_latest=False):
     if tag_latest:
         tags_opts = f"{tags_opts} -t 'pacs:latest'"
     c.run(f"{DOCKER_CMD} build {tags_opts} --build-arg 'VERSION={version}' -f docker/Dockerfile .")
+
+
+@pacstask()
+def lint(c):
+    c.run("isort .")
+    c.run("python -m black .")
+
+
+@pacstask()
+def check(c):
+    c.run("isort . --check")
+    c.run("black . --check")

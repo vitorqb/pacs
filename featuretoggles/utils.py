@@ -22,7 +22,6 @@ def serialize_toggles(dct):
 
 # Fake implementation of django cache's interface used for test
 class FakeCache:
-
     def __init__(self, _, __):
         self.calls = []
 

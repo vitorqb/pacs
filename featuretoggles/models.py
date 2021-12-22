@@ -1,14 +1,13 @@
 import django.db.models as models
 from django.core.cache import cache
+
 import featuretoggles.utils
 
-
-CACHE_KEY = 'featuretoggles'
+CACHE_KEY = "featuretoggles"
 CACHE_TIMEOUT = 120
 
 
 class FeatureToggleQuerySet(models.QuerySet):
-
     def read_feature_toggles(self):
         from_cache = cache.get(CACHE_KEY)
         if from_cache:

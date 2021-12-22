@@ -5,13 +5,13 @@ from common.testutils import PacsTestCase
 
 
 class TestOptionalPageNumberPaginator(PacsTestCase):
-
     def test_get_paginated_response_delegates(self):
         underlying_pag = Mock()
         args = (Mock(),)
         pag = OptionalPageNumberPaginator(underlying_pag)
-        assert pag.get_paginated_response(*args) ==\
-            underlying_pag.get_paginated_response.return_value
+        assert (
+            pag.get_paginated_response(*args) == underlying_pag.get_paginated_response.return_value
+        )
         underlying_pag.get_paginated_response.assert_called_with(*args)
 
     def test_get_to_html_delegates(self):
@@ -29,13 +29,12 @@ class TestOptionalPageNumberPaginator(PacsTestCase):
 
     def test_paginate_queryset_delegates_if_page(self):
         underlying_pag = Mock()
-        underlying_pag.page_query_param = 'paggge'
+        underlying_pag.page_query_param = "paggge"
         pag = OptionalPageNumberPaginator(underlying_pag)
 
         request = Mock()
-        request.query_params = {'paggge': 12}
+        request.query_params = {"paggge": 12}
         args = (Mock(), request, Mock())
 
-        assert pag.paginate_queryset(*args) ==\
-            underlying_pag.paginate_queryset.return_value
+        assert pag.paginate_queryset(*args) == underlying_pag.paginate_queryset.return_value
         underlying_pag.paginate_queryset.assert_called_with(*args)

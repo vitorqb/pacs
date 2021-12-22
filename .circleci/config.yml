@@ -7,5 +7,6 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: pip install -r requirements/development.txt
+      - run: inv check
       - run: cp .env.example .env && inv test
       - run: inv build

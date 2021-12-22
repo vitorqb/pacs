@@ -7,12 +7,11 @@ import attr
 
 from currencies.currency_converter import CurrencyPricePortifolioConverter
 
-
 if TYPE_CHECKING:
-    from reports.reports import Period
     from accounts.models import Account
-    from currencies.models import Currency
     from currencies.currency_converter import CurrencyPricePortifolio
+    from currencies.models import Currency
+    from reports.reports import Period
 
 
 NOINPUT = object()
@@ -24,9 +23,7 @@ class CurrencyOpts:
     convert_to: Currency = attr.ib()
 
     def as_currency_conversion_fn(self):
-        converter = CurrencyPricePortifolioConverter(
-            price_portifolio_list=self.price_portifolio
-        )
+        converter = CurrencyPricePortifolioConverter(price_portifolio_list=self.price_portifolio)
         return lambda m, d: converter.convert(m, self.convert_to, d)
 
 
@@ -46,7 +43,5 @@ class BalanceEvolutionInput:
     def as_dict(self):
         out = {"accounts": self.accounts, "dates": self.dates}
         if self.currency_opts is not NOINPUT:
-            out["currency_conversion_fn"] = (
-                self.currency_opts.as_currency_conversion_fn()
-            )
+            out["currency_conversion_fn"] = self.currency_opts.as_currency_conversion_fn()
         return out

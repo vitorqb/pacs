@@ -5,16 +5,16 @@ from common.models import full_clean_and_save
 from currencies.models import Currency
 
 CURRENCIES_DATA = [
-    dict(name="Dollar", code='USD', imutable=True),
-    dict(name="Euro", code='EUR'),
-    dict(name="Real", code='BRL'),
+    dict(name="Dollar", code="USD", imutable=True),
+    dict(name="Euro", code="EUR"),
+    dict(name="Real", code="BRL"),
 ]
 
 
 currency_populator = TablePopulator(
     lambda x: full_clean_and_save(Currency(**x)),
-    lambda x: Currency.objects.filter(name=x['name']).exists(),
-    CURRENCIES_DATA
+    lambda x: Currency.objects.filter(name=x["name"]).exists(),
+    CURRENCIES_DATA,
 )
 
 

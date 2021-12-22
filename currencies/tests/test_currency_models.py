@@ -4,23 +4,25 @@ from django.core.exceptions import ValidationError
 
 from common.testutils import PacsTestCase
 from currencies import models as currency_models
-from currencies.management.commands.populate_currencies import \
-    currency_populator
-from currencies.models import (Currency, CurrencyCodeValidationError,
-                               CurrencyFactory, get_default_currency,
-                               new_currency_code_field, MissingCodeForCurrency)
+from currencies.management.commands.populate_currencies import currency_populator
+from currencies.models import (
+    Currency,
+    CurrencyCodeValidationError,
+    CurrencyFactory,
+    MissingCodeForCurrency,
+    get_default_currency,
+    new_currency_code_field,
+)
 
 from .factories import CurrencyTestFactory
 
 
 class CurrencyModelTestCase(PacsTestCase):
-
     def setUp(self):
         super().setUp()
 
 
 class TestNewCurrencyCodeField(CurrencyModelTestCase):
-
     def test_blank_invalid(self):
         field = new_currency_code_field()
         with self.assertRaises(ValidationError):
@@ -40,32 +42,30 @@ class TestNewCurrencyCodeField(CurrencyModelTestCase):
 
 
 class TestCurrencyFactory(CurrencyModelTestCase):
-
     @staticmethod
     def get_data(**kwargs):
         out = dict(kwargs).copy()
-        if 'name' not in out:
-            out['name'] = 'foo'
-        if 'code' not in out:
-            out['code'] = 'BAR'
+        if "name" not in out:
+            out["name"] = "foo"
+        if "code" not in out:
+            out["code"] = "BAR"
         return out
 
     def test_base(self):
         data = self.get_data()
         cur = CurrencyFactory()(**data)
         assert cur in Currency.objects.all()
-        assert cur.name == data['name']
-        assert cur.code == data['code']
+        assert cur.name == data["name"]
+        assert cur.code == data["code"]
 
     def test_invalid_code(self):
-        code = 'I'
+        code = "I"
         data = self.get_data(code=code)
         with self.assertRaises(CurrencyCodeValidationError):
             CurrencyFactory()(**data)
 
 
 class TestCurrency(CurrencyModelTestCase):
-
     def test_get_name(self):
         assert CurrencyTestFactory(name="hola").get_name() == "hola"
 
@@ -87,7 +87,6 @@ class TestCurrency(CurrencyModelTestCase):
 
 
 class TestFun_get_default_currency(CurrencyModelTestCase):
-
     def test_base(self):
         currency_populator()
         # Forcely removes cache

@@ -1,9 +1,8 @@
-from common.testutils import PacsTestCase
 import featuretoggles.models as models
+from common.testutils import PacsTestCase
 
 
 class GetFeatureTogglesTest(PacsTestCase):
-
     def test_returns_200_with_feature_toggles(self):
         models.FeatureToggle.objects.create(name="foo", is_active=True)
         result = self.client.get("/featuretoggles")

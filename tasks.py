@@ -28,6 +28,7 @@ BUILD_SOURCES = [
     "tasks.py",
 ]
 DOCKER_CMD = os.environ.get("PACS_DOCKER_CMD", "docker")
+PYTHON = "python3.7"
 
 
 #
@@ -56,7 +57,7 @@ class PacsContext:
 
     def run_manage(self, cmd: str, pty: bool = False):
         """Runs a django management command"""
-        self.run(f"python {MANAGE_PATH} {cmd}", pty=pty)
+        self.run(f"{PYTHON} {MANAGE_PATH} {cmd}", pty=pty)
 
 
 class PacsTask(Task):
@@ -91,7 +92,7 @@ def _populate_db(c):
 
 
 def _new_venv(c, path, requirements_file="requirements/development.txt"):
-    c.run(f'python -m venv "{path}"')
+    c.run(f'{PYTHON} -m venv "{path}"')
     with c.prefix(f'source "{path}/bin/activate"'):
         c.run(f"pip install --upgrade pip")
         c.run(f"pip install -r {requirements_file}")
@@ -238,7 +239,7 @@ def build(c, build_dir="./build", dist_dir="./dist", tag_latest=False):
 @pacstask()
 def lint(c):
     c.run("isort .")
-    c.run("python -m black .")
+    c.run("{PYTHON} -m black .")
 
 
 @pacstask()
